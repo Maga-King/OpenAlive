@@ -19,6 +19,7 @@ final class ColorOsBridge {
     private static int wallpaperUid=-1;
     private static volatile Messenger channel;
     private static boolean connecting;
+    private static int connectAttempts;
     private static int lastMode=-1;
     private static int lastPhase;
     private static boolean localAodColor;
@@ -297,7 +298,7 @@ final class ColorOsBridge {
             selected=info!=null&&"org.aliveclean".equals(info.getPackageName());
             {if(Diagnostics.TRACE)XposedBridge.log("AliveClean: lock wallpaper selected="+selected);}
             if(selected){connect();readConfiguration();}
-            else main.post(()->{aodClock.configure(context,false,0);clocks.scene(context,false,-1,"");stateOrder.disconnect();lastMode=-1;lastPhase=0;});
+            else main.post(()->{aodClock.configure(context,false,0);clocks.scene(context,false,-1,"");stateOrder.disconnect();lastMode=-1;lastPhase=0;synchronized(ColorOsBridge.class){connectAttempts=0;}});
         }catch(Throwable error){selected=false;main.post(()->aodClock.configure(context,false,0));failure("wallpaper selection",error);}
     });}
     private static synchronized void connect(){
@@ -310,10 +311,18 @@ final class ColorOsBridge {
                 IBinder binder=reply.getBinder("channel");
                 binder.linkToDeath(()->{channel=null;main.post(()->aodClock.rendererLost());if(selected)worker.postDelayed(ColorOsBridge::connect,500);},0);
                 channel=new Messenger(binder);
+                synchronized(ColorOsBridge.class){connectAttempts=0;}
                 configure(reply);
                 {if(Diagnostics.TRACE)XposedBridge.log("AliveClean: scene channel connected; clock_api="+(clockApi?4:0));}
                 main.post(()->{if(lastMode>=0){Bundle b=new Bundle();b.putInt("mode",lastMode);b.putBoolean("animate",false);b.putInt("phase",lastPhase);b.putLong("time",SystemClock.uptimeMillis());b.putLong("clock_wake",aodClock.wakeToken());send(1,b);}});
-            }catch(Throwable error){failure("scene channel",error);}
+            }catch(Throwable error){
+                failure("scene channel",error);
+                if(selected){
+                    int attempt;
+                    synchronized(ColorOsBridge.class){attempt=++connectAttempts;}
+                    if(attempt<=8)worker.postDelayed(ColorOsBridge::connect,Math.min(4000L,250L<<Math.min(attempt-1,4)));
+                }
+            }
             finally{synchronized(ColorOsBridge.class){connecting=false;}}
         });
     }

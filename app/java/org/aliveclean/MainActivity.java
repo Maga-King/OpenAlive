@@ -68,7 +68,6 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
 
     private void applyDraft() {
         if(importing)return;
-        if(new SceneOptions(draft).aod==1&&!SceneChannel.hasClockHost()){toast(SceneChannel.clockStatus());return;}
         android.app.WallpaperInfo current=WallpaperManager.getInstance(this).getWallpaperInfo();
         if(current!=null&&getPackageName().equals(current.getPackageName())){commitDraft();return;}
         // The platform checks ambient permission when binding the service. An app-side
@@ -80,7 +79,20 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
 
     private void toast(String text){Toast.makeText(this,text,Toast.LENGTH_LONG).show();}
     private void importBusy(boolean busy){importing=busy;showScene();}
-    private void commitDraft(){SceneOptions chosen=new SceneOptions(draft);if(chosen.aod==1&&!SceneChannel.hasClockHost()){toast("息屏时钟模块未连接，请稍后再试");return;}if(chosen.save(getSharedPreferences(SceneOptions.APPLIED,0))){SceneProvider.changed(this);if(chosen.aod>=0)prepareAod();else toast("壁纸已应用");}else toast("设置保存失败，请重试");}
+    private void commitDraft(){
+        SceneOptions chosen=new SceneOptions(draft);
+        // The SystemUI bridge may become ready a little after the editor. Do not
+        // make applying a wallpaper depend on that race: the bridge observes the
+        // committed configuration and attaches the AOD clock when it is ready.
+        if(chosen.save(getSharedPreferences(SceneOptions.APPLIED,0))){
+            SceneProvider.changed(this);
+            if(chosen.aod>=0){
+                prepareAod();
+                if(chosen.aod==1&&!SceneChannel.hasClockHost())
+                    toast("壁纸已应用，息屏时钟正在连接");
+            }else toast("壁纸已应用");
+        }else toast("设置保存失败，请重试");
+    }
 
     @Override protected void onActivityResult(int request,int result,Intent data) {
         super.onActivityResult(request,result,data);

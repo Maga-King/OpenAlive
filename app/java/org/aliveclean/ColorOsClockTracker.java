@@ -74,6 +74,11 @@ final class ColorOsClockTracker {
             scope.refresh();
             timeView=findTimeView(root,0);
             digits.clear();findDigits(root,0);
+            if(timeView!=null){
+                java.util.ArrayList<View> activeDigits=new java.util.ArrayList<>();
+                findDigits(timeView,0,activeDigits);
+                if(!activeDigits.isEmpty()){digits.clear();digits.addAll(activeDigits);}
+            }
             measure();
         }catch(Throwable error){failure(error);}
     }
@@ -89,6 +94,11 @@ final class ColorOsClockTracker {
         if(view==null||depth>16)return;
         if(view.getClass().getSimpleName().equals("DigitalTimeView")){digits.add(view);return;}
         if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)findDigits(group.getChildAt(i),depth+1);}
+    }
+    private void findDigits(View view,int depth,java.util.List<View> target){
+        if(view==null||depth>16||(scope!=null&&scope.excludes(view)))return;
+        if(view.getClass().getSimpleName().equals("DigitalTimeView")){target.add(view);return;}
+        if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)findDigits(group.getChildAt(i),depth+1,target);}
     }
     private boolean validBounds(){
         return !bounds.isEmpty()&&bounds.width()<=displaySize.x&&bounds.height()<=displaySize.y/2
