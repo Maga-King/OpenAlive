@@ -20,6 +20,7 @@ final class ColorOsClockTracker {
     private final ClockInkBounds ink=new ClockInkBounds();
     private final Rect inkBounds=new Rect();
     private Object plugin;
+    private int officialClockSize=-1;
     private boolean active,workshop,failed;
     private int aodUiState;
     private final Rect bounds=new Rect(),last=new Rect();
@@ -70,7 +71,7 @@ final class ColorOsClockTracker {
                 Object host=classic.get();if(host!=null){Object v=XposedHelpers.getObjectField(host,"mAodViewFromApk");candidate=v instanceof View?(View)v:host instanceof View?(View)host:null;}
             }
             if(candidate==null)return;
-            if(root!=candidate){detach();root=candidate;scope=new ClockScope(root);last.setEmpty();root.getViewTreeObserver().addOnPreDrawListener(predraw);}
+            if(root!=candidate){detach();root=candidate;scope=new ClockScope(root);officialClockSize=-1;last.setEmpty();root.getViewTreeObserver().addOnPreDrawListener(predraw);}
             scope.refresh();
             timeView=findTimeView(root,0);
             digits.clear();findDigits(root,0);
@@ -110,11 +111,10 @@ final class ColorOsClockTracker {
             Display display=root.getDisplay();if(display==null)return;
             display.getRealSize(displaySize);
             bounds.setEmpty();String source="digits";
-            scope.refresh();
             boolean officialClock=workshop&&readOfficialClockRect(bounds);
             if(officialClock)source="official-clock";
-            View artwork=scope.artwork();
             if(!officialClock){
+                View artwork=scope.artwork();
                 if(artwork!=null&&artwork.getGlobalVisibleRect(bounds)&&validBounds())source="artwork";
                 else bounds.setEmpty();
             }
@@ -166,7 +166,8 @@ final class ColorOsClockTracker {
             if(plugin==null)return false;
             Bundle query=new Bundle();query.putInt("uiState",aodUiState);
             Object controller=keyguard.get();if(controller==null)return false;
-            query.putInt("clockSize",((Number)XposedHelpers.callMethod(controller,"pluginClockSize")).intValue());
+            if(officialClockSize<0)officialClockSize=((Number)XposedHelpers.callMethod(controller,"pluginClockSize")).intValue();
+            query.putInt("clockSize",officialClockSize);
             Object value=XposedHelpers.callMethod(plugin,"getClockVisibleRect",query);
             if(value instanceof Rect)out.set((Rect)value);
             else if(value instanceof Bundle){Object rect=((Bundle)value).getParcelable("visibleRect");if(rect instanceof Rect)out.set((Rect)rect);}
