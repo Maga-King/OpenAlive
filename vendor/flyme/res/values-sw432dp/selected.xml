@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <dimen name="mc_empty_tips_text_size_light">16.0sp</dimen>
+    <dimen name="mc_seekbar_vertical_padding_bottom">16.0dp</dimen>
+    <dimen name="mc_seekbar_vertical_padding_top">16.0dp</dimen>
+</resources>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:id="@id/nested_scroll_view" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <flyme.support.v7.widget.MzRecyclerView android:orientation="vertical" android:id="@id/recycler_view_launcher_effect" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8.0dp" android:overScrollMode="never" android:paddingStart="@dimen/fd_sys_margin_large" android:paddingEnd="@dimen/fd_sys_margin_large" android:nestedScrollingEnabled="true" />
+</LinearLayout>

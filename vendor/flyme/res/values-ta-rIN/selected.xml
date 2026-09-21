@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="mc_search">தேடு</string>
+    <string name="mz_action_bar_multi_choice_cancel">இரத்து செய்</string>
+    <string name="mz_action_bar_multi_choice_select_all">எல்லாம்</string>
+</resources>

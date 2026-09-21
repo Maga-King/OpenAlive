@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="16.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <ImageView android:id="@id/iv_preview" android:background="@drawable/aod_panel_item_bg" android:padding="13.0dp" android:duplicateParentState="true" android:layout_width="106.0dp" android:layout_height="106.0dp" android:foreground="@drawable/aod_panel_item_fg" android:scaleType="centerCrop" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+    <LinearLayout android:layout_gravity="center" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4.0dp">
+        <TextView android:textSize="12.0sp" android:textColor="@color/white" android:layout_gravity="center" android:id="@id/tv_label" android:duplicateParentState="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:maxLines="1" android:fontFamily="sans-serif-medium" />
+        <ImageView android:layout_gravity="center_vertical" android:id="@id/iv_arrow_right" android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@drawable/ic_right_arrow" android:layout_marginStart="6.0dp" />
+    </LinearLayout>
+</LinearLayout>

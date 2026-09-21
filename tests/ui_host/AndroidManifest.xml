@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.aliveclean.uihost">
+    <uses-sdk android:minSdkVersion="33" android:targetSdkVersion="36"/>
+    <application android:label="Flyme UI compatibility host" android:theme="@*com.flyme.systemuieditor:style/Theme.EditorActivity" android:allowBackup="false">
+        <activity android:name="org.aliveclean.uihost.OfficialUiHost" android:exported="false"/>
+    </application>
+    <instrumentation android:name="org.aliveclean.uihost.OfficialUiInstrumentation" android:targetPackage="org.aliveclean.uihost"/>
+</manifest>

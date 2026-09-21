@@ -1,0 +1,161 @@
+package org.aliveclean;
+
+import android.animation.*;
+import android.view.*;
+import android.view.animation.PathInterpolator;
+import java.lang.reflect.Method;
+import java.util.*;
+
+/** AOD ownership outlives its visible window, including the native AOD-to-OFF fade. */
+final class AodClockHost {
+    private ViewGroup root;
+    private View scope,time,date;
+    private AodClockView clock;
+    private ValueAnimator fade,stockFade;
+    private int generation,lastBottom;
+    private boolean owning,holdingClock;
+    private float stockAlpha;
+    private Runnable boundsChanged=()->{};
+    private final IdentityHashMap<View,Float> suppressed=new IdentityHashMap<>();
+    private final IdentityHashMap<View,Float> written=new IdentityHashMap<>();
+    private final Set<View> targets=Collections.newSetFromMap(new IdentityHashMap<View,Boolean>());
+    private final Map<Class<?>,Method> artworkGetters=new HashMap<>(),dateGetters=new HashMap<>();
+    private final ViewTreeObserver.OnPreDrawListener predraw=()->{
+        if(root!=null){
+            if(owning||holdingClock)maskContents();
+            int bottom=notificationTop();
+            if(bottom!=lastBottom){lastBottom=bottom;boundsChanged.run();}
+        }
+        return true;
+    };
+    private final View.OnAttachStateChangeListener attachment=new View.OnAttachStateChangeListener(){
+        public void onViewAttachedToWindow(View v){}
+        public void onViewDetachedFromWindow(View v){hide();}
+    };
+    void onBoundsChanged(Runnable callback){boundsChanged=callback;}
+    boolean shown(){return clock!=null;}
+    boolean ownsClock(){return owning;}
+    boolean same(ViewGroup parent,View t,View d){return root==parent&&time==t&&date==d;}
+    void show(ViewGroup parent,View t,View d){show(parent,t,d,null);}
+    void show(ViewGroup parent,View t,View d,View clockScope){
+        if(parent==null||!parent.isAttachedToWindow()||t==null||d==null||t==d||descendant(t,d)||descendant(d,t)){hide();return;}
+        // A verified plugin scope may migrate into a SurfaceControlViewHost.
+        // The AOD overlay itself must stay in the stable notification window.
+        if(clockScope==null&&(!descendant(t,parent)||!descendant(d,parent))){hide();return;}
+        if(root==parent&&scope==clockScope&&clock!=null){
+            cancelFade();cancelStockFade();holdingClock=false;stockAlpha=0;owning=true;time=t;date=d;maskContents();return;
+        }
+        hide();
+        AodClockView next=new AodClockView(parent.getContext(),false);
+        try{
+            parent.addView(next,new ViewGroup.LayoutParams(-1,-1));
+            next.active(true);next.refresh(System.currentTimeMillis());
+            root=parent;clock=next;time=t;date=d;scope=clockScope;owning=true;stockAlpha=0;
+            maskContents();
+            parent.getViewTreeObserver().addOnPreDrawListener(predraw);parent.addOnAttachStateChangeListener(attachment);
+        }catch(RuntimeException error){next.active(false);if(next.getParent()==parent)parent.removeView(next);hide();throw error;}
+    }
+    private void discover(View view){
+        String name=view.getClass().getSimpleName();
+        if(name.equals("ClockTimeView")||name.equals("DateMessageView")||name.equals("TextTimeTextView")){target(view);return;}
+        if(name.equals("TextDateInformationView")){
+            targetGetter(view,"getLocalDate",dateGetters);return;
+        }
+        if(name.equals("ShellMaterialContainer")){
+            // The SDK's ShellMaterialView is a wrapper, not an Android View.
+            // Target its actual ImageView, never the shared material container.
+            targetGetter(view,"getMaterialImageView$KeyguardPersonalityClocks_release",artworkGetters);
+            discoverCoe(view);return;
+        }
+        if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)discover(group.getChildAt(i));}
+    }
+    private void targetGetter(View owner,String name,Map<Class<?>,Method> methods){
+        Class<?> type=owner.getClass();
+        try{
+            if(!methods.containsKey(type)){Method method=null;try{method=type.getMethod(name);}catch(NoSuchMethodException ignored){}methods.put(type,method);}
+            Method method=methods.get(type);if(method==null)return;
+            Object result=method.invoke(owner);if(result instanceof View&&descendant((View)result,owner))target((View)result);
+        }catch(ReflectiveOperationException ignored){} // Unknown material keeps native contents.
+    }
+    private void discoverCoe(View view){
+        if(view.getClass().getSimpleName().equals("COETextureView")){target(view);return;}
+        if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)discoverCoe(group.getChildAt(i));}
+    }
+    private void target(View view){
+        // A material may own its own time/date. Mask each branch once so the
+        // wake fade remains linear rather than multiplying parent/child alpha.
+        for(View existing:targets)if(descendant(view,existing))return;
+        Iterator<View> it=targets.iterator();while(it.hasNext())if(descendant(it.next(),view))it.remove();
+        targets.add(view);
+    }
+    private void maskContents(){
+        targets.clear();
+        if(time!=null)target(time);
+        if(date!=null)target(date);
+        // Notifications can replace/reparent the baseline clock. Only inspect
+        // this verified plugin subtree; preserve widgets and wallpaper depth.
+        if(scope!=null)discover(scope);
+        Iterator<Map.Entry<View,Float>> it=suppressed.entrySet().iterator();
+        while(it.hasNext()){Map.Entry<View,Float> item=it.next();if(!targets.contains(item.getKey())){restore(item);written.remove(item.getKey());it.remove();}}
+        for(View v:targets){
+            float current=v.getTransitionAlpha();Float last=written.get(v);
+            if(last==null||current!=last)suppressed.put(v,current);
+            float next=suppressed.get(v)*stockAlpha;
+            if(current!=next)v.setTransitionAlpha(next);
+            written.put(v,next);
+        }
+    }
+    void tick(long time){if(clock!=null)clock.tick(time);}
+    void contentAlpha(float value){if(clock!=null){clock.setAlpha(Math.max(0,Math.min(1,value)));clock.active(value>0);}}
+    int notificationTop(){return !owning||clock==null||clock.getHeight()==0?0:clock.notificationTop();}
+    void leave(){leave(false);}
+    void leave(boolean waitForFrame){
+        if(waitForFrame&&owning){owning=false;holdingClock=true;releaseNotificationSpace();}
+        else if(!waitForFrame)releaseClock();
+        if(clock==null){if(!holdingClock)hide();return;}
+        if(fade!=null)return;
+        if(clock.getAlpha()==0){removeFace();if(!holdingClock)hide();return;}
+        final int token=++generation;
+        fade=ValueAnimator.ofFloat(clock.getAlpha(),0);fade.setDuration(180);
+        fade.setInterpolator(new PathInterpolator(.33f,0,.67f,1));
+        fade.addUpdateListener(a->{if(token==generation)contentAlpha((float)a.getAnimatedValue());});
+        fade.addListener(new AnimatorListenerAdapter(){@Override public void onAnimationEnd(Animator a){if(token==generation){fade=null;removeFace();if(!holdingClock)hide();}}});
+        fade.start();
+    }
+    // Only a successfully submitted expanded wallpaper frame releases this gate.
+    // No delay/timeout guesses at the duration of the photo animation.
+    void frameReady(){
+        if(!holdingClock||stockFade!=null)return;
+        ValueAnimator animation=ValueAnimator.ofFloat(stockAlpha,1);stockFade=animation;
+        animation.setDuration(167);animation.setInterpolator(new PathInterpolator(.33f,0,.67f,1));
+        animation.addUpdateListener(a->{if(stockFade==a&&holdingClock){stockAlpha=(float)a.getAnimatedValue();maskContents();}});
+        animation.addListener(new AnimatorListenerAdapter(){@Override public void onAnimationEnd(Animator a){if(stockFade==a){stockFade=null;releaseClock();if(clock==null)hide();}}});
+        animation.start();
+    }
+    private void cancelStockFade(){if(stockFade!=null){ValueAnimator old=stockFade;stockFade=null;old.cancel();}}
+    private void cancelFade(){generation++;if(fade!=null){ValueAnimator old=fade;fade=null;old.cancel();}}
+    private void releaseClock(){
+        owning=false;holdingClock=false;cancelStockFade();
+        for(Map.Entry<View,Float> item:suppressed.entrySet())restore(item);
+        suppressed.clear();written.clear();targets.clear();
+        releaseNotificationSpace();
+    }
+    private void releaseNotificationSpace(){
+        if(lastBottom!=0){lastBottom=0;boundsChanged.run();}
+    }
+    private void removeFace(){if(clock!=null){clock.active(false);if(clock.getParent() instanceof ViewGroup)((ViewGroup)clock.getParent()).removeView(clock);clock=null;}}
+    void hide(){
+        cancelFade();ViewGroup previous=root;root=null;scope=time=date=null;
+        if(previous!=null){if(previous.getViewTreeObserver().isAlive())previous.getViewTreeObserver().removeOnPreDrawListener(predraw);previous.removeOnAttachStateChangeListener(attachment);}
+        removeFace();
+        releaseClock();
+    }
+    // Native alpha is never changed or restored: it remains authoritative even
+    // when the clock starts at zero and the platform animates it while masked.
+    private void restore(Map.Entry<View,Float> item){Float last=written.get(item.getKey());if(last!=null&&item.getKey().getTransitionAlpha()==last)item.getKey().setTransitionAlpha(item.getValue());}
+    private static boolean descendant(View child,View parent){
+        if(parent==null)return false;
+        for(View v=child;v!=null;){if(v==parent)return true;ViewParent p=v.getParent();v=p instanceof View?(View)p:null;}
+        return false;
+    }
+}

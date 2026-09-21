@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Навигиране нагоре</string>
+    <string name="abc_action_mode_done">Готово</string>
+    <string name="abc_capital_off">ИЗКЛ.</string>
+    <string name="abc_capital_on">ВКЛ.</string>
+    <string name="abc_search_hint">Търсете…</string>
+    <string name="abc_searchview_description_clear">Изчистване на заявката</string>
+    <string name="abc_searchview_description_search">Търсене</string>
+    <string name="abc_searchview_description_submit">Изпращане на заявката</string>
+    <string name="abc_searchview_description_voice">Гласово търсене</string>
+    <string name="abc_toolbar_collapse_description">Свиване</string>
+    <string name="mc_search">Търсене</string>
+    <string name="mz_action_bar_multi_choice_cancel">Отказ</string>
+    <string name="mz_action_bar_multi_choice_select_all">Всички</string>
+</resources>

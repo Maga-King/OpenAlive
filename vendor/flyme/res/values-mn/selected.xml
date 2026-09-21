@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Дээш шилжих</string>
+    <string name="abc_action_mode_done">Болсон</string>
+    <string name="abc_capital_off">ИДЭВХГҮЙ</string>
+    <string name="abc_capital_on">ИДЭВХТЭЙ</string>
+    <string name="abc_search_hint">Хайх…</string>
+    <string name="abc_searchview_description_clear">Асуулга арилгах</string>
+    <string name="abc_searchview_description_search">Хайх</string>
+    <string name="abc_searchview_description_submit">Асуулга илгээх</string>
+    <string name="abc_searchview_description_voice">Дуут хайлт</string>
+    <string name="abc_toolbar_collapse_description">Буулгах</string>
+</resources>

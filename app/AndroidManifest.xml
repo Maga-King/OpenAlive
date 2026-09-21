@@ -1,0 +1,30 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.aliveclean" android:versionCode="32" android:versionName="0.4.16-preview">
+  <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="35"/>
+  <uses-permission android:name="android.permission.SET_WALLPAPER"/>
+  <uses-permission android:name="android.permission.AMBIENT_WALLPAPER"/>
+  <uses-feature android:glEsVersion="0x00030000" android:required="true"/>
+  <uses-feature android:name="android.software.live_wallpaper" android:required="true"/>
+  <queries>
+    <package android:name="org.lsposed.manager"/>
+    <provider android:authorities="com.oplus.aod.AodMachineHelperProvider"/>
+    <package android:name="com.coloros.gallery3d"/><package android:name="com.oplus.gallery3d"/>
+    <package android:name="com.android.documentsui"/><package android:name="com.google.android.documentsui"/>
+    <intent><action android:name="android.intent.action.PICK"/><data android:mimeType="image/*"/></intent>
+    <intent><action android:name="android.intent.action.OPEN_DOCUMENT"/><data android:mimeType="image/*"/></intent>
+  </queries>
+  <application android:label="OpenAlive" android:icon="@drawable/icon" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:extractNativeLibs="true" android:supportsRtl="true">
+    <meta-data android:name="xposedmodule" android:value="true"/>
+    <meta-data android:name="xposedminversion" android:value="82"/>
+    <meta-data android:name="xposeddescription" android:value="OpenAlive · 当前壁纸的 ColorOS AOD 适配"/>
+    <meta-data android:name="xposedscope" android:resource="@array/xposed_scope"/>
+    <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.Clean.Editor">
+      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+    </activity>
+    <activity android:name=".FrameCropActivity" android:exported="false" android:theme="@android:style/Theme.Material.NoActionBar"/>
+    <provider android:name=".SceneProvider" android:authorities="org.aliveclean.scene" android:exported="true" android:permission="android.permission.STATUS_BAR"/>
+    <service android:name=".CleanWallpaper" android:exported="true" android:permission="android.permission.BIND_WALLPAPER">
+      <intent-filter><action android:name="android.service.wallpaper.WallpaperService"/></intent-filter>
+      <meta-data android:name="android.service.wallpaper" android:resource="@xml/wallpaper"/>
+    </service>
+  </application>
+</manifest>

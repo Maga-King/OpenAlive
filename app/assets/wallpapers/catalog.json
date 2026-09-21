@@ -1,0 +1,386 @@
+[
+  {
+    "image": "2a.png",
+    "thumbnail": "2a.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "2a",
+    "sha256": "4c0693ff84006914a72624f6fb37d6b221cd8eb9df629d0b25ad4baea5efdba5"
+  },
+  {
+    "image": "2a_night.png",
+    "thumbnail": "2a_night.png",
+    "variant": "night",
+    "group": ".",
+    "source_name": "2a_night",
+    "sha256": "1fafbdb42457ea7165da74ca539eb7e9e53d76fb3dfc9880c46c00de8a6b62d0"
+  },
+  {
+    "image": "2b.png",
+    "thumbnail": "2b.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "2b",
+    "sha256": "eb59321f9eeb7af74bf6706e83dc7ec7ef26d46f507926f2220a2c4fb1850e9f"
+  },
+  {
+    "image": "2b_night.png",
+    "thumbnail": "2b_night.png",
+    "variant": "night",
+    "group": ".",
+    "source_name": "2b_night",
+    "sha256": "efb43c9a45b1ca1194104ff5295c51da2d05b84482265d3941f0d345c849c743"
+  },
+  {
+    "image": "2c.png",
+    "thumbnail": "2c.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "2c",
+    "sha256": "fb301ed3b4844add2f02f1d093efdcdbec8b94ed29ca6261dfef4f63eaf43e03"
+  },
+  {
+    "image": "2c_night.png",
+    "thumbnail": "2c_night.png",
+    "variant": "night",
+    "group": ".",
+    "source_name": "2c_night",
+    "sha256": "20a515824301f692477d16e7568afa3d3b910da2d7f1ec5d8ef728a13724a857"
+  },
+  {
+    "image": "3a.png",
+    "thumbnail": "3a_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "3a",
+    "sha256": "a2510012269005871d5e86922d32da922c136b0acd1487fdf751566b779ad6a7"
+  },
+  {
+    "image": "3a_night.png",
+    "thumbnail": "3a_thumb.png",
+    "variant": "night",
+    "group": ".",
+    "source_name": "3a_night",
+    "sha256": "41d1dbee1203e8d6bb509b6b570800acd7016387f714474a1fa2d0ea03b7bd33"
+  },
+  {
+    "image": "4a.png",
+    "thumbnail": "4a_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "4a",
+    "sha256": "400c9ef9b4ed738b149753b84c96c0e978a562ee9f50b8a52feeb00afd91bb74"
+  },
+  {
+    "image": "4a_night.png",
+    "thumbnail": "4a_thumb.png",
+    "variant": "night",
+    "group": ".",
+    "source_name": "4a_night",
+    "sha256": "ca2d580c822d4f589b14c5cc3ef3e9c64dfbf6c68f6f4d3995fcc4d7dba27015"
+  },
+  {
+    "image": "582c/01.png",
+    "thumbnail": "582c/01.png",
+    "variant": "day",
+    "group": "582c",
+    "source_name": "01",
+    "sha256": "d88076cafb4a1a423fb8fe00ccd7e1f7b92f546ceadbe6a1409a9d27dba47dd1"
+  },
+  {
+    "image": "582h/01.jpg",
+    "thumbnail": "582h/01.jpg",
+    "variant": "day",
+    "group": "582h",
+    "source_name": "01",
+    "sha256": "9ef7bd7e3dd2e6e08c5227e3e569527448406280b63996bff3cda3b7a1e7da16"
+  },
+  {
+    "image": "582h/02.jpg",
+    "thumbnail": "582h/02.jpg",
+    "variant": "day",
+    "group": "582h",
+    "source_name": "02",
+    "sha256": "c3bc571736cae3a9914d7c73f7e610ac3dfe4154e85011b9e1dca0095c692659"
+  },
+  {
+    "image": "582r/01.jpeg",
+    "thumbnail": "582r/01.jpeg",
+    "variant": "day",
+    "group": "582r",
+    "source_name": "01",
+    "sha256": "86a1521630276604ed5a467b24fbe5e3b453d76279194ca8f4275a2fc82875cb"
+  },
+  {
+    "image": "582r/02.png",
+    "thumbnail": "582r/02.png",
+    "variant": "day",
+    "group": "582r",
+    "source_name": "02",
+    "sha256": "16669b7d9b75ecfcefeba6d54828058694be551281c820d3d1d421d9a52b035f"
+  },
+  {
+    "image": "6a1.jpg",
+    "thumbnail": "6a1_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "6a1",
+    "sha256": "9eaed2aa2edf36015feef5c74be5325093523cd39d00b6d6a74c6cc901c8fb7d"
+  },
+  {
+    "image": "6a2.jpg",
+    "thumbnail": "6a2_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "6a2",
+    "sha256": "3e7c4f3071e0d3b1282e0ab2447047dba096791dcc885d7557d178dcc62dac55"
+  },
+  {
+    "image": "6a3.jpg",
+    "thumbnail": "6a3_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "6a3",
+    "sha256": "683e81552225e7ec4f87520dddf54779702bc5b478900e70dd4ddb62007dfaab"
+  },
+  {
+    "image": "6a4.jpg",
+    "thumbnail": "6a4_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "6a4",
+    "sha256": "8c4dab4cac886662bb12d0a29cc7b96ee6159f74ba9af8cadb45a33143e5b40f"
+  },
+  {
+    "image": "6a5.jpg",
+    "thumbnail": "6a5_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "6a5",
+    "sha256": "7b07b3c1b635c1f1328db783a01284ddd389515462ceb246addadee3f3499ab8"
+  },
+  {
+    "image": "a.jpg",
+    "thumbnail": "a_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "a",
+    "sha256": "454ad8d14ba821fda485bcfe75e0dbc4beffe593781795afe194cf4ed70c9e18"
+  },
+  {
+    "image": "a_night.jpg",
+    "thumbnail": "a_thumb.jpg",
+    "variant": "night",
+    "group": ".",
+    "source_name": "a_night",
+    "sha256": "0b3559c47d5a97ed09b72b4a745baa6e9ec878672fc6af52043e77cd70e859ba"
+  },
+  {
+    "image": "b.jpg",
+    "thumbnail": "b_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "b",
+    "sha256": "3f1e7334448e9d54e871a8a233c63268f06d5df6f436cd08b0837bf7e25631eb"
+  },
+  {
+    "image": "b1.jpg",
+    "thumbnail": "b1_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "b1",
+    "sha256": "b98bdfea5d29d6f46bb3db7d74841259a85f9d02726683aba18b696706899077"
+  },
+  {
+    "image": "b1_night.jpg",
+    "thumbnail": "b1_thumb.jpg",
+    "variant": "night",
+    "group": ".",
+    "source_name": "b1_night",
+    "sha256": "cbc32bd1f1545c18317d9b798e0d3b7e45d9563b0f05cef1371dee490611dabb"
+  },
+  {
+    "image": "b2.jpg",
+    "thumbnail": "b2_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "b2",
+    "sha256": "9d0e5ade949cec7b79a54e2b8984256311c276ece0ce111e67e7bba0504f3fa5"
+  },
+  {
+    "image": "b3.jpg",
+    "thumbnail": "b3_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "b3",
+    "sha256": "5cf61469b8e9bada0c671b9a44ef032c481e181edfa4b23f326a1666d75e2052"
+  },
+  {
+    "image": "b_night.jpg",
+    "thumbnail": "b_thumb.jpg",
+    "variant": "night",
+    "group": ".",
+    "source_name": "b_night",
+    "sha256": "0482d8ce8ef66a4ffca010ff446286773afc4f839f1ce5ad5e042ae254e21283"
+  },
+  {
+    "image": "bb.jpg",
+    "thumbnail": "bb_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "bb",
+    "sha256": "b6d0276436b069afaa8a8e96b40a736d6b8829adf99581ec049a8aaf6ae258f5"
+  },
+  {
+    "image": "e.jpg",
+    "thumbnail": "e_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "e",
+    "sha256": "a75c2c0b5dbcde7d7413c1d87c697f16ebabdffe423e8b449db308ca83ffd677"
+  },
+  {
+    "image": "ee.jpg",
+    "thumbnail": "ee_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "ee",
+    "sha256": "d0aa7a4492a521f1629a82264c72f1bc3b17d13f431bff6b4afbd26834ce8e19"
+  },
+  {
+    "image": "eee.jpg",
+    "thumbnail": "eee_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "eee",
+    "sha256": "c02df638c451cb59a84465f630bb262e0bc63e4af041410cc9945bc7902da838"
+  },
+  {
+    "image": "f.jpg",
+    "thumbnail": "f_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "f",
+    "sha256": "c84a678c802c7595c8c119ee6f4c3f51cce3bd0806e4b5e3a306b10a9d62dad1"
+  },
+  {
+    "image": "ff.jpg",
+    "thumbnail": "ff_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "ff",
+    "sha256": "9c94104a697300f2333a35d49bb24aadcc9280b41cc9c793e5de840043982f36"
+  },
+  {
+    "image": "fff.jpg",
+    "thumbnail": "fff_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "fff",
+    "sha256": "a6d153efadeec183b42df05f21e4b6f24b53e9ee7157a33b0e08214efa6a7bba"
+  },
+  {
+    "image": "g.jpg",
+    "thumbnail": "g_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "g",
+    "sha256": "af29eee544d6fb4b55d7da99c9fb3b7b85c880ce2d106e178ccdde2d05d08d80"
+  },
+  {
+    "image": "gg.jpg",
+    "thumbnail": "gg_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "gg",
+    "sha256": "bb4a48b0e73144cb3fc7ce65422b8c6c4de51d8061d2f954d11a5626e62e35d5"
+  },
+  {
+    "image": "ggg.jpg",
+    "thumbnail": "ggg_thumb.jpg",
+    "variant": "day",
+    "group": ".",
+    "source_name": "ggg",
+    "sha256": "47f1fa8c39a754b84d25b1e9e797e8f37bb943fdbd710831beab0e54ee4523c5"
+  },
+  {
+    "image": "h.png",
+    "thumbnail": "h_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "h",
+    "sha256": "9230e69cf6f0120819ce055c3a8dff107fcf33371d75bbde321931d70a955113"
+  },
+  {
+    "image": "i.png",
+    "thumbnail": "i_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "i",
+    "sha256": "0c18bad937e082c6f225a57cd545064f66ae832e021e4051589d96222d77a8b1"
+  },
+  {
+    "image": "j.png",
+    "thumbnail": "j_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "j",
+    "sha256": "ee517a8596325e353021b11e943ed7ea5ff28688861f5e73db3c2f28b51b57c3"
+  },
+  {
+    "image": "k.png",
+    "thumbnail": "k_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "k",
+    "sha256": "66512b8aaabc02603a9dd343eaa7855073d6ac6fdaee55bd8bdb1c12ffb5b363"
+  },
+  {
+    "image": "l.png",
+    "thumbnail": "l_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "l",
+    "sha256": "b201eff73025103adf001b7fd41481a1f82e4c7078839a39294bfbfd160fa755"
+  },
+  {
+    "image": "m.png",
+    "thumbnail": "m_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "m",
+    "sha256": "ef6799402dbe1b7e3e06bcd8055ef12909b21395f730044863e665b9b498c28b"
+  },
+  {
+    "image": "o.png",
+    "thumbnail": "o_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "o",
+    "sha256": "dc44afea322ef52217a08bc299639049dc170177316990a996b020d0c6d12554"
+  },
+  {
+    "image": "p.png",
+    "thumbnail": "p_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "p",
+    "sha256": "1b0518c8c5ad668f25df67a29f60377ced294c9e7ebb88de405898c2aff12264"
+  },
+  {
+    "image": "q.png",
+    "thumbnail": "q_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "q",
+    "sha256": "8c0b9622ba61876c2efd0f67bd5e6a62c4eb6192968263df908f40f08c1b665d"
+  },
+  {
+    "image": "r.png",
+    "thumbnail": "r_thumb.png",
+    "variant": "day",
+    "group": ".",
+    "source_name": "r",
+    "sha256": "861809820428f6f51a6d177bb212a1434d52dd4ee99505fbd5120be095f7ed50"
+  }
+]

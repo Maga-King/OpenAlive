@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flyme.support.v7.widget.FlymeAlertDialogLayout android:gravity="start|top" android:orientation="vertical" android:id="@id/parentPanel" android:layout_width="match_parent" android:layout_height="wrap_content"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <android.widget.Space android:id="@id/dialogSpace1" android:layout_width="match_parent" android:layout_height="wrap_content" />
+    <LinearLayout android:orientation="vertical" android:id="@id/topPanel" android:layout_width="match_parent" android:layout_height="wrap_content">
+        <LinearLayout android:gravity="start|center" android:orientation="horizontal" android:id="@id/title_template" android:paddingLeft="?dialogPreferredPadding" android:paddingRight="?dialogPreferredPadding" android:layout_width="match_parent" android:layout_height="wrap_content">
+            <ImageView android:id="@android:id/icon" android:layout_width="@dimen/mz_alert_dialog_title_icon_width" android:layout_height="@dimen/mz_alert_dialog_title_icon_height" android:layout_marginRight="8.0dp" android:src="@null" android:scaleType="fitCenter" android:layout_marginEnd="8.0dp" />
+            <TextView android:ellipsize="end" android:gravity="start" android:id="@id/alertTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="2" style="?android:windowTitleStyle" />
+        </LinearLayout>
+    </LinearLayout>
+    <android.widget.Space android:id="@id/dialogSpace2" android:layout_width="match_parent" android:layout_height="wrap_content" />
+    <FrameLayout android:id="@id/contentPanel" android:layout_width="match_parent" android:layout_height="wrap_content">
+        <View android:layout_gravity="top" android:id="@id/scrollIndicatorUp" android:background="#0d000000" android:visibility="gone" android:layout_width="match_parent" android:layout_height="2.0px" />
+        <androidx.core.widget.NestedScrollView android:id="@id/scrollView" android:clipToPadding="false" android:layout_width="match_parent" android:layout_height="wrap_content" android:overScrollMode="never">
+            <LinearLayout android:orientation="vertical" android:id="@id/content_view" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <TextView android:gravity="start" android:id="@android:id/message" android:paddingLeft="?dialogPreferredPadding" android:paddingRight="?dialogPreferredPadding" android:layout_width="match_parent" android:layout_height="wrap_content" android:includeFontPadding="false" android:lineSpacingExtra="5.0dp" style="?mzDialogMessageStyle" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+        <View android:layout_gravity="bottom" android:id="@id/scrollIndicatorDown" android:background="#0d000000" android:visibility="gone" android:layout_width="match_parent" android:layout_height="2.0px" />
+    </FrameLayout>
+    <FrameLayout android:id="@id/customPanel" android:layout_width="match_parent" android:layout_height="wrap_content">
+        <FrameLayout android:id="@id/custom" android:layout_width="match_parent" android:layout_height="wrap_content" />
+    </FrameLayout>
+    <android.widget.Space android:id="@id/dialogSpace3" android:layout_width="match_parent" android:layout_height="wrap_content" />
+    <include android:layout_width="match_parent" android:layout_height="wrap_content" layout="@layout/mz_alert_dialog_button_bar" />
+    <android.widget.Space android:id="@id/dialogSpace4" android:layout_width="match_parent" android:layout_height="wrap_content" />
+</flyme.support.v7.widget.FlymeAlertDialogLayout>

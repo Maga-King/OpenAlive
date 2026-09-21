@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <dimen name="mz_action_bar_default_height_appcompat">64.0dp</dimen>
+    <dimen name="mz_action_bar_default_height_appcompat_expanded">128.0dp</dimen>
+</resources>

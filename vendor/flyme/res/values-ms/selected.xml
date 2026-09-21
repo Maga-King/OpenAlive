@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Navigasi ke atas</string>
+    <string name="abc_action_mode_done">Selesai</string>
+    <string name="abc_capital_off">MATI</string>
+    <string name="abc_capital_on">HIDUP</string>
+    <string name="abc_search_hint">Cari…</string>
+    <string name="abc_searchview_description_clear">Kosongkan pertanyaan</string>
+    <string name="abc_searchview_description_search">Cari</string>
+    <string name="abc_searchview_description_submit">Serah pertanyaan</string>
+    <string name="abc_searchview_description_voice">Carian suara</string>
+    <string name="abc_toolbar_collapse_description">Runtuhkan</string>
+    <string name="mc_search">Cari</string>
+    <string name="mz_action_bar_multi_choice_cancel">Batal</string>
+    <string name="mz_action_bar_multi_choice_select_all">Semua</string>
+</resources>

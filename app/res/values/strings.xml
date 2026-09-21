@@ -1,0 +1,4 @@
+<resources>
+  <string name="description">本地照片 · 息屏、锁屏与桌面连贯过渡</string>
+  <string-array name="xposed_scope"><item>android</item><item>com.android.systemui</item></string-array>
+</resources>

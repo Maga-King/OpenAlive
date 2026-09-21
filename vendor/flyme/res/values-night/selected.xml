@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <bool name="isLightWindowBar">false</bool>
+    <color name="action_bar_search_layout_bg_color">#222227</color>
+    <color name="action_bar_search_layout_bg_pressed_color">#2e2e33</color>
+    <color name="fd_sys_color_brand">#1564ed</color>
+    <color name="fd_sys_color_brand_container">#172747</color>
+    <color name="fd_sys_color_error_container_default">#221b1d</color>
+    <color name="fd_sys_color_error_default">#e7000c</color>
+    <color name="fd_sys_color_inverse_on_surface_default">#1b1b1f</color>
+    <color name="fd_sys_color_inverse_surface_default">#e4e2e6</color>
+    <color name="fd_sys_color_on_brand">#eff6ff</color>
+    <color name="fd_sys_color_on_brand_container">#e1ecfe</color>
+    <color name="fd_sys_color_on_error_container_default">#ffdad5</color>
+    <color name="fd_sys_color_on_error_default">#ffedea</color>
+    <color name="fd_sys_color_on_primary_blue">#eff6ff</color>
+    <color name="fd_sys_color_on_primary_container_blue">#e1ecfe</color>
+    <color name="fd_sys_color_on_primary_container_default">#ffffff</color>
+    <color name="fd_sys_color_on_primary_default">#000000</color>
+    <color name="fd_sys_color_on_surface_default">#eeeeee</color>
+    <color name="fd_sys_color_on_surface_variant_default">#73ebebf5</color>
+    <color name="fd_sys_color_outline_default">#262626</color>
+    <color name="fd_sys_color_outline_variant_default">#0dffffff</color>
+    <color name="fd_sys_color_primary_blue">#1564ed</color>
+    <color name="fd_sys_color_primary_container_blue">#172747</color>
+    <color name="fd_sys_color_primary_container_default">#08ffffff</color>
+    <color name="fd_sys_color_primary_default">#ffffff</color>
+    <color name="fd_sys_color_scrim_default">#73000000</color>
+    <color name="fd_sys_color_state_disabled_default">#33eeeeee</color>
+    <color name="fd_sys_color_state_disabled_variant_default">#4deeeeee</color>
+    <color name="fd_sys_color_state_pressed_default">#24767680</color>
+    <color name="fd_sys_color_surface_bright_default">#17171a</color>
+    <color name="fd_sys_color_surface_container_default">#29767680</color>
+    <color name="fd_sys_color_surface_container_high_default">#4088888c</color>
+    <color name="fd_sys_color_surface_container_highest_default">#6679797e</color>
+    <color name="fd_sys_color_surface_container_low_default">#1f747480</color>
+    <color name="fd_sys_color_surface_container_lowest_default">#1c1c1e</color>
+    <color name="fd_sys_color_surface_default">#0b0b0c</color>
+    <color name="fd_sys_color_surface_dim_default">#000000</color>
+    <color name="list_hovered_background">#1affffff</color>
+    <color name="mz_normal_icon_pressed_color">#46464b</color>
+    <color name="mz_notice_blur_overlay">#b21a1a1a</color>
+    <color name="mz_page_indicator_default">#88888c</color>
+    <color name="mz_page_indicator_selected">#ebebf5</color>
+    <color name="mz_seekbar_background_color_disable">#060606</color>
+    <color name="mz_seekbar_background_color_normal">#626262</color>
+    <color name="mz_wheel_picker_normal_text_color">#1affffff</color>
+    <color name="navigation_color">#01000000</color>
+    <color name="sysui_preview_dark_border_selected">#99ffffff</color>
+    <color name="sysui_preview_dark_border_unselected">#33ffffff</color>
+    <dimen name="f11_dialog_dim_amount">0.5</dimen>
+    <style name="Theme.SystemUIEditor" parent="@style/Theme.Flyme.AppCompat.Dark.Color.Blue">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+</resources>

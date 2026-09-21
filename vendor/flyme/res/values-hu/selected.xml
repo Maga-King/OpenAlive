@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Fel</string>
+    <string name="abc_action_mode_done">Kész</string>
+    <string name="abc_capital_off">KI</string>
+    <string name="abc_capital_on">BE</string>
+    <string name="abc_search_hint">Keresés…</string>
+    <string name="abc_searchview_description_clear">Lekérdezés törlése</string>
+    <string name="abc_searchview_description_search">Keresés</string>
+    <string name="abc_searchview_description_submit">Lekérdezés küldése</string>
+    <string name="abc_searchview_description_voice">Hangalapú keresés</string>
+    <string name="abc_toolbar_collapse_description">Összecsukás</string>
+    <string name="mc_search">Keresés</string>
+    <string name="mz_action_bar_multi_choice_cancel">Mégse</string>
+    <string name="mz_action_bar_multi_choice_select_all">Összes</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">အပေါ်သို့ ရွှေ့ရန်</string>
+    <string name="abc_action_mode_done">ပြီးပြီ</string>
+    <string name="abc_capital_off">ပိတ်</string>
+    <string name="abc_capital_on">ဖွင့်</string>
+    <string name="abc_search_hint">ရှာဖွေရန်…</string>
+    <string name="abc_searchview_description_clear">ရှာဖွေမှုကို ဖယ်ရှားရန်</string>
+    <string name="abc_searchview_description_search">ရှာရန်</string>
+    <string name="abc_searchview_description_submit">ရှာဖွေစရာ အချက်အလက်ကို ပေးပို့ရန်</string>
+    <string name="abc_searchview_description_voice">အသံဖြင့် ရှာရန်</string>
+    <string name="abc_toolbar_collapse_description">လျှော့ပြရန်</string>
+</resources>

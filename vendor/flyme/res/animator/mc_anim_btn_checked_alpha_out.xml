@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set android:interpolator="@interpolator/mc_btn_checked_single_uncheck_interpolator" android:shareInterpolator="true"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <objectAnimator android:interpolator="@interpolator/mc_btn_checked_single_uncheck_interpolator" android:duration="90" android:valueFrom="1" android:valueTo="0" android:propertyName="fillAlpha" />
+    <objectAnimator android:interpolator="@interpolator/mc_btn_checked_single_uncheck_interpolator" android:duration="90" android:valueFrom="1" android:valueTo="0" android:propertyName="strokeAlpha" />
+</set>

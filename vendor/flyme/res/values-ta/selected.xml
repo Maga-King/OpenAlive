@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">மேலே செல்லும்</string>
+    <string name="abc_action_mode_done">முடிந்தது</string>
+    <string name="abc_capital_off">ஆஃப்</string>
+    <string name="abc_capital_on">ஆன்</string>
+    <string name="abc_search_hint">தேடுக…</string>
+    <string name="abc_searchview_description_clear">வினவலை அழிக்கும்</string>
+    <string name="abc_searchview_description_search">தேடும்</string>
+    <string name="abc_searchview_description_submit">வினவலைச் சமர்ப்பிக்கும்</string>
+    <string name="abc_searchview_description_voice">குரல் தேடல்</string>
+    <string name="abc_toolbar_collapse_description">சுருக்கும்</string>
+</resources>

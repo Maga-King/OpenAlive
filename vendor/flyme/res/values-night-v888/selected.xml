@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <color name="fd_sys_color_on_surface_default">#e5e5e5</color>
+    <color name="fd_sys_color_surface_bright_default">#202020</color>
+    <color name="fd_sys_color_surface_container_lowest_default">#2d2d2d</color>
+    <color name="fd_sys_color_surface_default">#232323</color>
+</resources>

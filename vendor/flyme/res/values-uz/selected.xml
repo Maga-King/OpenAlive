@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Yopish</string>
+    <string name="abc_action_mode_done">OK</string>
+    <string name="abc_capital_off">YOQILMAGAN</string>
+    <string name="abc_capital_on">YONIQ</string>
+    <string name="abc_search_hint">Qidirish…</string>
+    <string name="abc_searchview_description_clear">So‘rovni o‘chirish</string>
+    <string name="abc_searchview_description_search">Qidiruv</string>
+    <string name="abc_searchview_description_submit">So‘rov yaratish</string>
+    <string name="abc_searchview_description_voice">Ovozli qidiruv</string>
+    <string name="abc_toolbar_collapse_description">Yig‘ish</string>
+</resources>

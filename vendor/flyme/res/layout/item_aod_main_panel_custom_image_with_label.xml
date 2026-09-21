@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="16.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <FrameLayout android:id="@id/iv_preview_container" android:background="@drawable/aod_panel_item_bg" android:duplicateParentState="true" android:layout_width="106.0dp" android:layout_height="106.0dp" android:foreground="@drawable/aod_panel_item_fg" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent">
+        <com.meizu.common.widget.SmoothCornerView android:id="@id/iv_preview_radius" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="16.0dp" app:mzCornerSmoothness="0.0">
+            <com.flyme.systemuieditor.widget.view.photoview.PhotoView android:id="@id/iv_preview" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/default_photo" android:scaleType="fitXY" />
+        </com.meizu.common.widget.SmoothCornerView>
+    </FrameLayout>
+    <LinearLayout android:gravity="center" android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4.0dp">
+        <TextView android:textSize="12.0sp" android:textColor="@color/white" android:layout_gravity="center_vertical" android:id="@id/tv_label" android:duplicateParentState="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:maxLines="1" android:includeFontPadding="false" android:fontFamily="sans-serif-medium" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/iv_preview_container" />
+        <ImageView android:layout_gravity="center_vertical" android:id="@id/iv_arrow_right" android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@drawable/ic_right_arrow" android:layout_marginStart="6.0dp" app:layout_constraintBottom_toBottomOf="@id/tv_label" app:layout_constraintStart_toEndOf="@id/tv_label" app:layout_constraintTop_toTopOf="@id/tv_label" />
+    </LinearLayout>
+</LinearLayout>

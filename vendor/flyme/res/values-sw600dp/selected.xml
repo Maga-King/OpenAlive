@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <dimen name="abc_action_bar_content_inset_material">24.0dp</dimen>
+    <dimen name="abc_action_bar_content_inset_with_nav">80.0dp</dimen>
+    <dimen name="abc_action_bar_default_height_material">64.0dp</dimen>
+    <dimen name="abc_action_bar_default_padding_end_material">8.0dp</dimen>
+    <dimen name="abc_action_bar_default_padding_start_material">8.0dp</dimen>
+</resources>

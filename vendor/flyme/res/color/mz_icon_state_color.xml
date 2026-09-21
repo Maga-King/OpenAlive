@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:color="@color/fd_sys_color_surface_container_highest_default" android:alpha="0.25" />
+    <item android:state_pressed="true" android:color="@color/mz_normal_icon_pressed_color" />
+    <item android:color="@color/fd_sys_color_surface_container_highest_default" />
+</selector>

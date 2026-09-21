@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.meizu.common.widget.ImageFontCompatView android:layout_gravity="end" android:id="@id/arrow" android:focusable="false" android:clickable="false" android:layout_width="wrap_content" android:layout_height="wrap_content" app:fontTextColor="@color/mz_icon_font_text_color" app:textResName="@string/icon_font_arrow_next"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" />

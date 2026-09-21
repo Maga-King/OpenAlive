@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">ניווט למעלה</string>
+    <string name="abc_action_mode_done">סיום</string>
+    <string name="abc_capital_off">כבוי</string>
+    <string name="abc_capital_on">מופעל</string>
+    <string name="abc_search_hint">חיפוש…</string>
+    <string name="abc_searchview_description_clear">מחיקת השאילתה</string>
+    <string name="abc_searchview_description_search">חיפוש</string>
+    <string name="abc_searchview_description_submit">שליחת שאילתה</string>
+    <string name="abc_searchview_description_voice">חיפוש קולי</string>
+    <string name="abc_toolbar_collapse_description">כיווץ</string>
+    <string name="mc_search">חיפוש</string>
+    <string name="mz_action_bar_multi_choice_cancel">ביטול</string>
+    <string name="mz_action_bar_multi_choice_select_all">הכול</string>
+</resources>

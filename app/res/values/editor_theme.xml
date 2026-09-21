@@ -1,0 +1,25 @@
+<resources>
+    <style name="Theme.Clean.Editor" parent="Theme.Flyme.AppCompat.Dark.Color.Blue">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">#000000</item>
+        <item name="android:fontFamily">@font/editor_sans</item>
+        <item name="android:statusBarColor">#00000000</item>
+        <item name="android:navigationBarColor">#00000000</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:colorAccent">@color/fd_sys_color_primary_blue</item>
+    </style>
+    <!-- Compatibility for the existing editor until the official control host
+         is integrated. Do not inflate vendor selectors without their classes. -->
+    <style name="Theme.Clean.Dialog" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:listViewStyle">@style/Clean.Dialog.List</item>
+        <item name="android:gridViewStyle">@style/Clean.Dialog.Grid</item>
+    </style>
+    <style name="Clean.Dialog.List" parent="@android:style/Widget.Material.ListView">
+        <item name="android:listSelector">@android:drawable/list_selector_background</item>
+    </style>
+    <style name="Clean.Dialog.Grid" parent="@android:style/Widget.GridView">
+        <item name="android:listSelector">@android:drawable/list_selector_background</item>
+    </style>
+</resources>

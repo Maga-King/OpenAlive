@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flyme.support.v7.widget.MzMultiLinesCheckLayout android:gravity="center_vertical" android:orientation="horizontal" android:id="@id/multi_line_parent" android:background="@drawable/mz_alert_dialog_listview_item_bg_radius" android:layout_width="match_parent" android:layout_height="wrap_content" android:choiceMode="multipleChoice" android:paddingStart="20.0dp" android:paddingEnd="0.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:gravity="center_vertical" android:orientation="vertical" android:paddingTop="15.0dp" android:paddingBottom="15.0dp" android:layout_width="0.0dp" android:layout_height="wrap_content" android:layout_weight="1.0">
+        <TextView android:textAppearance="?android:textAppearance" android:textStyle="normal" android:id="@id/alert_title_multi_line_text_view" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" style="@style/TextAppearance.Flyme.Label.Large" />
+        <TextView android:id="@id/alert_detail_multi_line_text_view" android:layout_width="wrap_content" android:layout_height="wrap_content" android:includeFontPadding="false" android:fontFamily="sans-serif" style="@style/TextAppearance.Flyme.Body.Mini" />
+    </LinearLayout>
+    <CheckBox android:id="@id/alert_title_multi_line_check_box" android:clickable="false" android:layout_width="24.0dp" android:layout_height="24.0dp" android:layout_marginLeft="20.0dp" android:layout_marginRight="20.0dp" android:button="@drawable/mz_btn_check_two_state" />
+</flyme.support.v7.widget.MzMultiLinesCheckLayout>

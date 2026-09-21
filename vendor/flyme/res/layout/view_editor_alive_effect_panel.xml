@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout android:paddingTop="8.0dp" android:paddingBottom="8.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <flyme.support.v7.widget.MzRecyclerView android:orientation="horizontal" android:id="@id/recycler_view_effect" android:layout_width="match_parent" android:layout_height="wrap_content" android:overScrollMode="never" android:nestedScrollingEnabled="true" />
+</FrameLayout>

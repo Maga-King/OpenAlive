@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <layer-list>
+            <item android:gravity="end" android:height="22.0dp" android:width="11.0dp" android:start="11.0dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/mz_seekbar_thumb_state_color" />
+                    <corners android:topLeftRadius="22.0dp" android:bottomLeftRadius="22.0dp" />
+                </shape>
+            </item>
+            <item android:gravity="center" android:height="14.0dp" android:width="14.0dp">
+                <shape android:shape="oval">
+                    <solid android:color="?colorOnPrimary" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    <item>
+        <layer-list>
+            <item android:gravity="center" android:height="22.0dp" android:width="22.0dp">
+                <shape android:shape="oval">
+                    <solid android:color="@color/mz_seekbar_thumb_state_color" />
+                </shape>
+            </item>
+            <item android:gravity="center" android:height="14.0dp" android:width="14.0dp">
+                <shape android:shape="oval">
+                    <solid android:color="?colorOnPrimary" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

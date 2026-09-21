@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <dimen name="mz_action_bar_default_height_appcompat">60.0dp</dimen>
+    <dimen name="mz_action_bar_default_height_appcompat_expanded">120.0dp</dimen>
+    <style name="Widget.Flyme.BottomNavigationBar.ButtonText" parent="">
+        <item name="android:textColor">?colorPrimary</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:paddingStart">5.0dp</item>
+        <item name="android:paddingEnd">5.0dp</item>
+    </style>
+</resources>

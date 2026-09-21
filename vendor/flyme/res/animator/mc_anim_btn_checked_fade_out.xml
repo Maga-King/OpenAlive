@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<objectAnimator android:interpolator="@interpolator/mc_btn_checked_single_interpolator" android:duration="160" android:valueFrom="1" android:valueTo="0" android:propertyName="strokeAlpha"
+  xmlns:android="http://schemas.android.com/apk/res/android" />

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector android:tint="@color/mz_icon_state_color" android:height="24.0dp" android:width="24.0dp" android:autoMirrored="true" android:viewportWidth="24.0" android:viewportHeight="24.0"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <path android:fillColor="#000000" android:pathData="M10.484,9.886C10.296,9.671 10.449,9.333 10.735,9.333H18.547C18.833,9.333 18.986,9.67 18.799,9.885L14.907,14.361C14.774,14.513 14.537,14.514 14.404,14.362L10.484,9.886Z" android:fillType="evenOdd" />
+</vector>

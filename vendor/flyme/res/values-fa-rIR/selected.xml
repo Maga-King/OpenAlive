@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="mc_search">جستجو</string>
+    <string name="mz_action_bar_multi_choice_cancel">لغو</string>
+    <string name="mz_action_bar_multi_choice_select_all">همه</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-selector
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true" android:id="@id/checked" android:drawable="@drawable/mz_btn_check_button_square_on" />
+    <item android:id="@id/not_checked" android:drawable="@drawable/mz_btn_check_button_square_off" />
+    <transition android:drawable="@drawable/fa_checkbox_btn_off_to_on" android:toId="@id/checked" android:fromId="@id/not_checked" />
+</animated-selector>

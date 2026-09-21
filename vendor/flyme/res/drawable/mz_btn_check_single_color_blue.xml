@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-selector
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:state_checked="true" android:drawable="@drawable/mz_vec_btn_checked_true_normal_disabled_color_blue" />
+    <item android:state_checked="false" android:id="@id/not_checked" android:drawable="@drawable/mz_vec_btn_checked_false_normal_color_blue" />
+    <item android:state_checked="true" android:id="@id/checked" android:drawable="@drawable/mz_vec_btn_checked_true_normal_color_blue" />
+    <transition android:drawable="@drawable/mz_vec_btn_checked_false_to_true_color_blue" android:toId="@id/checked" android:fromId="@id/not_checked" />
+    <transition android:drawable="@drawable/mz_vec_btn_checked_true_to_false_color_blue" android:toId="@id/not_checked" android:fromId="@id/checked" />
+</animated-selector>

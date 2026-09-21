@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">ወደ ላይ ያስሱ</string>
+    <string name="abc_action_mode_done">ተከናውኗል</string>
+    <string name="abc_capital_off">አጥፋ</string>
+    <string name="abc_capital_on">አብራ</string>
+    <string name="abc_search_hint">ይፈልጉ…</string>
+    <string name="abc_searchview_description_clear">መጠይቅ አጽዳ</string>
+    <string name="abc_searchview_description_search">ፍለጋ</string>
+    <string name="abc_searchview_description_submit">መጠይቅ አስገባ</string>
+    <string name="abc_searchview_description_voice">የድምጽ ፍለጋ</string>
+    <string name="abc_toolbar_collapse_description">ሰብስብ</string>
+</resources>

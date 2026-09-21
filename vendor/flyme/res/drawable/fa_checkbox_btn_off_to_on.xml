@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector android:drawable="@drawable/$fa_checkbox_btn_off_to_on__0"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt">
+    <target android:name="anim_path" android:animation="@drawable/$fa_checkbox_btn_off_to_on__1" />
+    <target android:name="anim_alpha" android:animation="@drawable/$fa_checkbox_btn_off_to_on__2" />
+</animated-vector>

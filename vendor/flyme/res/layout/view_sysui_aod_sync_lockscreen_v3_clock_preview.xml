@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.flyme.systemuieditor.widget.view.ScreenPreviewLayout android:layout_gravity="center_horizontal" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <ImageView android:id="@id/v3_clock_preview" android:layout_width="wrap_content" android:layout_height="wrap_content" android:importantForAccessibility="no" />
+</com.flyme.systemuieditor.widget.view.ScreenPreviewLayout>

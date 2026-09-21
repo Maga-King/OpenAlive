@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.flyme.systemuieditor.widget.view.ScreenPreviewLayout android:layout_gravity="center_horizontal" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:gravity="center" android:orientation="vertical" android:id="@id/layout_lockscreen_clock" android:paddingTop="2.0dp" android:paddingBottom="2.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="68.0dp" android:paddingStart="5.0dp" android:paddingEnd="5.0dp">
+        <com.flyme.systemuieditor.widget.view.clockview.EditorClockImageView android:textColor="@color/fd_sys_color_on_surface_default" android:id="@id/tv_lockscreen_time" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+    </LinearLayout>
+</com.flyme.systemuieditor.widget.view.ScreenPreviewLayout>

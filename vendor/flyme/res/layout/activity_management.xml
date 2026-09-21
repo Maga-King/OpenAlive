@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout android:id="@id/main" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <FrameLayout android:layout_gravity="center" android:orientation="vertical" android:id="@id/loading_view" android:layout_width="wrap_content" android:layout_height="wrap_content">
+        <com.meizu.common.widget.LoadingView android:layout_gravity="center_horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content" app:mcLBackground="@color/mc_loading_view_background_light" style="@style/Widget.MeizuCommon.LoadingView.Light" />
+        <TextView android:textColor="#993c3c43" android:layout_gravity="center_horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="33.0dp" android:text="@string/loading" style="@style/LoadingViewTextStyle.Light" />
+    </FrameLayout>
+    <flyme.support.v7.widget.MzRecyclerView android:id="@id/recycler_view" android:layout_width="match_parent" android:layout_height="match_parent" android:paddingHorizontal="@dimen/manager_padding_horizontal" />
+</FrameLayout>

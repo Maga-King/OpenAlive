@@ -1,0 +1,23 @@
+[package]
+name = "alive-clean"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "alive_clean"
+crate-type = ["cdylib", "rlib"]
+path = "native/lib.rs"
+
+[features]
+headless = []
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni-sys = "=0.3.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -1,0 +1,23 @@
+/research/
+/target/
+/build/
+/local/
+/app/assets/video/
+/dist/
+*.jks
+*.keystore
+__pycache__/
+*.pyc
+.env
+.env.*
+# Local research notes and tooling stay in the workspace.
+/*.md
+!/README.md
+!/THIRD_PARTY.md
+!/BUILD.md
+/tools/*
+!/tools/apk_layout.py
+!/tools/build_release.py
+!/tools/check_clock_scope.py
+!/tools/check_layout.py
+!/tools/ui-api/

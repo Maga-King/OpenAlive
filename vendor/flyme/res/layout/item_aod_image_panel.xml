@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8.0dp" android:layout_marginBottom="8.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <FrameLayout android:id="@id/image_item_container" android:background="@drawable/aod_panel_item_bg" android:padding="4.0dp" android:layout_width="106.0dp" android:layout_height="106.0dp">
+        <com.meizu.common.widget.SmoothCornerView android:id="@id/item_image_view_container" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="4.0dp" app:mzCornerSmoothness="0.0">
+            <com.flyme.systemuieditor.widget.view.photoview.PhotoView android:id="@id/item_image_view" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" />
+        </com.meizu.common.widget.SmoothCornerView>
+    </FrameLayout>
+    <CheckBox android:layout_gravity="end|top" android:id="@id/check_box" android:visibility="invisible" android:clickable="false" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8.0dp" android:layout_marginEnd="8.0dp" android:backgroundTint="@null" style="@style/Widget.Flyme.Light.CompoundButton.CheckBox" />
+</FrameLayout>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout android:id="@id/coordinator_layout" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <LinearLayout android:orientation="vertical" android:id="@id/bottom_sheet" android:tag="@string/first_level_panel" android:layout_width="match_parent" android:layout_height="196.0dp" app:behavior_hideable="true" app:behavior_peekHeight="0.0dp" app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+        <TextView android:textSize="20.0sp" android:id="@id/tv_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3.0dp" android:minHeight="@dimen/editor_panel_title_height" android:text="@string/photo_frame_style" android:paddingStart="@dimen/fd_sys_margin_large" android:paddingEnd="@dimen/fd_sys_margin_large" style="@style/TextAppearance.Editor.Panel.Title" />
+        <flyme.support.v7.widget.MzRecyclerView android:id="@id/recycler_view_photo_frame" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/fd_sys_margin_large" android:paddingEnd="@dimen/fd_sys_margin_large" android:nestedScrollingEnabled="false" />
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

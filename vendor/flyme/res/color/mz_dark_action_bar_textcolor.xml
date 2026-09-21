@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:color="@color/mz_dark_action_bar_tab_select_textcolor" />
+    <item android:color="@color/mz_dark_action_bar_textcolor_normal" />
+</selector>

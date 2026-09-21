@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <layer-list>
+            <item>
+                <vector android:height="106.0dp" android:width="106.0dp" android:viewportWidth="106.0" android:viewportHeight="106.0">
+                    <path android:fillColor="#00000000" android:pathData="M16,1L90,1A15,15 0,0 1,105 16L105,90A15,15 0,0 1,90 105L16,105A15,15 0,0 1,1 90L1,16A15,15 0,0 1,16 1z" android:strokeColor="#1368fb" android:strokeWidth="2.0" />
+                    <path android:fillColor="#1368fb" android:pathData="M72,106H80.4C89.36,106 93.84,106 97.26,104.26C100.27,102.72 102.72,100.27 104.26,97.26C106,93.84 106,89.36 106,80.4V72H97.6C88.64,72 84.16,72 80.74,73.74C77.73,75.28 75.28,77.73 73.74,80.74C72,84.16 72,88.64 72,97.6V106Z" android:fillType="evenOdd" />
+                </vector>
+            </item>
+            <item android:gravity="end|bottom" android:height="14.0dp" android:width="14.0dp" android:bottom="10.0dp" android:end="10.0dp">
+                <vector android:height="24.0dp" android:width="24.0dp" android:autoMirrored="true" android:viewportWidth="24.0" android:viewportHeight="24.0">
+                    <path android:fillColor="#000000" android:pathData="M10.55,14.941C10.652,14.924 10.746,14.875 10.819,14.802L20.854,4.768C21.049,4.573 21.049,4.256 20.854,4.061L20.146,3.354C19.951,3.158 19.635,3.158 19.439,3.354L9.405,13.388C9.332,13.461 9.283,13.555 9.266,13.657L9.048,14.928C9.024,15.064 9.143,15.183 9.279,15.159L10.55,14.941Z" />
+                    <path android:fillColor="#000000" android:pathData="M12.5,3.207C12.776,3.207 13,3.431 13,3.707V4.707C13,4.983 12.776,5.207 12.5,5.207H6C5.448,5.207 5,5.655 5,6.207V18.207C5,18.759 5.448,19.207 6,19.207H18C18.552,19.207 19,18.759 19,18.207V11.707C19,11.431 19.224,11.207 19.5,11.207H20.5C20.776,11.207 21,11.431 21,11.707V18.707C21,20.088 19.881,21.207 18.5,21.207H5.5C4.119,21.207 3,20.088 3,18.707V5.707C3,4.326 4.119,3.207 5.5,3.207H12.5Z" />
+                </vector>
+            </item>
+        </layer-list>
+    </item>
+    <item>
+        <vector android:height="106.0dp" android:width="106.0dp" android:viewportWidth="106.0" android:viewportHeight="106.0">
+            <path android:fillColor="#00000000" android:pathData="M16,1L90,1A15,15 0,0 1,105 16L105,90A15,15 0,0 1,90 105L16,105A15,15 0,0 1,1 90L1,16A15,15 0,0 1,16 1z" android:strokeColor="#1affffff" android:strokeWidth="2.0" />
+        </vector>
+    </item>
+</selector>

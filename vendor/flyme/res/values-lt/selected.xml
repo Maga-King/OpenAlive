@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Naršyti aukštyn</string>
+    <string name="abc_action_mode_done">Atlikta</string>
+    <string name="abc_capital_off">IŠJUNGTI</string>
+    <string name="abc_capital_on">ĮJUNGTI</string>
+    <string name="abc_search_hint">Ieškoti…</string>
+    <string name="abc_searchview_description_clear">Išvalyti užklausą</string>
+    <string name="abc_searchview_description_search">Ieškoti</string>
+    <string name="abc_searchview_description_submit">Pateikti užklausą</string>
+    <string name="abc_searchview_description_voice">Paieška balsu</string>
+    <string name="abc_toolbar_collapse_description">Sutraukti</string>
+    <string name="mc_search">Paieška</string>
+    <string name="mz_action_bar_multi_choice_cancel">Atšaukti</string>
+    <string name="mz_action_bar_multi_choice_select_all">Visi</string>
+</resources>

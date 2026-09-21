@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Liigu üles</string>
+    <string name="abc_action_mode_done">Valmis</string>
+    <string name="abc_capital_off">VÄLJAS</string>
+    <string name="abc_capital_on">SEES</string>
+    <string name="abc_search_hint">Otsige …</string>
+    <string name="abc_searchview_description_clear">Päringu tühistamine</string>
+    <string name="abc_searchview_description_search">Otsing</string>
+    <string name="abc_searchview_description_submit">Päringu esitamine</string>
+    <string name="abc_searchview_description_voice">Häälotsing</string>
+    <string name="abc_toolbar_collapse_description">Ahendamine</string>
+</resources>

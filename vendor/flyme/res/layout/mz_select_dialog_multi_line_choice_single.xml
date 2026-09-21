@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flyme.support.v7.widget.MzMultiLinesCheckLayout android:gravity="center_vertical" android:orientation="horizontal" android:background="@drawable/mz_alert_dialog_listview_item_bg_radius" android:paddingTop="15.0dp" android:paddingBottom="15.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:choiceMode="singleChoice" android:paddingStart="20.0dp" android:paddingEnd="0.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:gravity="center_vertical" android:orientation="vertical" android:layout_width="0.0dp" android:layout_height="wrap_content" android:layout_weight="1.0">
+        <TextView android:textStyle="normal" android:id="@id/alert_title_multi_line_text_view" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" style="@style/TextAppearance.Flyme.Label.Large" />
+        <TextView android:id="@id/alert_detail_multi_line_text_view" android:layout_width="wrap_content" android:layout_height="wrap_content" android:includeFontPadding="false" android:lineSpacingExtra="0.0dp" android:fontFamily="sans-serif" style="@style/Widget.Flyme.MultipleList.Desc.NormalDisplay.AdjoinTitle" />
+    </LinearLayout>
+    <ImageView android:id="@id/alert_title_multi_line_check_box_single" android:background="@drawable/mz_vec_btn_checked_true_normal_color_blue" android:clickable="false" android:layout_width="24.0dp" android:layout_height="25.0dp" android:layout_marginLeft="20.0dp" android:layout_marginRight="20.0dp" />
+</flyme.support.v7.widget.MzMultiLinesCheckLayout>

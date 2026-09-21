@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Prejsť nahor</string>
+    <string name="abc_action_mode_done">Hotovo</string>
+    <string name="abc_capital_off">VYP.</string>
+    <string name="abc_capital_on">ZAP.</string>
+    <string name="abc_search_hint">Vyhľadať…</string>
+    <string name="abc_searchview_description_clear">Vymazať dopyt</string>
+    <string name="abc_searchview_description_search">Hľadať</string>
+    <string name="abc_searchview_description_submit">Odoslať dopyt</string>
+    <string name="abc_searchview_description_voice">Hlasové vyhľadávanie</string>
+    <string name="abc_toolbar_collapse_description">Zbaliť</string>
+    <string name="mc_search">Hľadať</string>
+    <string name="mz_action_bar_multi_choice_cancel">Zrušiť</string>
+    <string name="mz_action_bar_multi_choice_select_all">Všetky</string>
+</resources>

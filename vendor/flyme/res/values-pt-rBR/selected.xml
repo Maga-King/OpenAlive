@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Navegar para cima</string>
+    <string name="abc_action_mode_done">Concluído</string>
+    <string name="abc_capital_off">DESATIVADO</string>
+    <string name="abc_capital_on">ATIVADO</string>
+    <string name="abc_search_hint">Pesquisar…</string>
+    <string name="abc_searchview_description_clear">Limpar consulta</string>
+    <string name="abc_searchview_description_search">Pesquisar</string>
+    <string name="abc_searchview_description_submit">Enviar consulta</string>
+    <string name="abc_searchview_description_voice">Pesquisa por voz</string>
+    <string name="abc_toolbar_collapse_description">Recolher</string>
+    <string name="mc_search">Pesquisar</string>
+    <string name="mz_action_bar_multi_choice_cancel">Cancelar</string>
+    <string name="mz_action_bar_multi_choice_select_all">Tudo</string>
+</resources>

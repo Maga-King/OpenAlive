@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:gravity="center_vertical" android:id="@android:id/background" android:height="22.0dp" android:drawable="@drawable/mz_seekbar_progress_spot_drawable" />
+    <item android:gravity="center_vertical" android:id="@android:id/secondaryProgress" android:height="22.0dp" android:drawable="@drawable/mz_seekbar_progress_spot_drawable" />
+    <item android:gravity="center_vertical" android:id="@android:id/progress" android:height="22.0dp">
+        <clip>
+            <shape android:shape="rectangle">
+                <corners android:radius="11.0dp" />
+                <solid android:color="@color/transparent" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

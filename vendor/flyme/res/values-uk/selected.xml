@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Перейти вгору</string>
+    <string name="abc_action_mode_done">Готово</string>
+    <string name="abc_capital_off">ВИМКНЕНО</string>
+    <string name="abc_capital_on">УВІМКНЕНО</string>
+    <string name="abc_search_hint">Введіть пошуковий запит…</string>
+    <string name="abc_searchview_description_clear">Очистити запит</string>
+    <string name="abc_searchview_description_search">Пошук</string>
+    <string name="abc_searchview_description_submit">Наіслати запит</string>
+    <string name="abc_searchview_description_voice">Голосовий пошук</string>
+    <string name="abc_toolbar_collapse_description">Згорнути</string>
+    <string name="mc_search">Пошук</string>
+    <string name="mz_action_bar_multi_choice_cancel">Скасувати</string>
+    <string name="mz_action_bar_multi_choice_select_all">Усі</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="16.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <FrameLayout android:layout_width="wrap_content" android:layout_height="wrap_content">
+        <TextView android:textSize="26.0sp" android:textColor="@color/white" android:id="@id/tv_clock" android:background="@drawable/aod_panel_item_bg" android:padding="13.0dp" android:duplicateParentState="true" android:layout_width="106.0dp" android:layout_height="106.0dp" android:foreground="@drawable/aod_panel_item_fg" />
+        <FrameLayout android:id="@id/screen_preview_container" android:padding="13.0dp" android:layout_width="106.0dp" android:layout_height="106.0dp" />
+    </FrameLayout>
+    <TextView android:textSize="12.0sp" android:textColor="@color/white" android:layout_gravity="center_horizontal" android:id="@id/tv_label" android:duplicateParentState="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4.0dp" android:maxWidth="106.0dp" android:maxLines="1" android:fontFamily="sans-serif-medium" />
+</LinearLayout>

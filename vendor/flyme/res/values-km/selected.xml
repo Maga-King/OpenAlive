@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">រំកិលឡើងលើ</string>
+    <string name="abc_action_mode_done">រួចរាល់</string>
+    <string name="abc_capital_off">បិទ</string>
+    <string name="abc_capital_on">បើក</string>
+    <string name="abc_search_hint">ស្វែងរក…</string>
+    <string name="abc_searchview_description_clear">សម្អាត​សំណួរ</string>
+    <string name="abc_searchview_description_search">ស្វែងរក</string>
+    <string name="abc_searchview_description_submit">ដាក់បញ្ជូន​សំណួរ</string>
+    <string name="abc_searchview_description_voice">ស្វែងរក​តាម​សំឡេង</string>
+    <string name="abc_toolbar_collapse_description">បង្រួម</string>
+</resources>

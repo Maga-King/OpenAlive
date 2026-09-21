@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:gravity="center_vertical" android:height="@dimen/mz_seekbar_height">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/mz_seekbar_radius" />
+            <solid android:color="@color/mz_seekbar_background_state_color" />
+        </shape>
+    </item>
+    <item android:gravity="start|center" android:height="@dimen/mz_seekbar_height" android:width="12.0dp">
+        <shape android:shape="rectangle">
+            <corners android:topLeftRadius="@dimen/mz_seekbar_radius" android:bottomLeftRadius="@dimen/mz_seekbar_radius" />
+            <solid android:color="@color/mz_seekbar_thumb_state_color" />
+        </shape>
+    </item>
+</layer-list>

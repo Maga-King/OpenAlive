@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flyme.support.v7.widget.MzRecyclerView android:id="@id/select_dialog_recycler_view" android:paddingTop="2.0dp" android:paddingBottom="2.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="12.0dp" android:paddingEnd="12.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android" />

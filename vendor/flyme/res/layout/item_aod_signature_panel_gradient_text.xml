@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8.0dp" android:layout_marginBottom="8.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.flyme.systemuieditor.widget.view.GradientFrameLayout android:id="@id/gradient_layout" android:background="@drawable/aod_panel_item_bg" android:padding="13.0dp" android:layout_width="106.0dp" android:layout_height="106.0dp" android:foreground="@drawable/aod_mutable_item_fg">
+        <com.flyme.systemuieditor.widget.view.VerticalTextView1 android:textColor="@color/white" android:layout_gravity="center" android:id="@id/tv_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:includeFontPadding="false" />
+        <ImageView android:layout_gravity="center" android:id="@id/iv_thumbnail" android:visibility="gone" android:layout_width="80.0dp" android:layout_height="80.0dp" />
+    </com.flyme.systemuieditor.widget.view.GradientFrameLayout>
+    <CheckBox android:layout_gravity="end|top" android:id="@id/check_box" android:visibility="invisible" android:clickable="false" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8.0dp" android:layout_marginEnd="8.0dp" android:backgroundTint="@null" style="@style/Widget.Flyme.Light.CompoundButton.CheckBox" />
+</FrameLayout>

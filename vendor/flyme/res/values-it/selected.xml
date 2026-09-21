@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Torna indietro</string>
+    <string name="abc_action_mode_done">Fine</string>
+    <string name="abc_capital_off">OFF</string>
+    <string name="abc_capital_on">ON</string>
+    <string name="abc_search_hint">Cerca…</string>
+    <string name="abc_searchview_description_clear">Cancella query</string>
+    <string name="abc_searchview_description_search">Cerca</string>
+    <string name="abc_searchview_description_submit">Invia query</string>
+    <string name="abc_searchview_description_voice">Ricerca vocale</string>
+    <string name="abc_toolbar_collapse_description">Comprimi</string>
+    <string name="mc_search">Cerca</string>
+    <string name="mz_action_bar_multi_choice_cancel">Annulla</string>
+    <string name="mz_action_bar_multi_choice_select_all">Tutto</string>
+</resources>

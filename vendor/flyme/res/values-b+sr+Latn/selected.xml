@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Idite nagore</string>
+    <string name="abc_action_mode_done">Gotovo</string>
+    <string name="abc_capital_off">ISKLJUČENO</string>
+    <string name="abc_capital_on">UKLJUČENO</string>
+    <string name="abc_search_hint">Pretražite…</string>
+    <string name="abc_searchview_description_clear">Obrišite upit</string>
+    <string name="abc_searchview_description_search">Pretražite</string>
+    <string name="abc_searchview_description_submit">Pošaljite upit</string>
+    <string name="abc_searchview_description_voice">Glasovna pretraga</string>
+    <string name="abc_toolbar_collapse_description">Skupi</string>
+</resources>

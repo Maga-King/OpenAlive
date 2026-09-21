@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <dimen name="abc_action_bar_default_height_material">48.0dp</dimen>
+    <style name="Widget.Flyme.BottomNavigationBar.ButtonText" parent="@style/Widget.Flyme.AppCompat.ActionButton.Split">
+        <item name="android:paddingStart">0.0dp</item>
+        <item name="android:paddingEnd">5.0dp</item>
+    </style>
+</resources>

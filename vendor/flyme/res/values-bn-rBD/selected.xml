@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="mc_search">অনুসন্ধান করুন</string>
+    <string name="mz_action_bar_multi_choice_cancel">বাতিল করুন</string>
+    <string name="mz_action_bar_multi_choice_select_all">সব</string>
+</resources>

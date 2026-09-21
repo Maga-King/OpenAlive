@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Navighează în sus</string>
+    <string name="abc_action_mode_done">Gata</string>
+    <string name="abc_capital_off">DEZACTIVAT</string>
+    <string name="abc_capital_on">ACTIVAT</string>
+    <string name="abc_search_hint">Caută…</string>
+    <string name="abc_searchview_description_clear">Șterge interogarea</string>
+    <string name="abc_searchview_description_search">Caută</string>
+    <string name="abc_searchview_description_submit">Trimite interogarea</string>
+    <string name="abc_searchview_description_voice">Căutare vocală</string>
+    <string name="abc_toolbar_collapse_description">Restrânge</string>
+    <string name="mc_search">Căutare</string>
+    <string name="mz_action_bar_multi_choice_cancel">Anulare</string>
+    <string name="mz_action_bar_multi_choice_select_all">Toate</string>
+</resources>

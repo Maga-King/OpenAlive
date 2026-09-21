@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/editor_root" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#000000">
+    <FrameLayout android:id="@+id/preview_card" android:layout_width="match_parent" android:layout_height="match_parent">
+        <TextureView android:id="@+id/preview" android:layout_width="match_parent" android:layout_height="match_parent" />
+        <org.aliveclean.EditorClockView android:id="@+id/clock_preview" android:layout_width="match_parent" android:layout_height="match_parent" android:importantForAccessibility="no" />
+    </FrameLayout>
+    <LinearLayout android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="20dp" android:paddingTop="15dp">
+        <Button android:id="@+id/cancel" style="@style/TextAppearance.Editor.Button" android:layout_width="64dp" android:layout_height="32dp"
+            android:background="@drawable/editor_top_btn_bg" android:stateListAnimator="@null" android:minHeight="0dp" android:minWidth="0dp" android:text="取消" />
+        <TextView android:id="@+id/scene_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:gravity="center" android:text="锁屏" android:textSize="17sp" android:textColor="#ffffff" />
+        <Button android:id="@+id/apply" style="@style/TextAppearance.Editor.Button" android:layout_width="64dp" android:layout_height="32dp"
+            android:background="@drawable/editor_apply_btn_bg" android:stateListAnimator="@null" android:minHeight="0dp" android:minWidth="0dp" android:text="应用" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/editor_bottom" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="bottom" android:orientation="vertical">
+        <LinearLayout android:id="@+id/scenes" android:layout_width="232dp" android:layout_height="48dp" android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp" android:orientation="horizontal" android:background="@drawable/clean_scene_tabs">
+            <TextView android:id="@+id/aod" style="@style/TextAppearance.Editor.Tab.Edit" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="息屏" android:clickable="true" android:focusable="true" />
+            <TextView android:id="@+id/lock" style="@style/TextAppearance.Editor.Tab.Edit" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="锁屏" android:clickable="true" android:focusable="true" />
+            <TextView android:id="@+id/home" style="@style/TextAppearance.Editor.Tab.Edit" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="桌面" android:clickable="true" android:focusable="true" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/panel" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+            android:background="@drawable/clean_editor_panel" android:paddingBottom="16dp">
+            <View android:layout_width="32dp" android:layout_height="4dp" android:layout_marginTop="9dp" android:layout_gravity="center_horizontal" android:background="@drawable/clean_sheet_handle" />
+            <TextView android:id="@+id/panel_title" style="@style/TextAppearance.Editor.Panel.Title" android:layout_width="match_parent"
+                android:layout_height="54dp" android:text="照片" android:gravity="center" android:textSize="20sp" android:textColor="#ffffff" />
+            <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none"
+                android:clipToPadding="false" android:paddingHorizontal="20dp" android:overScrollMode="ifContentScrolls">
+                <LinearLayout android:id="@+id/effects" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" />
+            </HorizontalScrollView>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="8dp" android:gravity="center" android:orientation="horizontal">
+                <Button android:id="@+id/change_photo" style="@style/TextAppearance.Editor.Button" android:layout_width="wrap_content" android:layout_height="48dp" android:text="更换照片" />
+                <Button android:id="@+id/follow_lock" style="@style/TextAppearance.Editor.Button" android:layout_width="wrap_content" android:layout_height="48dp" android:layout_marginStart="16dp" android:text="跟随锁屏" android:visibility="gone" />
+            </LinearLayout>
+            <TextView android:id="@+id/editor_notice" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp"
+                android:gravity="center" android:textColor="#99ffffff" android:textSize="12sp" android:visibility="gone" />
+            <Button android:id="@+id/photo_example" style="@style/TextAppearance.Editor.Button" android:layout_width="wrap_content" android:layout_height="44dp" android:layout_gravity="center_horizontal" android:text="载入樱花示例" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

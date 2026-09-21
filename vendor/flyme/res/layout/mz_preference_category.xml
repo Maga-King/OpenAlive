@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:paddingTop="15.0dp" android:paddingBottom="8.0dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="18.0dp" android:paddingEnd="18.0dp"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="7.0dp" android:layout_marginStart="2.0dp">
+        <TextView android:textAppearance="@style/Widget.Flyme.List.Setting.SingleList.Title" android:id="@android:id/title" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <LinearLayout android:gravity="end|center" android:orientation="vertical" android:id="@android:id/widget_frame" android:layout_width="0.0dp" android:layout_height="match_parent" android:layout_weight="1.0" />
+    </LinearLayout>
+    <View android:id="@id/divider" android:background="@color/mz_divider_line_block" android:layout_width="match_parent" android:layout_height="1.0dp" />
+</LinearLayout>

@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Joan gora</string>
+    <string name="abc_action_mode_done">Eginda</string>
+    <string name="abc_capital_off">DESAKTIBATU</string>
+    <string name="abc_capital_on">AKTIBATU</string>
+    <string name="abc_search_hint">Bilatu…</string>
+    <string name="abc_searchview_description_clear">Garbitu kontsulta</string>
+    <string name="abc_searchview_description_search">Bilatu</string>
+    <string name="abc_searchview_description_submit">Bidali kontsulta</string>
+    <string name="abc_searchview_description_voice">Ahozko bilaketa</string>
+    <string name="abc_toolbar_collapse_description">Tolestu</string>
+</resources>

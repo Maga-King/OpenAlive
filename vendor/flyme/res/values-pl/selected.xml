@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Przejdź wyżej</string>
+    <string name="abc_action_mode_done">Gotowe</string>
+    <string name="abc_capital_off">WYŁ.</string>
+    <string name="abc_capital_on">WŁ.</string>
+    <string name="abc_search_hint">Szukaj…</string>
+    <string name="abc_searchview_description_clear">Wyczyść zapytanie</string>
+    <string name="abc_searchview_description_search">Szukaj</string>
+    <string name="abc_searchview_description_submit">Wyślij zapytanie</string>
+    <string name="abc_searchview_description_voice">Wyszukiwanie głosowe</string>
+    <string name="abc_toolbar_collapse_description">Zwiń</string>
+    <string name="mc_search">Szukaj</string>
+    <string name="mz_action_bar_multi_choice_cancel">Anuluj</string>
+    <string name="mz_action_bar_multi_choice_select_all">Wszystkie</string>
+</resources>

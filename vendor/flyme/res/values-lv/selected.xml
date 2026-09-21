@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Pārvietoties uz augšu</string>
+    <string name="abc_action_mode_done">Gatavs</string>
+    <string name="abc_capital_off">IZSLĒGT</string>
+    <string name="abc_capital_on">IESLĒGT</string>
+    <string name="abc_search_hint">Meklējiet…</string>
+    <string name="abc_searchview_description_clear">Notīrīt vaicājumu</string>
+    <string name="abc_searchview_description_search">Meklēt</string>
+    <string name="abc_searchview_description_submit">Iesniegt vaicājumu</string>
+    <string name="abc_searchview_description_voice">Meklēt ar balsi</string>
+    <string name="abc_toolbar_collapse_description">Sakļaut</string>
+    <string name="mc_search">Meklēt</string>
+    <string name="mz_action_bar_multi_choice_cancel">Atcelt</string>
+    <string name="mz_action_bar_multi_choice_select_all">Viss</string>
+</resources>

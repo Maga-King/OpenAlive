@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">ზემოთ გადასვლა</string>
+    <string name="abc_action_mode_done">მზადაა</string>
+    <string name="abc_capital_off">გამორთვა</string>
+    <string name="abc_capital_on">ჩართვა</string>
+    <string name="abc_search_hint">ძიება…</string>
+    <string name="abc_searchview_description_clear">მოთხოვნის გასუფთავება</string>
+    <string name="abc_searchview_description_search">ძიება</string>
+    <string name="abc_searchview_description_submit">მოთხოვნის გადაგზავნა</string>
+    <string name="abc_searchview_description_voice">ხმოვანი ძიება</string>
+    <string name="abc_toolbar_collapse_description">ჩაკეცვა</string>
+</resources>

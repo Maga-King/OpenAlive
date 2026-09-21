@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.flyme.systemuieditor.widget.view.ScreenPreviewLayout android:id="@id/root" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <androidx.constraintlayout.widget.ConstraintLayout android:id="@id/layout_aod_tips" android:background="@color/black" android:layout_width="match_parent" android:layout_height="match_parent">
+        <ImageView android:id="@id/iv_disable" android:background="@drawable/ic_disable" android:layout_width="22.0dp" android:layout_height="22.0dp" android:layout_marginTop="228.0dp" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+        <TextView android:textSize="14.0sp" android:textColor="@color/white_40" android:id="@id/tv_aod_tips" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8.0dp" android:text="@string/system_doze_disabled" android:fontFamily="sans-serif-medium" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/iv_disable" />
+        <TextView android:textSize="14.0sp" android:textColor="@color/fd_sys_color_primary_blue" android:id="@id/btn_enable_doze" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8.0dp" android:text="@string/system_doze_enable" android:fontFamily="sans-serif-medium" app:layout_constraintEnd_toEndOf="@id/tv_aod_tips" app:layout_constraintStart_toStartOf="@id/tv_aod_tips" app:layout_constraintTop_toBottomOf="@id/tv_aod_tips" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.flyme.systemuieditor.widget.view.ScreenPreviewLayout>

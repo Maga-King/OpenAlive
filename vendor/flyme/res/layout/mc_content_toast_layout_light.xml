@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:gravity="center" android:orientation="vertical" android:id="@id/mc_content_toast_container" android:layout_width="match_parent" android:layout_height="wrap_content"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:gravity="center_vertical" android:id="@id/mc_content_toast_parent" android:background="@drawable/mz_toast_frame" android:layout_width="@dimen/mc_content_toast_content_width_default" android:layout_height="wrap_content" android:layout_marginTop="@dimen/mc_content_toast_content_margin" android:layout_marginBottom="@dimen/mc_content_toast_content_margin" android:minHeight="@dimen/mc_content_toast_min_height" android:paddingStart="@dimen/mc_content_toast_content_horizontal_padding" android:elevation="30.0dp" android:outlineSpotShadowColor="#33000000">
+        <ImageView android:id="@android:id/icon" android:visibility="gone" android:layout_width="wrap_content" android:layout_height="wrap_content" android:scaleType="centerInside" android:paddingEnd="@dimen/mc_content_toast_ic_margin_right" />
+        <RelativeLayout android:id="@id/preference_text_layout" android:paddingTop="@dimen/mc_content_toast_content_text_padding_vertical" android:paddingBottom="@dimen/mc_content_toast_content_text_padding_vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_weight="1.0" android:layout_marginEnd="@dimen/mz_widget_frame_margin_start">
+            <TextView android:ellipsize="end" android:id="@android:id/title" android:fadingEdge="horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:lineSpacingExtra="@dimen/mc_content_toast_line_spacing" />
+        </RelativeLayout>
+        <LinearLayout android:gravity="end|center" android:orientation="vertical" android:id="@android:id/widget_frame" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="@dimen/mz_widget_frame_margin_end">
+            <ImageView android:id="@id/mz_action_icon" android:visibility="gone" android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@drawable/mz_arrow_next_right_normal_light" />
+            <TextView android:textAppearance="@style/TextAppearance.Flyme.ContentToastLayout.ActionTextAppearance.Dark" android:textSize="@dimen/mz_widget_frame_action_text_size" android:id="@id/mz_action_text" android:visibility="gone" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        </LinearLayout>
+    </LinearLayout>
+    <View android:id="@id/mc_toast_separator" android:background="#26000000" android:visibility="gone" android:layout_width="match_parent" android:layout_height="2.0px" />
+</LinearLayout>

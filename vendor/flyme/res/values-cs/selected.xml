@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Přejít nahoru</string>
+    <string name="abc_action_mode_done">Hotovo</string>
+    <string name="abc_capital_off">VYP</string>
+    <string name="abc_capital_on">ZAP</string>
+    <string name="abc_search_hint">Vyhledat…</string>
+    <string name="abc_searchview_description_clear">Smazat dotaz</string>
+    <string name="abc_searchview_description_search">Hledat</string>
+    <string name="abc_searchview_description_submit">Odeslat dotaz</string>
+    <string name="abc_searchview_description_voice">Hlasové vyhledávání</string>
+    <string name="abc_toolbar_collapse_description">Sbalit</string>
+    <string name="mc_search">Hledání</string>
+    <string name="mz_action_bar_multi_choice_cancel">Storno</string>
+    <string name="mz_action_bar_multi_choice_select_all">Vše</string>
+</resources>

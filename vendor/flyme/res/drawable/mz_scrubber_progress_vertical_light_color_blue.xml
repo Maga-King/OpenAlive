@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="true">
+        <layer-list>
+            <item android:id="@android:id/background" android:drawable="@drawable/mc_scrubber_track_vertical" />
+            <item android:id="@android:id/secondaryProgress">
+                <scale android:drawable="@drawable/mc_scrubber_track_vertical" android:scaleHeight="100%" android:scaleGravity="bottom" />
+            </item>
+            <item android:id="@android:id/progress">
+                <inset android:insetLeft="@dimen/mz_scrubber_progress_vertical_padding" android:insetRight="@dimen/mz_scrubber_progress_vertical_padding">
+                    <scale android:scaleHeight="100%" android:scaleGravity="bottom">
+                        <shape android:shape="rectangle" />
+                        <color android:color="?colorBrand" />
+                    </scale>
+                </inset>
+            </item>
+        </layer-list>
+    </item>
+    <item android:state_enabled="false">
+        <layer-list>
+            <item android:id="@android:id/background" android:drawable="@drawable/mc_scrubber_track_vertical" />
+            <item android:id="@android:id/secondaryProgress">
+                <scale android:drawable="@drawable/mc_scrubber_track_vertical" android:scaleHeight="100%" android:scaleGravity="bottom" />
+            </item>
+            <item android:id="@android:id/progress">
+                <inset android:insetLeft="@dimen/mz_scrubber_progress_vertical_padding" android:insetRight="@dimen/mz_scrubber_progress_vertical_padding">
+                    <scale android:scaleHeight="100%" android:scaleGravity="bottom">
+                        <shape android:shape="rectangle" />
+                        <color android:color="?colorStateDisabled" />
+                    </scale>
+                </inset>
+            </item>
+        </layer-list>
+    </item>
+</selector>

@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="abc_action_bar_up_description">Yukarı git</string>
+    <string name="abc_action_mode_done">Bitti</string>
+    <string name="abc_capital_off">KAPAT</string>
+    <string name="abc_capital_on">AÇ</string>
+    <string name="abc_search_hint">Ara…</string>
+    <string name="abc_searchview_description_clear">Sorguyu temizle</string>
+    <string name="abc_searchview_description_search">Ara</string>
+    <string name="abc_searchview_description_submit">Sorguyu gönder</string>
+    <string name="abc_searchview_description_voice">Sesli arama</string>
+    <string name="abc_toolbar_collapse_description">Daralt</string>
+    <string name="mc_search">Ara</string>
+    <string name="mz_action_bar_multi_choice_cancel">İptal</string>
+    <string name="mz_action_bar_multi_choice_select_all">Tümü</string>
+</resources>

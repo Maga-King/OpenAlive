@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list android:autoMirrored="true"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <bitmap android:src="@drawable/mz_text_select_handle_right_color_blue" android:antialias="true" android:tint="?colorPrimary" />
+    </item>
+</layer-list>

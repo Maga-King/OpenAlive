@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout android:id="@id/main" android:layout_width="match_parent" android:layout_height="match_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <ImageView android:id="@id/iv_wallpaper_lockscreen_bottom" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" />
+    <ImageView android:id="@id/iv_wallpaper_lockscreen" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" />
+    <FrameLayout android:id="@id/fl_sysui_lockscreen" android:layout_width="match_parent" android:layout_height="match_parent" />
+    <FrameLayout android:id="@id/fl_lockscreen_v3_container" android:layout_width="match_parent" android:layout_height="match_parent" />
+    <FrameLayout android:id="@id/fl_lockscreen_legacy_container" android:layout_width="match_parent" android:layout_height="match_parent" />
+    <View android:layout_gravity="bottom" android:id="@id/gradient_bg" android:background="@drawable/selector_gradient_bg" android:layout_width="match_parent" android:layout_height="393.0dp" app:layout_constraintBottom_toBottomOf="@id/iv_wallpaper_lockscreen" />
+    <FrameLayout android:id="@id/btn_cancel_container" android:layout_width="@dimen/editor_top_button_width" android:layout_height="@dimen/editor_top_button_height" android:layout_marginTop="@dimen/editor_top_button_margin_top" android:layout_marginStart="@dimen/editor_top_button_margin_horizontal" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent">
+        <com.flyme.systemuieditor.widget.view.EditorPartialDrawableView android:id="@id/btn_cancel_blur" android:layout_width="match_parent" android:layout_height="match_parent" />
+        <TextView android:textSize="17.0sp" android:textColor="@color/white" android:gravity="center" android:id="@id/btn_cancel" android:background="@drawable/selector_btn_cancel_bg" android:layout_width="@dimen/editor_top_button_width" android:layout_height="@dimen/editor_top_button_height" android:text="@string/cancel" />
+    </FrameLayout>
+    <androidx.constraintlayout.widget.Guideline android:orientation="horizontal" android:id="@id/guideline_horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content" app:layout_constraintGuide_end="392.0dp" />
+    <flyme.support.v4.view.ViewPager android:layout_gravity="center|bottom" android:id="@id/view_pager" android:clipToPadding="false" android:layout_width="match_parent" android:layout_height="0.0dp" android:animateLayoutChanges="true" app:layout_constraintBottom_toTopOf="@id/bottom_button_container" app:layout_constraintTop_toBottomOf="@id/guideline_horizontal" />
+    <LinearLayout android:gravity="center_horizontal" android:orientation="horizontal" android:id="@id/bottom_button_container" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="@dimen/editor_bottom_button_margin_bottom" android:baselineAligned="false" android:layout_marginHorizontal="16.0dp" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent">
+        <FrameLayout android:id="@id/btn_edit_container" android:layout_width="@dimen/editor_bottom_button_size" android:layout_height="@dimen/editor_bottom_button_size" android:layout_marginEnd="16.0dp">
+            <com.flyme.systemuieditor.widget.view.EditorPartialDrawableView android:id="@id/btn_edit_blur" android:layout_width="@dimen/editor_bottom_button_size" android:layout_height="@dimen/editor_bottom_button_size" />
+            <ImageView android:id="@id/btn_edit" android:background="@drawable/selector_btn_editor_bg" android:padding="12.0dp" android:layout_width="@dimen/editor_bottom_button_size" android:layout_height="@dimen/editor_bottom_button_size" android:layout_marginBottom="@dimen/editor_bottom_button_margin_bottom" android:src="@drawable/ic_edit_selector" app:tint="@color/white" />
+        </FrameLayout>
+        <FrameLayout android:id="@id/btn_apply_container" android:clickable="true" android:layout_width="0.0dp" android:layout_height="@dimen/editor_bottom_tab_group_height" android:layout_weight="1.0">
+            <com.flyme.systemuieditor.widget.view.EditorPartialDrawableView android:id="@id/btn_apply_blur" android:clickable="false" android:layout_width="match_parent" android:layout_height="match_parent" />
+            <TextView android:textAppearance="@style/TextAppearance.Editor.Tab" android:textColor="@color/white" android:gravity="center" android:id="@id/btn_apply" android:background="@drawable/selector_btn_apply_bg" android:clickable="false" android:layout_width="match_parent" android:layout_height="match_parent" android:fontFamily="sans-serif-medium" app:tint="@color/white" />
+        </FrameLayout>
+        <FrameLayout android:id="@id/btn_add_container" android:layout_width="@dimen/editor_bottom_button_size" android:layout_height="@dimen/editor_bottom_button_size" android:layout_marginStart="16.0dp">
+            <com.flyme.systemuieditor.widget.view.EditorPartialDrawableView android:id="@id/btn_add_blur" android:layout_width="@dimen/editor_bottom_button_size" android:layout_height="@dimen/editor_bottom_button_size" />
+            <ImageView android:id="@id/btn_add" android:background="@drawable/selector_btn_editor_bg" android:padding="15.0dp" android:layout_width="@dimen/editor_bottom_button_size" android:layout_height="@dimen/editor_bottom_button_size" android:src="@drawable/ic_add" />
+        </FrameLayout>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
