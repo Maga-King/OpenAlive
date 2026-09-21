@@ -111,12 +111,16 @@ final class ColorOsClockTracker {
             display.getRealSize(displaySize);
             bounds.setEmpty();String source="digits";
             scope.refresh();
+            boolean officialClock=workshop&&readOfficialClockRect(bounds);
+            if(officialClock)source="official-clock";
             View artwork=scope.artwork();
-            if(artwork!=null&&artwork.getGlobalVisibleRect(bounds)&&validBounds())source="artwork";
-            else bounds.setEmpty();
+            if(!officialClock){
+                if(artwork!=null&&artwork.getGlobalVisibleRect(bounds)&&validBounds())source="artwork";
+                else bounds.setEmpty();
+            }
             boolean preferArtwork=validBounds();
             // Digital ClockTimeView fills the display; only the visible glyphs locate the time.
-            for(View digit:digits)if(!preferArtwork&&!scope.excludes(digit)&&digit.isShown()&&digit.getAlpha()>0.01f&&digit.getGlobalVisibleRect(digitBounds)){
+            for(View digit:digits)if(!officialClock&&!preferArtwork&&!scope.excludes(digit)&&digit.isShown()&&digit.getAlpha()>0.01f&&digit.getGlobalVisibleRect(digitBounds)){
                 // Text digit containers use extra height while the font animator runs.
                 // Its release moves their center although the painted text does not move.
                 // Image/irregular digits retain the existing container measurement.
@@ -156,6 +160,18 @@ final class ColorOsClockTracker {
             ColorOsBridge.send(2,b);
             if(first){if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Clock anchor="+bounds+" source="+source+" display="+displayId);}
         }catch(Throwable error){failure(error);}
+    }
+    private boolean readOfficialClockRect(Rect out){
+        try{
+            if(plugin==null)return false;
+            Bundle query=new Bundle();query.putInt("uiState",aodUiState);
+            Object controller=keyguard.get();if(controller==null)return false;
+            query.putInt("clockSize",((Number)XposedHelpers.callMethod(controller,"pluginClockSize")).intValue());
+            Object value=XposedHelpers.callMethod(plugin,"getClockVisibleRect",query);
+            if(value instanceof Rect)out.set((Rect)value);
+            else if(value instanceof Bundle){Object rect=((Bundle)value).getParcelable("visibleRect");if(rect instanceof Rect)out.set((Rect)rect);}
+            return validBounds();
+        }catch(Throwable ignored){return false;}
     }
     private void detach(){
         if(root!=null&&root.getViewTreeObserver().isAlive())root.getViewTreeObserver().removeOnPreDrawListener(predraw);
