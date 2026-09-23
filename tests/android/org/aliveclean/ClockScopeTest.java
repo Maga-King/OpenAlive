@@ -27,11 +27,13 @@ public final class ClockScopeTest {
     public static final class Container extends FrameLayout {
         final Map<String,Entry> entries=new LinkedHashMap<>();
         Anchor anchor;
+        SingleClock baseline;
         final Engine engine=new Engine();
         Container(Context c){super(c);}
         public Map<String,Entry> getSceneViewMap(){return entries;}
         public Anchor getActiveLayoutTransitionSceneAnchor$KeyguardPersonalityClocks_release(){return anchor;}
         public Engine getLayoutTransitionEngine(){return engine;}
+        public SingleClock getBaselineSingleClockView(){return baseline;}
         View add(String key){FrameLayout view=new FrameLayout(getContext());addView(view);entries.put(key,new Entry(view));return view;}
     }
     public static final class Engine {
@@ -76,6 +78,20 @@ public final class ClockScopeTest {
         check(scope.targetTime(5,1)==root.container.entries.get("KEYGUARD_BIG").view,"Big panoramic target mismatch");
         check(scope.targetTime(5,2)==root.container.entries.get("KEYGUARD_IMMERSED").view,"Immersed panoramic target mismatch");
         check(scope.targetTime(1,1)==null,"Launcher accepted as destination");
+        View big=root.container.entries.get("KEYGUARD_BIG").view;
+        View small=root.container.entries.get("KEYGUARD_SMALL").view;
+        root.container.baseline=root.container.entries.get("KEYGUARD_BIG").single;
+        small.setVisibility(View.INVISIBLE);
+        check(scope.visibleTime(5,0)==big,"Hidden notification mirror chosen instead of displayed baseline");
+        big.setTranslationX(-83);big.setTranslationY(91);
+        check(scope.visibleTime(5,0)==big&&scope.visibleTime(5,0).getTranslationX()==-83,"Live notification movement lost");
+        big.setVisibility(View.INVISIBLE);small.setVisibility(View.VISIBLE);
+        check(scope.visibleTime(5,0)==small,"Visible clock replacement ignored");
+        root.container.baseline=root.container.entries.get("UNLOCK").single;
+        check(scope.visibleTime(5,0)==small,"Launcher baseline contaminated AOD coordinates");
+        root.setAlpha(0);
+        check(scope.visibleTime(5,0)==null,"Invisible tree produced a coordinate");
+        root.setAlpha(1);big.setVisibility(View.VISIBLE);root.container.baseline=null;
         check(!scope.excludes(root.container),"Shared mount excluded with desktop copy");
         root.container.anchor=new Anchor(root.container.entries.get("UNLOCK").single);
         check(scope.allowsPluginFallback(),"Inactive follow-hand incorrectly blocked native AOD fallback");

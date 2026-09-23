@@ -10,7 +10,7 @@ import java.util.Map;
 final class ClockScope {
     private final View root;
     private final Method container,material;
-    private Method sceneMap,single,dual,clockTime,image,transitionAnchor,animationView,layoutEngine,followProgress;
+    private Method sceneMap,single,dual,clockTime,image,transitionAnchor,animationView,layoutEngine,followProgress,baseline;
     private boolean mapResolved,entryResolved,clockResolved,imageResolved,animationResolved,progressResolved;
     private Object clockContainer;
     private View launcher,launcherDual;
@@ -26,6 +26,7 @@ final class ClockScope {
                 sceneMap=method(host.getClass(),"getSceneViewMap");
                 transitionAnchor=method(host.getClass(),"getActiveLayoutTransitionSceneAnchor$KeyguardPersonalityClocks_release");
                 layoutEngine=method(host.getClass(),"getLayoutTransitionEngine");
+                baseline=method(host.getClass(),"getBaselineSingleClockView");
                 mapResolved=true;
             }
             if(sceneMap==null)return;
@@ -62,6 +63,29 @@ final class ClockScope {
         return view instanceof View?(View)view:null;
     }
     boolean excludes(View view){return (launcher!=null&&within(view,launcher))||(launcherDual!=null&&within(view,launcherDual));}
+    boolean hasSceneMap(){return clockContainer!=null&&sceneMap!=null;}
+    View visibleTime(int uiState,int clockSize){
+        if(!hasSceneMap())return null;
+        try{
+            // SystemUI renders its baseline instance even when the requested
+            // size is SMALL. The other scene entries can be hidden mirrors.
+            View view=baseline==null?null:timeView(baseline.invoke(clockContainer));
+            if(visibleClock(view))return view;
+            view=targetTime(uiState,clockSize);
+            if(visibleClock(view))return view;
+            Object value=sceneMap.invoke(clockContainer);if(!(value instanceof Map))return null;
+            View candidate=null;
+            for(Map.Entry<?,?> entry:((Map<?,?>)value).entrySet()){
+                if("UNLOCK".equals(String.valueOf(entry.getKey())))continue;
+                view=entryView(entry.getValue(),false);
+                if(!visibleClock(view))continue;
+                if(candidate!=null&&candidate!=view)return null;
+                candidate=view;
+            }
+            return candidate;
+        }catch(ReflectiveOperationException|RuntimeException ignored){return null;}
+    }
+    private boolean visibleClock(View view){return view!=null&&!excludes(view)&&visibleWithin(view,root);}
     View targetTime(int uiState,int clockSize){
         // SceneKt.resolveScene: panoramic AOD uses the selected keyguard layout;
         // workshop AOD has its own entry. Never choose the first visible copy.

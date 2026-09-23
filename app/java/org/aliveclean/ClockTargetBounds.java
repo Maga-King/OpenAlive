@@ -7,15 +7,15 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/** Glyph bounds in the exact digit-layout coordinate system used by the native query. */
+/** Current displayed time, including every ancestor's scale and translation. */
 final class ClockTargetBounds {
     private final ClockInkBounds ink=new ClockInkBounds();
-    private final Rect layout=new Rect(),glyphs=new Rect(),box=new Rect(),painted=new Rect();
+    private final Rect glyphs=new Rect(),painted=new Rect();
     private Class<?> targetType,containerType,digitType,textType;
     private Method containers,simpleDigits,digitView,visibleText;
     private Field drawOffset;
 
-    boolean correct(View target,Rect destination){
+    boolean measure(View target,Rect destination){
         if(target==null)return false;
         try{
             if(targetType!=target.getClass()){
@@ -26,7 +26,7 @@ final class ClockTargetBounds {
             if(containers==null||simpleDigits==null)return false;
             Object all=containers.invoke(target),numbers=simpleDigits.invoke(target);
             if(!(all instanceof List)||!(numbers instanceof List))return false;
-            layout.setEmpty();glyphs.setEmpty();
+            glyphs.setEmpty();
             for(Object item:(List<?>)all){
                 // The native query filters DigitalTimeContainer, not its still-visible child.
                 if(!(item instanceof View)||((View)item).getVisibility()!=View.VISIBLE)continue;
@@ -35,16 +35,15 @@ final class ClockTargetBounds {
                 }
                 Object value=digitView.invoke(item);if(!(value instanceof View))continue;
                 View digit=(View)value;
+                if(digit.getVisibility()!=View.VISIBLE||digit.getAlpha()<=.01f)continue;
                 if(digit.getWidth()<=0||digit.getHeight()<=0)return false;
-                box.set(digit.getLeft(),digit.getTop(),digit.getRight(),digit.getBottom());
-                layout.union(box);
                 // A colon can be a drawable or have no text layout. It is not a time digit.
                 if(!((List<?>)numbers).contains(digit))continue;
                 if(digitType!=digit.getClass()){
                     digitType=digit.getClass();visibleText=digitType.getMethod("getVisibleTextView");
                 }
                 Object text=visibleText.invoke(digit);
-                if(!(text instanceof TextView))return false;
+                if(!(text instanceof TextView)||((View)text).getVisibility()!=View.VISIBLE||((View)text).getAlpha()<=.01f)return false;
                 if(textType!=text.getClass()){
                     textType=text.getClass();drawOffset=null;
                     for(Class<?> type=textType;type!=null;type=type.getSuperclass()){
@@ -53,10 +52,11 @@ final class ClockTargetBounds {
                     }
                 }
                 float offset=drawOffset==null?0:drawOffset.getFloat(text);
-                if(!ink.measureLayout((TextView)text,offset,digit,painted))return false;
-                painted.offset(digit.getLeft(),digit.getTop());glyphs.union(painted);
+                if(!ink.measure((TextView)text,offset,painted))return false;
+                glyphs.union(painted);
             }
-            return ClockVisualAnchor.project(destination,layout,glyphs);
+            if(glyphs.isEmpty())return false;
+            destination.set(glyphs);return true;
         }catch(ReflectiveOperationException|RuntimeException ignored){return false;}
     }
 }

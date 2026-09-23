@@ -20,18 +20,11 @@ final class ColorOsClockTracker {
     private final ClockInkBounds ink=new ClockInkBounds();
     private final Rect inkBounds=new Rect();
     private final ClockTargetBounds targetBounds=new ClockTargetBounds();
-    private final Rect visualAnchor=new Rect();
     private Object plugin;
     private boolean active,workshop,failed;
     private int aodUiState;
     private final Rect bounds=new Rect(),last=new Rect();
     private final Point displaySize=new Point();
-    private final Rect transitionBounds=new Rect();
-    private int sceneMode=-1,transitionStable;
-    private boolean aodTransition;
-    private boolean aodAnchorLocked;
-    private int officialClockSize=-1;
-    private String targetAodState="";
     private int lastDisplay=-1,lastWidth,lastHeight;
     private final ViewTreeObserver.OnPreDrawListener predraw=()->{measure();return true;};
     ColorOsClockTracker(ClassLoader loader){this.loader=loader;}
@@ -50,18 +43,8 @@ final class ColorOsClockTracker {
         });
     }
     void scene(Context context,boolean selected,int mode,String state){
-        int previous=sceneMode;sceneMode=mode;
         active=selected&&mode==0;workshop=state.equals("WORKSHOP_AOD")||state.equals("PANORAMIC_AOD");
         aodUiState=state.equals("WORKSHOP_AOD")?3:5;
-        // The clock tree is rebuilt after the scene callback.  During a
-        // lock/home -> AOD transition its first few bounds can describe the
-        // moving handoff view rather than the settled AOD clock.  Require two
-        // equal official samples before publishing a changed anchor.
-        aodTransition=active&&previous!=0;
-        if(mode!=0||aodTransition||!state.equals(targetAodState))officialClockSize=-1;
-        if(mode!=0||aodTransition)aodAnchorLocked=false;
-        targetAodState=state;
-        transitionBounds.setEmpty();transitionStable=0;
         if(active){attach();main.postDelayed(this::attach,80);main.postDelayed(this::attach,350);}
         else detach();
     }
@@ -123,66 +106,50 @@ final class ColorOsClockTracker {
                 &&bounds.left>=0&&bounds.top>=0&&bounds.right<=displaySize.x&&bounds.bottom<=displaySize.y;
     }
     private void measure(){
-        if(!active||aodAnchorLocked||root==null||!root.isAttachedToWindow())return;
+        if(!active||root==null||!root.isAttachedToWindow())return;
         try{
             Display display=root.getDisplay();if(display==null)return;
             display.getRealSize(displaySize);
             bounds.setEmpty();String source="digits";
             scope.refresh();
-            if(aodTransition&&workshop&&!scope.allowsPluginFallback())return;
-            boolean officialClock=workshop&&readOfficialClockRect(bounds);
-            if(officialClock){source="official-clock";if(centerOnTargetInk(bounds))source="official-visual-center";}
-            if(aodTransition&&workshop&&!officialClock)return;
             View artwork=scope.artwork();
-            if(!officialClock){
-                if(artwork!=null&&artwork.getGlobalVisibleRect(bounds)&&validBounds())source="artwork";
-                else bounds.setEmpty();
-            }
-            boolean preferArtwork=validBounds();
-            // Digital ClockTimeView fills the display; only the visible glyphs locate the time.
-            for(View digit:digits)if(!officialClock&&!preferArtwork&&!scope.excludes(digit)&&digit.isShown()&&digit.getAlpha()>0.01f&&digit.getGlobalVisibleRect(digitBounds)){
-                // Text digit containers use extra height while the font animator runs.
-                // Its release moves their center although the painted text does not move.
-                // Image/irregular digits retain the existing container measurement.
-                try{
-                    Object text=XposedHelpers.callMethod(digit,"getVisibleTextView");
-                    if(text instanceof android.widget.TextView&&((View)text).isShown()){
-                        float offset=XposedHelpers.getFloatField(text,"fontMetricsDrawOffsetY");
-                        if(ink.measure((android.widget.TextView)text,offset,inkBounds)){
-                            digitBounds.set(inkBounds);
-                        }
-                    }
-                }catch(Throwable ignored){} // Unknown clock versions retain the original valid bounds.
-                bounds.union(digitBounds);
-            }
-            if(!validBounds()&&timeView!=null&&!scope.excludes(timeView)){bounds.setEmpty();timeView.getGlobalVisibleRect(bounds);source="time";}
-            if(!validBounds()&&workshop&&plugin!=null&&scope.allowsPluginFallback()){
-                // In-process plugin call, only as a fallback for clock styles without a time view.
-                bounds.setEmpty();source="plugin";
-                // Empty Bundle defaults to KEYGUARD_SMALL in this plugin. Request
-                // the actual AOD layout and the controller's non-launcher size.
-                Bundle query=new Bundle();query.putInt("uiState",aodUiState);
+            if(artwork!=null&&artwork.getGlobalVisibleRect(bounds)&&validBounds())source="artwork";
+            else bounds.setEmpty();
+            if(bounds.isEmpty()&&workshop&&scope.hasSceneMap()){
+                // Read the instance ColorOS actually draws, not a destination
+                // mirror or the plugin's temporary launcher handoff rectangle.
                 Object controller=keyguard.get();
-                if(controller==null)return;
-                query.putInt("clockSize",clockSize(controller));
-                Object value=XposedHelpers.callMethod(plugin,"getClockVisibleRect",query);
-                if(value instanceof Rect)bounds.set((Rect)value);
-                else if(value instanceof Bundle){Object rect=((Bundle)value).getParcelable("visibleRect");if(rect instanceof Rect)bounds.set((Rect)rect);}
-            }else if(!validBounds()&&!workshop){bounds.setEmpty();root.getGlobalVisibleRect(bounds);source="root";}
-            if(!validBounds())return;
-            if(aodTransition){
-                if(transitionBounds.isEmpty()||!transitionBounds.equals(bounds)){
-                    transitionBounds.set(bounds);transitionStable=1;
-                }else transitionStable++;
-                if(transitionStable<2)return;
-                aodTransition=false;
+                int size=controller==null?1:clockSize(controller);
+                View visible=scope.visibleTime(aodUiState,size);
+                if(visible==null)return; // Keep the last anchor during a hidden/rebuilding tree.
+                if(targetBounds.measure(visible,bounds))source="visible-time-ink";
+                else{
+                    // Image/irregular fonts keep their visible digit bounds.
+                    digits.clear();findDigits(visible,0,digits);
+                    for(View digit:digits)if(digit.isShown()&&digit.getAlpha()>.01f&&digit.getGlobalVisibleRect(digitBounds))bounds.union(digitBounds);
+                    source="visible-time-views";
+                }
+            }else if(bounds.isEmpty()){
+                for(View digit:digits)if(!scope.excludes(digit)&&digit.isShown()&&digit.getAlpha()>.01f&&digit.getGlobalVisibleRect(digitBounds)){
+                    try{
+                        Object text=XposedHelpers.callMethod(digit,"getVisibleTextView");
+                        if(text instanceof android.widget.TextView&&((View)text).isShown()){
+                            float offset=XposedHelpers.getFloatField(text,"fontMetricsDrawOffsetY");
+                            if(ink.measure((android.widget.TextView)text,offset,inkBounds))digitBounds.set(inkBounds);
+                        }
+                    }catch(Throwable ignored){}
+                    bounds.union(digitBounds);
+                }
+                if(!validBounds()&&timeView!=null&&!scope.excludes(timeView)&&timeView.isShown()){
+                    bounds.setEmpty();timeView.getGlobalVisibleRect(bounds);source="time";
+                }
+                if(!validBounds()&&workshop&&scope.allowsPluginFallback()){
+                    bounds.setEmpty();readOfficialClockRect(bounds);source="plugin";
+                }else if(!validBounds()&&!workshop){bounds.setEmpty();root.getGlobalVisibleRect(bounds);source="root";}
             }
-            // One AOD session has one official clock anchor.  SystemUI may
-            // rebuild the clock tree again after the mask animation and
-            // briefly expose the launcher/hand-off bounds; accepting that
-            // second rectangle is the source of the end-of-transition jump.
-            if(aodAnchorLocked)return;
-            aodAnchorLocked=true;
+            if(!validBounds())return;
+            // Continue observing notification reflow and burn-in movement.
+            // Only changed rectangles cross the bridge; no timer or session latch.
             int displayId=display.getDisplayId();
             if(last.equals(bounds)&&lastDisplay==displayId&&lastWidth==displaySize.x&&lastHeight==displaySize.y)return;
             boolean first=last.isEmpty();
@@ -206,17 +173,7 @@ final class ColorOsClockTracker {
         }catch(Throwable ignored){return false;}
     }
     private int clockSize(Object controller)throws Throwable{
-        if(officialClockSize<0)officialClockSize=((Number)XposedHelpers.callMethod(controller,"pluginClockSize")).intValue();
-        return officialClockSize;
-    }
-    private boolean centerOnTargetInk(Rect destination){
-        // Keep the accepted native destination and session latch. Remove font
-        // padding on both axes using only that scene's visible time digits.
-        View target=scope.targetTime(aodUiState,officialClockSize);
-        visualAnchor.set(destination);
-        if(!targetBounds.correct(target,visualAnchor)||visualAnchor.left<0||visualAnchor.right>displaySize.x
-                ||visualAnchor.top<0||visualAnchor.bottom>displaySize.y||visualAnchor.height()>displaySize.y/2)return false;
-        destination.set(visualAnchor);return true;
+        return ((Number)XposedHelpers.callMethod(controller,"pluginClockSize")).intValue();
     }
     private void detach(){
         if(root!=null&&root.getViewTreeObserver().isAlive())root.getViewTreeObserver().removeOnPreDrawListener(predraw);
