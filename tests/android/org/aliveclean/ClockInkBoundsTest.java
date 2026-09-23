@@ -30,9 +30,9 @@ final class ClockInkBoundsTest {
         text.setTranslationY(0);text.setScaleY(1);parent.setTranslationY(0);parent.setScaleY(1);
         Rect endpoint=new Rect(100,600,600,1060),layoutBox=new Rect(20,100,520,560);
         Rect corrected=new Rect(endpoint);
-        if(!ClockVisualAnchor.vertical(corrected,layoutBox,local))throw new AssertionError("Visual center rejected");
-        if(corrected.left!=100||corrected.right!=600||corrected.top!=600+local.top-100||corrected.bottom!=600+local.bottom-100)throw new AssertionError("Visual center changed horizontal anchor or kept padding");checks++;
-        Rect invalid=new Rect(corrected);if(ClockVisualAnchor.vertical(invalid,new Rect(),local))throw new AssertionError("Unknown layout corrected");same(corrected,invalid,"unknown styles retain destination");
+        if(!ClockVisualAnchor.project(corrected,layoutBox,local))throw new AssertionError("Visual center rejected");
+        if(corrected.left!=100+local.left-20||corrected.right!=100+local.right-20||corrected.top!=600+local.top-100||corrected.bottom!=600+local.bottom-100)throw new AssertionError("Visual center kept horizontal or vertical padding");checks++;
+        Rect invalid=new Rect(corrected);if(ClockVisualAnchor.project(invalid,new Rect(),local))throw new AssertionError("Unknown layout corrected");same(corrected,invalid,"unknown styles retain destination");
         parent.setTranslationY(24);ink.measure(text,0,after);
         Rect translated=new Rect(before);translated.offset(0,24);same(translated,after,"ancestor movement retained");
         ink.measure(text,30,after);translated.offset(0,30);same(translated,after,"native draw offset retained");

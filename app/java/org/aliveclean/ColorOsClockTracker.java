@@ -19,9 +19,8 @@ final class ColorOsClockTracker {
     private final Rect digitBounds=new Rect();
     private final ClockInkBounds ink=new ClockInkBounds();
     private final Rect inkBounds=new Rect();
-    private final Rect targetLayout=new Rect(),targetInk=new Rect();
+    private final ClockTargetBounds targetBounds=new ClockTargetBounds();
     private final Rect visualAnchor=new Rect();
-    private final java.util.ArrayList<View> targetDigits=new java.util.ArrayList<>();
     private Object plugin;
     private boolean active,workshop,failed;
     private int aodUiState;
@@ -124,7 +123,7 @@ final class ColorOsClockTracker {
                 &&bounds.left>=0&&bounds.top>=0&&bounds.right<=displaySize.x&&bounds.bottom<=displaySize.y;
     }
     private void measure(){
-        if(!active||root==null||!root.isAttachedToWindow())return;
+        if(!active||aodAnchorLocked||root==null||!root.isAttachedToWindow())return;
         try{
             Display display=root.getDisplay();if(display==null)return;
             display.getRealSize(displaySize);
@@ -150,8 +149,7 @@ final class ColorOsClockTracker {
                     if(text instanceof android.widget.TextView&&((View)text).isShown()){
                         float offset=XposedHelpers.getFloatField(text,"fontMetricsDrawOffsetY");
                         if(ink.measure((android.widget.TextView)text,offset,inkBounds)){
-                            // Keep the established horizontal alignment; remove vertical font padding.
-                            digitBounds.top=inkBounds.top;digitBounds.bottom=inkBounds.bottom;
+                            digitBounds.set(inkBounds);
                         }
                     }
                 }catch(Throwable ignored){} // Unknown clock versions retain the original valid bounds.
@@ -212,29 +210,13 @@ final class ColorOsClockTracker {
         return officialClockSize;
     }
     private boolean centerOnTargetInk(Rect destination){
-        // The accepted native rectangle unions DigitalTimeView layout boxes.
-        // Preserve its position/source, but remove the same vertical font
-        // padding that the original glyph tracker removed after settling.
+        // Keep the accepted native destination and session latch. Remove font
+        // padding on both axes using only that scene's visible time digits.
         View target=scope.targetTime(aodUiState,officialClockSize);
-        if(target==null)return false;
-        targetDigits.clear();findDigits(target,0,targetDigits);
-        targetLayout.setEmpty();targetInk.setEmpty();
-        try{
-            for(View digit:targetDigits){
-                if(digit.getVisibility()!=View.VISIBLE)continue;
-                if(digit.getWidth()<=0||digit.getHeight()<=0)return false;
-                Object text=XposedHelpers.callMethod(digit,"getVisibleTextView");
-                if(!(text instanceof android.widget.TextView))return false;
-                float offset=XposedHelpers.getFloatField(text,"fontMetricsDrawOffsetY");
-                if(!ink.measureLayout((android.widget.TextView)text,offset,digit,inkBounds))return false;
-                digitBounds.set(digit.getLeft(),digit.getTop(),digit.getRight(),digit.getBottom());
-                targetLayout.union(digitBounds);
-                inkBounds.offset(digit.getLeft(),digit.getTop());targetInk.union(inkBounds);
-            }
-            visualAnchor.set(destination);
-            if(!ClockVisualAnchor.vertical(visualAnchor,targetLayout,targetInk)||visualAnchor.top<0||visualAnchor.bottom>displaySize.y||visualAnchor.height()>displaySize.y/2)return false;
-            destination.set(visualAnchor);return true;
-        }catch(Throwable ignored){return false;} // Image/unknown clocks keep their native anchor.
+        visualAnchor.set(destination);
+        if(!targetBounds.correct(target,visualAnchor)||visualAnchor.left<0||visualAnchor.right>displaySize.x
+                ||visualAnchor.top<0||visualAnchor.bottom>displaySize.y||visualAnchor.height()>displaySize.y/2)return false;
+        destination.set(visualAnchor);return true;
     }
     private void detach(){
         if(root!=null&&root.getViewTreeObserver().isAlive())root.getViewTreeObserver().removeOnPreDrawListener(predraw);
