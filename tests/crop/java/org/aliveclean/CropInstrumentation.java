@@ -254,10 +254,54 @@ public final class CropInstrumentation extends Instrumentation {
         });
         close(false);
     }
+    private void aodWidgetSpacing()throws Exception{
+        open("accepted.png",false);
+        main(()->{
+            FrameLayout decor=(FrameLayout)activity.getWindow().getDecorView();
+            FrameLayout root=new FrameLayout(activity),widgetRoot=new FrameLayout(activity);
+            View card=new View(activity),time=new View(activity),date=new View(activity);
+            decor.addView(root,new FrameLayout.LayoutParams(-1,-1));
+            root.addView(time);root.addView(date);root.addView(widgetRoot,new FrameLayout.LayoutParams(-1,-1));
+            FrameLayout.LayoutParams cardParams=new FrameLayout.LayoutParams(800,220);cardParams.topMargin=400;
+            card.setId(-0x3f6fdc3);widgetRoot.addView(card,cardParams);widgetRoot.setTranslationY(17);widgetRoot.setAlpha(.7f);
+            AodWidgetSpace space=new AodWidgetSpace();AodClockHost host=new AodClockHost();
+            AodWidgetSpace.Bounds bounds=new ColorOsWidgetBounds(widgetRoot);
+            try{
+                root.measure(View.MeasureSpec.makeMeasureSpec(1080,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(2400,View.MeasureSpec.EXACTLY));root.layout(0,0,1080,2400);
+                for(float scale:new float[]{1,.9f,1.2f}){
+                    root.setScaleY(scale);space.bind(widgetRoot,bounds);
+                    int floor=bounds.read().top+150;space.update(floor);
+                    if(Math.abs(bounds.read().top-floor)>1)throw new AssertionError("Widget floor uses wrong parent scale");checks++;
+                    float settled=widgetRoot.getTranslationY();
+                    for(int i=0;i<80;i++)space.update(floor);
+                    near(widgetRoot.getTranslationY(),settled);near(widgetRoot.getAlpha(),.7f);near(root.getScaleY(),scale);
+                    space.update(floor-60);if(Math.abs(bounds.read().top-(floor-60))>1)throw new AssertionError("Widget floor did not shrink");checks++;
+                    widgetRoot.setTranslationY(33);space.update(floor);space.restore();near(widgetRoot.getTranslationY(),33);
+                    widgetRoot.setTranslationY(17);space.bind(widgetRoot,bounds);space.update(bounds.read().top-5);near(widgetRoot.getTranslationY(),17);
+                    space.clear();
+                }
+                root.setScaleY(1);space.bind(widgetRoot,bounds);space.update(bounds.read().top+150);
+                space.bind(widgetRoot,()->null);space.update(1600);near(widgetRoot.getTranslationY(),17);space.clear();
+                host.show(root,time,date);host.widgets(widgetRoot,bounds);
+                root.measure(View.MeasureSpec.makeMeasureSpec(1080,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(2400,View.MeasureSpec.EXACTLY));root.layout(0,0,1080,2400);
+                root.getViewTreeObserver().dispatchOnPreDraw();
+                AodClockView face=(AodClockView)root.getChildAt(3);int floor=face.notificationTop();
+                if(bounds.read().top<floor-1||host.notificationTop()<=bounds.read().bottom)throw new AssertionError("Clock/widgets/notifications overlap");checks++;
+                near(face.getScaleX(),1);near(face.getScaleY(),1);
+                host.leave(true);near(widgetRoot.getTranslationY(),17);host.hide();
+                host.show(root,time,date);host.widgets(widgetRoot,bounds);
+                root.measure(View.MeasureSpec.makeMeasureSpec(1080,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(2400,View.MeasureSpec.EXACTLY));root.layout(0,0,1080,2400);root.getViewTreeObserver().dispatchOnPreDraw();
+                host.leaveUnlocked();near(widgetRoot.getTranslationY(),17);host.unlockFinished();host.hide();
+                host.show(root,time,date);host.widgets(root,bounds);near(root.getTranslationY(),0);host.hide();
+                observations.add("Widget spacing: scaled parents, repeated traversals, external writes, missing bounds, clock/notification ordering and both wake paths passed");
+            }finally{space.clear();host.hide();decor.removeView(root);}
+        });
+        close(false);
+    }
     @Override public void onCreate(Bundle args){super.onCreate(args);onlyClockHost=args!=null&&"true".equals(args.getString("onlyClockHost"));start();}
     @Override public void onStart(){Bundle result=new Bundle();try{
         if(onlyClockHost){
-            fixture("accepted.png",600,400);aodClockHost();
+            fixture("accepted.png",600,400);aodClockHost();aodWidgetSpacing();
             result.putString("stream","CLOCK_HOST_OK checks="+checks+"\n"+String.join("\n",observations));finish(Activity.RESULT_OK,result);return;
         }
         for(int[] size:new int[][]{{800,1200},{1200,800},{800,800}}){
@@ -285,7 +329,7 @@ public final class CropInstrumentation extends Instrumentation {
         if(cancelled.exists())throw new AssertionError("Cancel kept pending file");checks+=2;
         File accepted=fixture("accepted.png",600,400);open(accepted.getName(),true);close(true);
         if(!accepted.exists()||!new SceneOptions(prefs()).framePhoto.equals(accepted.getName()))throw new AssertionError("New photo was not retained");checks++;
-        clockContent();aodClockHost();
+        clockContent();aodClockHost();aodWidgetSpacing();
         result.putString("stream","CROP_OK checks="+checks+"\n"+String.join("\n",observations));finish(Activity.RESULT_OK,result);
     }catch(Throwable t){result.putString("stream",android.util.Log.getStackTraceString(t));finish(Activity.RESULT_CANCELED,result);}}
 }

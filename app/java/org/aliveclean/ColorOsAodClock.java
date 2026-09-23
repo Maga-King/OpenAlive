@@ -15,7 +15,7 @@ final class ColorOsAodClock {
     private WeakReference<Object> controller=new WeakReference<>(null);
     private Context context;
     private volatile boolean enabled;
-    private boolean installed,failed;
+    private boolean installed,failed,widgetFailure;
     private String installError="";
     private int mode=-1;
     private long wakeSerial=SystemClock.uptimeMillis(),wakeToken;
@@ -148,9 +148,19 @@ final class ColorOsAodClock {
             // custom face becomes visible only in the native display window.
             if(fresh&&!showing)contentAlpha=0;
             host.show((ViewGroup)root,t,d,(View)scope);host.contentAlpha(contentAlpha);host.tick(System.currentTimeMillis());
+            bindWidgets(current);
             if(fresh&&host.shown()){if(Diagnostics.TRACE)android.util.Log.i("AliveClean","AOD clock attached; system lock clock retained");}
             if(Diagnostics.TRACE){long minute=System.currentTimeMillis()/60000;if(host.shown()&&minute!=lastMinute){lastMinute=minute;android.util.Log.i("AliveClean","AOD clock minute="+minute+" updated in native display window");}}
         }catch(Throwable error){host.hide();failure(error);}
     }
+    private void bindWidgets(Object current){
+        try{
+            Object keyguard=XposedHelpers.getObjectField(current,"keyguardPlugin");
+            Object plugin=XposedHelpers.callMethod(keyguard,"getWidgetPlugin");
+            Object view=XposedHelpers.callMethod(plugin,"getView",0);
+            host.widgets(view instanceof View?(View)view:null,view instanceof View?new ColorOsWidgetBounds((View)view):null);
+        }catch(Throwable error){host.widgets(null,null);widgetFailure(error);}
+    }
+    private void widgetFailure(Throwable error){if(!widgetFailure){widgetFailure=true;android.util.Log.w("AliveClean","AOD widget spacing unavailable",error);}}
     private void failure(Throwable error){if(!failed){failed=true;XposedBridge.log("AliveClean: AOD clock unavailable: "+error);android.util.Log.w("AliveClean","AOD clock unavailable",error);}}
 }

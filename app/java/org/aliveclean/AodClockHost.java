@@ -16,6 +16,7 @@ final class AodClockHost {
     private boolean owning,holdingClock,holdingUnlock;
     private float stockAlpha;
     private Runnable boundsChanged=()->{};
+    private final AodWidgetSpace widgets=new AodWidgetSpace();
     private final IdentityHashMap<View,Float> suppressed=new IdentityHashMap<>();
     private final IdentityHashMap<View,Float> written=new IdentityHashMap<>();
     private final Set<View> targets=Collections.newSetFromMap(new IdentityHashMap<View,Boolean>());
@@ -23,6 +24,7 @@ final class AodClockHost {
     private final ViewTreeObserver.OnPreDrawListener predraw=()->{
         if(root!=null){
             if(owning||holdingClock)maskContents();
+            widgets.update(clockBottom());
             int bottom=notificationTop();
             if(bottom!=lastBottom){lastBottom=bottom;boundsChanged.run();}
         }
@@ -33,6 +35,11 @@ final class AodClockHost {
         public void onViewDetachedFromWindow(View v){hide();}
     };
     void onBoundsChanged(Runnable callback){boundsChanged=callback;}
+    void widgets(View view,AodWidgetSpace.Bounds bounds){
+        // Do not translate a parent shared with clock/artwork/notifications.
+        if(view==null||root==null||view==root||descendant(time,view)||descendant(date,view)||descendant(clock,view)){widgets.clear();return;}
+        widgets.bind(view,bounds);widgets.update(clockBottom());
+    }
     boolean shown(){return clock!=null;}
     boolean ownsClock(){return owning;}
     boolean same(ViewGroup parent,View t,View d){return root==parent&&time==t&&date==d;}
@@ -107,7 +114,11 @@ final class AodClockHost {
     }
     void tick(long time){if(clock!=null)clock.tick(time);}
     void contentAlpha(float value){if(clock!=null){clock.setAlpha(Math.max(0,Math.min(1,value)));clock.active(value>0);}}
-    int notificationTop(){return !owning||clock==null||clock.getHeight()==0?0:clock.notificationTop();}
+    private int clockBottom(){return !owning||clock==null||clock.getHeight()==0?0:clock.notificationTop();}
+    int notificationTop(){
+        int floor=clockBottom();
+        return floor==0?0:Math.max(floor,widgets.bottom()==0?0:widgets.bottom()+Math.round(clock.getWidth()*.035f));
+    }
     void leave(){leave(false);}
     // UNLOCK is announced before the native NormalUnlockAnim hides keyguard.
     // Keep only our existing clock-leaf mask through that interval. Wallpaper,
@@ -153,10 +164,12 @@ final class AodClockHost {
         releaseNotificationSpace();
     }
     private void releaseNotificationSpace(){
+        widgets.restore();
         if(lastBottom!=0){lastBottom=0;boundsChanged.run();}
     }
     private void removeFace(){if(clock!=null){clock.active(false);if(clock.getParent() instanceof ViewGroup)((ViewGroup)clock.getParent()).removeView(clock);clock=null;}}
     void hide(){
+        widgets.clear();
         cancelFade();ViewGroup previous=root;root=null;scope=time=date=null;
         if(previous!=null){if(previous.getViewTreeObserver().isAlive())previous.getViewTreeObserver().removeOnPreDrawListener(predraw);previous.removeOnAttachStateChangeListener(attachment);}
         removeFace();
