@@ -27,6 +27,7 @@ final class ColorOsBridge {
     private static ColorOsClockTracker clocks;
     private static ColorOsAodClock aodClock;
     private static ColorOsContinuousAod continuousAod;
+    private static ColorOsNotificationEffects notificationEffects;
     private static boolean continuousAodRequested;
     private static final Messenger clockFeedback=new Messenger(new Handler(Looper.getMainLooper(),message->{
         if(message.sendingUid==wallpaperUid&&wallpaperUid>=0&&message.what==1&&selected&&aodClock!=null){
@@ -53,6 +54,7 @@ final class ColorOsBridge {
         clocks.install();
         aodClock=new ColorOsAodClock(cl);clockApi=aodClock.install();
         continuousAod=new ColorOsContinuousAod(cl);continuousAod.install();
+        notificationEffects=new ColorOsNotificationEffects(cl,()->selected);notificationEffects.install();
         try{
             XposedHelpers.findAndHookMethod(application,"onCreate",new XC_MethodHook(){
                 @Override protected void afterHookedMethod(MethodHookParam p){initialize((Context)p.thisObject);}
@@ -281,6 +283,7 @@ final class ColorOsBridge {
         continuousAod.configure(context,selected&&channel!=null&&continuousAodRequested&&lastMode==0);
     }
     private static void configure(Bundle reply){
+        notificationEffects.configure(reply.getInt("notification_mode",0),reply.getInt("notification_seconds",10),reply.getString("notification_color","blue"),reply.getInt("notification_ring_color",NotificationOptions.RING_BLUE));
         int style=reply.getInt("aod",0);
         boolean continuous=reply.getBoolean("continuous_aod",false);
         main.post(()->{continuousAodRequested=continuous;updateContinuousAod();aodClock.configure(context,selected,style);if(aodClock.usesIndependentClock())clocks.scene(context,false,-1,"");});
@@ -306,7 +309,7 @@ final class ColorOsBridge {
             selected=info!=null&&"org.aliveclean".equals(info.getPackageName());
             {if(Diagnostics.TRACE)XposedBridge.log("AliveClean: lock wallpaper selected="+selected);}
             if(selected){connect();readConfiguration();}
-            else main.post(()->{updateContinuousAod();aodClock.configure(context,false,0);clocks.scene(context,false,-1,"");stateOrder.disconnect();lastMode=-1;lastPhase=0;synchronized(ColorOsBridge.class){connectAttempts=0;}});
+            else main.post(()->{notificationEffects.configure(0,10,"blue");updateContinuousAod();aodClock.configure(context,false,0);clocks.scene(context,false,-1,"");stateOrder.disconnect();lastMode=-1;lastPhase=0;synchronized(ColorOsBridge.class){connectAttempts=0;}});
         }catch(Throwable error){selected=false;main.post(()->{continuousAodRequested=false;updateContinuousAod();aodClock.configure(context,false,0);});failure("wallpaper selection",error);}
     });}
     private static synchronized void connect(){

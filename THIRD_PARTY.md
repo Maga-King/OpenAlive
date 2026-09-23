@@ -12,6 +12,7 @@
 - `app/assets/cosmic/`：官方 Cosmic、Phoenix 系列配色、预览图及模型数据；来源文件校验值保存在同目录 `source.json`、`phoenix-source.json`。
 - `app/assets/bubble/`、`app/assets/soundviz/`：官方 Bubble 系列的数值配置和流动背景着色器；来源校验值见 `bubble/source.json`。
 - `docs/donate.png`：项目维护者提供的赞赏码，不属于代码许可范围。
+- `app/assets/notification/`：魅族 22 SystemUI 的原始通知光环和双侧光带动画，来源及文件校验值见同目录 `source.json`；使用已包含的官方 SVGA 运行库解码和绘制。
 
 资源来源标注不代表魅族或其他权利人授予了再分发或商用许可。使用这些资源时，仍需遵守其适用许可；MIT 仅授权本项目有权授权的自实现代码。
 

@@ -22,6 +22,7 @@
       <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
     </activity>
     <activity android:name=".DynamicLibraryActivity" android:exported="false"/>
+    <activity android:name=".NotificationSettingsActivity" android:exported="false"/>
     <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.Clean.Editor"/>
     <activity android:name=".FrameCropActivity" android:exported="false" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <provider android:name=".SceneProvider" android:authorities="org.aliveclean.scene" android:exported="true" android:permission="android.permission.STATUS_BAR"/>

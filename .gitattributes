@@ -14,5 +14,6 @@
 *.otf binary
 *.apk binary
 *.dex binary
+*.svga binary
 app/assets/** -text
 vendor/flyme/res/** -text

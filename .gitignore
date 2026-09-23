@@ -26,4 +26,6 @@ __pycache__/
 !/tools/import_phoenix.py
 !/tools/import_bubble.py
 !/tools/import_settings_ui.py
+!/tools/import_notification_effects.py
+!/tools/check_notification_effects.py
 !/tools/ui-api/

@@ -1,0 +1,19 @@
+{
+  "source": "Meizu 22 Flyme 12.6.0.0A SystemUI",
+  "apk_sha256": "069e1977149da5d1d311b0100876ddea108e4558a803b3438bf84ba029fad856",
+  "controller": "com.flyme.aod.AODNotiAnimController",
+  "files": [
+    {
+      "file": "circle.svga",
+      "source": "assets/circle.svga",
+      "sha256": "cb9ed7398d8d7f64f9c3c6a5ac845ebaf7d2967d3fcb538fc4f0cdb9314ca7d0",
+      "bytes": 1967
+    },
+    {
+      "file": "light.svga",
+      "source": "assets/light.svga",
+      "sha256": "d1c9a0ffb462aabe3904ee4b488d7d09845b49fa6dbf027fa93fd37b0a12f3ed",
+      "bytes": 454341
+    }
+  ]
+}

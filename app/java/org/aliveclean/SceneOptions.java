@@ -15,9 +15,9 @@ final class SceneOptions {
         int a=prefs.getInt("aod",0),l=prefs.getInt("lock",2),h=prefs.getInt("home",6);
         int c=prefs.getInt("cosmic",0);cosmic=c==1||c==3||c==4||(c>=6&&c<=15)||(c>=101&&c<=105)||(c>=201&&c<=205)?c:0;
         cosmicKeepLock=prefs.getBoolean("cosmic_keep_lock",false);
-        cosmicContinuousAod=prefs.getBoolean("cosmic_continuous_aod",false);
-        cosmicContinuousHome=prefs.getBoolean("cosmic_continuous_home",false);
-        sailContinuousAod=prefs.getBoolean("sail_continuous_aod",false);
+        cosmicContinuousAod=prefs.getBoolean("cosmic_continuous_aod",true);
+        cosmicContinuousHome=prefs.getBoolean("cosmic_continuous_home",true);
+        sailContinuousAod=prefs.getBoolean("sail_continuous_aod",true);
         aod=cosmic!=0?0:a==-1||a==0||PhotoStyle.supported(a)||a==101?a:0;
         lock=l>=0&&l<=5?l:2;
         home=h>=6&&h<=9?h:6;
