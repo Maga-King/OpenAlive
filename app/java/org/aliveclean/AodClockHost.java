@@ -17,6 +17,8 @@ final class AodClockHost {
     private float stockAlpha;
     private Runnable boundsChanged=()->{};
     private final AodWidgetSpace widgets=new AodWidgetSpace();
+    private final AodStackSpace stackSpace=new AodStackSpace();
+    private View notificationStack;
     private final IdentityHashMap<View,Float> suppressed=new IdentityHashMap<>();
     private final IdentityHashMap<View,Float> written=new IdentityHashMap<>();
     private final Set<View> targets=Collections.newSetFromMap(new IdentityHashMap<View,Boolean>());
@@ -25,7 +27,7 @@ final class AodClockHost {
         if(root!=null){
             if(owning||holdingClock)maskContents();
             widgets.update(clockBottom());
-            int bottom=notificationTop();
+            int bottom=notificationPadding();
             if(bottom!=lastBottom){lastBottom=bottom;boundsChanged.run();}
         }
         return true;
@@ -119,6 +121,14 @@ final class AodClockHost {
         int floor=clockBottom();
         return floor==0?0:Math.max(floor,widgets.bottom()==0?0:widgets.bottom()+Math.round(clock.getWidth()*.035f));
     }
+    int notificationPadding(){
+        int floor=notificationTop();if(floor==0||root==null)return 0;
+        if(notificationStack==null||!notificationStack.isAttachedToWindow()){
+            int id=root.getResources().getIdentifier("notification_stack_scroller","id","com.android.systemui");
+            notificationStack=id==0?null:root.findViewById(id);
+        }
+        return stackSpace.padding(notificationStack,floor);
+    }
     void leave(){leave(false);}
     // UNLOCK is announced before the native NormalUnlockAnim hides keyguard.
     // Keep only our existing clock-leaf mask through that interval. Wallpaper,
@@ -170,7 +180,7 @@ final class AodClockHost {
     private void removeFace(){if(clock!=null){clock.active(false);if(clock.getParent() instanceof ViewGroup)((ViewGroup)clock.getParent()).removeView(clock);clock=null;}}
     void hide(){
         widgets.clear();
-        cancelFade();ViewGroup previous=root;root=null;scope=time=date=null;
+        cancelFade();ViewGroup previous=root;root=null;scope=time=date=null;notificationStack=null;
         if(previous!=null){if(previous.getViewTreeObserver().isAlive())previous.getViewTreeObserver().removeOnPreDrawListener(predraw);previous.removeOnAttachStateChangeListener(attachment);}
         removeFace();
         releaseClock();

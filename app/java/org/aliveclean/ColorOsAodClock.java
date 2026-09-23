@@ -38,9 +38,29 @@ final class ColorOsAodClock {
             for(String method:new String[]{"getStyleClockBottomPositionForNotification","getSmallClockBottomPositionForNotification"})
                 XposedHelpers.findAndHookMethod(clock,method,new XC_MethodHook(){
                     @Override protected void afterHookedMethod(MethodHookParam p){
-                        if(!p.hasThrowable()&&enabled&&host.ownsClock()&&p.getResult() instanceof Integer)p.setResult(Math.max((int)p.getResult(),host.notificationTop()));
+                        if(!p.hasThrowable()&&enabled&&host.ownsClock()&&p.getResult() instanceof Integer){
+                            int padding=host.notificationPadding();if(padding>0)p.setResult(padding);
+                        }
                     }
                 });
+            // onClockBottomChanged requests a padding update but does not rerun
+            // the clock algorithm. Supply the current floor while the native
+            // method reads its cached result, retaining its drag/bypass logic.
+            Class<?> panel=XposedHelpers.findClass("com.android.systemui.shade.NotificationPanelViewController",loader);
+            XposedHelpers.findAndHookMethod(panel,"getKeyguardNotificationStaticPadding",new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){
+                    if(!enabled||!host.ownsClock())return;
+                    int padding=host.notificationPadding();if(padding<=0)return;
+                    Object result=XposedHelpers.getObjectField(p.thisObject,"mClockPositionResult");
+                    int previous=XposedHelpers.getIntField(result,"stackScrollerPadding");
+                    p.setObjectExtra("openalive.padding.result",result);p.setObjectExtra("openalive.padding.previous",previous);
+                    XposedHelpers.setIntField(result,"stackScrollerPadding",padding);
+                }
+                @Override protected void afterHookedMethod(MethodHookParam p){
+                    Object result=p.getObjectExtra("openalive.padding.result");
+                    if(result!=null)XposedHelpers.setIntField(result,"stackScrollerPadding",(Integer)p.getObjectExtra("openalive.padding.previous"));
+                }
+            });
             Class<?> mask=XposedHelpers.findClass("com.oplus.systemui.aod.anim.OplusAODMaskAnimController",loader);
             XposedHelpers.findAndHookMethod(mask,"getPanoramicMaskInAnim",new XC_MethodHook(){
                 @Override protected void afterHookedMethod(MethodHookParam p){if(!p.hasThrowable())observeMask(p.getResult(),false);}
