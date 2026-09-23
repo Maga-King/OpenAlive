@@ -20,6 +20,12 @@ final class AodWidgetSpace {
     }
     int bottom(){return bottom;}
     void update(int floor){
+        update(floor,false);
+    }
+    void align(int floor){
+        update(floor,true);
+    }
+    private void update(int floor,boolean align){
         if(floor<=0||view==null||bounds==null||!view.isAttachedToWindow()||!view.isShown()){restore();return;}
         float current=view.getTranslationY();
         // An external animator owns its newest value. Never subtract an old
@@ -31,10 +37,11 @@ final class AodWidgetSpace {
         axis[0]=0;axis[1]=1;matrix.mapVectors(axis);
         float scale=axis[1];
         if(!Float.isFinite(scale)||scale<.01f||Math.abs(axis[0])>.001f){restore();return;}
-        float next=Math.max(0,offset+(floor-rect.top)/scale);
+        float next=offset+(floor-rect.top)/scale;
+        if(!align)next=Math.max(0,next);
         // Visible bounds round to pixels. Keep an already aligned correction
         // stable instead of scheduling another traversal for subpixel noise.
-        if(next>0&&Math.abs(next-offset)*scale<=1.01f)next=offset;
+        if(Math.abs(next-offset)*scale<=1.01f)next=offset;
         bottom=Math.round(rect.bottom+(next-offset)*scale);
         offset=next;written=base+offset;
         if(current!=written)view.setTranslationY(written);

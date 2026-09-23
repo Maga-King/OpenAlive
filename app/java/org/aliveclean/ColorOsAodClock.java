@@ -22,9 +22,8 @@ final class ColorOsAodClock {
     private long lastMinute=-1;
     private ValueAnimator maskAnimation;
     private float contentAlpha=1;
-    private final Runnable updateNotifications=this::updateNotifications;
     private final Runnable reconcile=this::reconcile;
-    ColorOsAodClock(ClassLoader loader){this.loader=loader;host.onBoundsChanged(()->{main.removeCallbacks(updateNotifications);main.post(updateNotifications);});}
+    ColorOsAodClock(ClassLoader loader){this.loader=loader;}
     boolean install(){
         try{
             Class<?> clock=XposedHelpers.findClass("com.oplus.systemui.keyguard.clockstyle.KeyguardStyleClockControllerImpl",loader);
@@ -34,32 +33,6 @@ final class ColorOsAodClock {
             });
             XposedHelpers.findAndHookMethod(data,"setAodIsInShow",boolean.class,new XC_MethodHook(){
                 @Override protected void afterHookedMethod(MethodHookParam p){if(!p.hasThrowable())onMain(()->{if((boolean)p.args[0]&&maskAnimation==null)contentAlpha=1;reconcile();});}
-            });
-            for(String method:new String[]{"getStyleClockBottomPositionForNotification","getSmallClockBottomPositionForNotification"})
-                XposedHelpers.findAndHookMethod(clock,method,new XC_MethodHook(){
-                    @Override protected void afterHookedMethod(MethodHookParam p){
-                        if(!p.hasThrowable()&&enabled&&host.ownsClock()&&p.getResult() instanceof Integer){
-                            int padding=host.notificationPadding();if(padding>0)p.setResult(padding);
-                        }
-                    }
-                });
-            // onClockBottomChanged requests a padding update but does not rerun
-            // the clock algorithm. Supply the current floor while the native
-            // method reads its cached result, retaining its drag/bypass logic.
-            Class<?> panel=XposedHelpers.findClass("com.android.systemui.shade.NotificationPanelViewController",loader);
-            XposedHelpers.findAndHookMethod(panel,"getKeyguardNotificationStaticPadding",new XC_MethodHook(){
-                @Override protected void beforeHookedMethod(MethodHookParam p){
-                    if(!enabled||!host.ownsClock())return;
-                    int padding=host.notificationPadding();if(padding<=0)return;
-                    Object result=XposedHelpers.getObjectField(p.thisObject,"mClockPositionResult");
-                    int previous=XposedHelpers.getIntField(result,"stackScrollerPadding");
-                    p.setObjectExtra("openalive.padding.result",result);p.setObjectExtra("openalive.padding.previous",previous);
-                    XposedHelpers.setIntField(result,"stackScrollerPadding",padding);
-                }
-                @Override protected void afterHookedMethod(MethodHookParam p){
-                    Object result=p.getObjectExtra("openalive.padding.result");
-                    if(result!=null)XposedHelpers.setIntField(result,"stackScrollerPadding",(Integer)p.getObjectExtra("openalive.padding.previous"));
-                }
             });
             Class<?> mask=XposedHelpers.findClass("com.oplus.systemui.aod.anim.OplusAODMaskAnimController",loader);
             XposedHelpers.findAndHookMethod(mask,"getPanoramicMaskInAnim",new XC_MethodHook(){
@@ -124,11 +97,6 @@ final class ColorOsAodClock {
             @Override public void onAnimationEnd(Animator a){if(maskAnimation==animation){maskAnimation=null;contentAlpha=opening?1:0;if(enabled&&mode==0)host.contentAlpha(contentAlpha);}}
         });
         animation.addUpdateListener(a->{if(maskAnimation==animation&&enabled&&mode==0){contentAlpha=Math.max(0,Math.min(1,1-(float)a.getAnimatedValue()));host.contentAlpha(contentAlpha);}});
-    }
-    private void updateNotifications(){
-        Object current=controller.get();if(current==null)return;
-        try{Object panel=XposedHelpers.callMethod(XposedHelpers.getObjectField(current,"notificationPanelViewControllerEx"),"get");XposedHelpers.callMethod(panel,"onClockBottomChanged");}
-        catch(Throwable error){failure(error);}
     }
     private void reconcile(){
         if(!enabled||context==null){host.hide();return;}

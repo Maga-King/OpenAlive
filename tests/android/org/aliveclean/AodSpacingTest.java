@@ -44,5 +44,42 @@ final class AodSpacingTest {
         }
         stack.setScaleY(0);require(space.padding(stack,1900)==0,"Noninvertible stack accepted");
     }
+    static void attached(android.app.Activity activity){
+        FrameLayout window=new FrameLayout(activity);activity.setContentView(window);
+        window.layout(0,0,1440,3168);
+        FrameLayout stack=new FrameLayout(activity);window.addView(stack);stack.layout(0,0,1440,3168);
+        stack.setScaleX(.9f);stack.setScaleY(.9f);
+        View media=new com.oplus.systemui.statusbar.notification.customcard.OplusCustomRow(activity);
+        View notice=new com.android.systemui.statusbar.notification.row.ExpandableNotificationRow(activity);
+        stack.addView(media);media.layout(64,0,1376,576);media.setTranslationY(1651);
+        media.setScaleX(.8762931f);media.setScaleY(.8762931f);
+        stack.addView(notice);notice.layout(64,0,1376,240);notice.setTranslationY(2250);
+        View shelf=new View(activity);stack.addView(shelf);shelf.layout(0,0,1440,100);
+        AodNotificationBounds bounds=new AodNotificationBounds(stack);
+        AodWidgetSpace spacing=new AodWidgetSpace();spacing.bind(stack,bounds);
+        require(stack.isAttachedToWindow(),"Fixture not attached to real Android window");
+        for(int floor:new int[]{1909,2197,1909,1500,1909}){
+            spacing.align(floor);
+            require(Math.abs(bounds.read().top-floor)<=1,"Card floor wrong after row count changed");
+            float stable=stack.getTranslationY();
+            for(int i=0;i<120;i++)spacing.align(floor);
+            require(Math.abs(stack.getTranslationY()-stable)<.01f,"AOD spacing drifted across frames");
+            require(media.getScaleX()==.8762931f&&media.getScaleY()==.8762931f,"Media scale changed");
+            require(media.getTranslationY()==1651&&notice.getTranslationY()==2250,"Native row placement overwritten");
+            require(media.getHeight()==576&&notice.getHeight()==240,"Card dimensions changed");
+        }
+        // Native animation replaces our root transform; release must not restore
+        // a stale transform or accumulate the preceding correction.
+        stack.setTranslationY(37);spacing.align(1909);spacing.restore();
+        require(stack.getTranslationY()==37,"Native transform lost on restore");
+        media.setVisibility(View.GONE);spacing.align(1800);
+        require(Math.abs(bounds.read().top-1800)<=1,"Notice did not rise when player removed");
+        notice.setVisibility(View.GONE);spacing.align(1800);
+        require(stack.getTranslationY()==37&&bounds.read().isEmpty(),"Empty stack retained correction");
+        notice.setVisibility(View.VISIBLE);spacing.align(1909);
+        stack.setTranslationY(55);spacing.restore();
+        require(stack.getTranslationY()==55,"Release overwrote a newer native animation");
+        spacing.clear();
+    }
     private static void require(boolean value,String label){if(!value)throw new AssertionError(label);checks++;}
 }

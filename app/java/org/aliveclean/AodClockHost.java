@@ -12,12 +12,11 @@ final class AodClockHost {
     private View scope,time,date;
     private AodClockView clock;
     private ValueAnimator fade,stockFade;
-    private int generation,lastBottom;
+    private int generation;
     private boolean owning,holdingClock,holdingUnlock;
     private float stockAlpha;
-    private Runnable boundsChanged=()->{};
     private final AodWidgetSpace widgets=new AodWidgetSpace();
-    private final AodStackSpace stackSpace=new AodStackSpace();
+    private final AodWidgetSpace notifications=new AodWidgetSpace();
     private View notificationStack;
     private final IdentityHashMap<View,Float> suppressed=new IdentityHashMap<>();
     private final IdentityHashMap<View,Float> written=new IdentityHashMap<>();
@@ -27,8 +26,7 @@ final class AodClockHost {
         if(root!=null){
             if(owning||holdingClock)maskContents();
             widgets.update(clockBottom());
-            int bottom=notificationPadding();
-            if(bottom!=lastBottom){lastBottom=bottom;boundsChanged.run();}
+            alignNotifications();
         }
         return true;
     };
@@ -36,7 +34,6 @@ final class AodClockHost {
         public void onViewAttachedToWindow(View v){}
         public void onViewDetachedFromWindow(View v){hide();}
     };
-    void onBoundsChanged(Runnable callback){boundsChanged=callback;}
     void widgets(View view,AodWidgetSpace.Bounds bounds){
         // Do not translate a parent shared with clock/artwork/notifications.
         if(view==null||root==null||view==root||descendant(time,view)||descendant(date,view)||descendant(clock,view)){widgets.clear();return;}
@@ -121,13 +118,19 @@ final class AodClockHost {
         int floor=clockBottom();
         return floor==0?0:Math.max(floor,widgets.bottom()==0?0:widgets.bottom()+Math.round(clock.getWidth()*.035f));
     }
-    int notificationPadding(){
-        int floor=notificationTop();if(floor==0||root==null)return 0;
+    private void alignNotifications(){
+        int floor=notificationTop();
+        if(floor==0||root==null){notifications.restore();return;}
         if(notificationStack==null||!notificationStack.isAttachedToWindow()){
             int id=root.getResources().getIdentifier("notification_stack_scroller","id","com.android.systemui");
-            notificationStack=id==0?null:root.findViewById(id);
+            View candidate=id==0?null:root.findViewById(id);
+            notificationStack=candidate instanceof ViewGroup?candidate:null;
+            notifications.bind(notificationStack,notificationStack==null?null:new AodNotificationBounds((ViewGroup)notificationStack));
         }
-        return stackSpace.padding(notificationStack,floor);
+        // Preserve the platform's row size/stacking negotiation. Correct only
+        // the dedicated stack's final placement, after actual widget occupancy.
+        // Alignment can move upward too when a second widget row disappears.
+        notifications.align(floor);
     }
     void leave(){leave(false);}
     // UNLOCK is announced before the native NormalUnlockAnim hides keyguard.
@@ -175,11 +178,11 @@ final class AodClockHost {
     }
     private void releaseNotificationSpace(){
         widgets.restore();
-        if(lastBottom!=0){lastBottom=0;boundsChanged.run();}
+        notifications.restore();
     }
     private void removeFace(){if(clock!=null){clock.active(false);if(clock.getParent() instanceof ViewGroup)((ViewGroup)clock.getParent()).removeView(clock);clock=null;}}
     void hide(){
-        widgets.clear();
+        widgets.clear();notifications.clear();
         cancelFade();ViewGroup previous=root;root=null;scope=time=date=null;notificationStack=null;
         if(previous!=null){if(previous.getViewTreeObserver().isAlive())previous.getViewTreeObserver().removeOnPreDrawListener(predraw);previous.removeOnAttachStateChangeListener(attachment);}
         removeFace();
