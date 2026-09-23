@@ -13,6 +13,13 @@ public final class CleanWallpaper extends WallpaperService {
         boolean ambient;
         final SceneState scenesState=new SceneState();
         boolean regionObserverRegistered,receivedLayout;
+        boolean wallpaperVisible,renderVisible;
+        android.hardware.display.DisplayManager displayManager;
+        final android.hardware.display.DisplayManager.DisplayListener displays=new android.hardware.display.DisplayManager.DisplayListener(){
+            public void onDisplayAdded(int id){refreshVisibility();}
+            public void onDisplayRemoved(int id){refreshVisibility();}
+            public void onDisplayChanged(int id){if(id==engineDisplayId())refreshVisibility();}
+        };
         final android.database.ContentObserver area=new android.database.ContentObserver(new android.os.Handler(android.os.Looper.getMainLooper())){
             @Override public void onChange(boolean selfChange){readOfficialRegion();}
         };
@@ -31,6 +38,9 @@ public final class CleanWallpaper extends WallpaperService {
         }};
         @Override public void onCreate(SurfaceHolder holder){
             super.onCreate(holder);renderer=new RenderLoop(CleanWallpaper.this,isPreview()?SceneOptions.DRAFT:SceneOptions.APPLIED);
+            renderer.visible(false);
+            displayManager=getSystemService(android.hardware.display.DisplayManager.class);
+            displayManager.registerDisplayListener(displays,new android.os.Handler(android.os.Looper.getMainLooper()));
             if(!isPreview())SceneChannel.add(this);
             IntentFilter f=new IntentFilter();f.addAction(Intent.ACTION_SCREEN_ON);f.addAction(Intent.ACTION_SCREEN_OFF);f.addAction(Intent.ACTION_USER_PRESENT);
             IntentFilter bridge=new IntentFilter(ColorOsBridge.ACTION);
@@ -79,7 +89,12 @@ public final class CleanWallpaper extends WallpaperService {
         }
         private void update(){KeyguardManager k=getSystemService(KeyguardManager.class);renderer.mode(isPreview()?1:scenesState.fallback(ambient,k.isKeyguardLocked()));}
         @Override public void onSurfaceChanged(SurfaceHolder h,int format,int w,int height){super.onSurfaceChanged(h,format,w,height);{if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Surface changed "+w+"x"+height);}update();renderer.attach(h.getSurface(),w,height);readOfficialRegion();}
-        @Override public void onVisibilityChanged(boolean visible){{if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Wallpaper visible="+visible);}renderer.visible(visible);if(visible)update();}
+        private void refreshVisibility(){
+            android.view.Display display=engineDisplay();
+            boolean next=wallpaperVisible&&display!=null&&display.getState()!=android.view.Display.STATE_OFF;
+            if(next!=renderVisible){renderVisible=next;renderer.visible(next);}
+        }
+        @Override public void onVisibilityChanged(boolean visible){{if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Wallpaper visible="+visible);}wallpaperVisible=visible;if(visible)update();refreshVisibility();}
         // Framework @SystemApi callback: absent from the public SDK's stubs.
         public void onAmbientModeChanged(boolean inAmbientMode,long duration){ambient=inAmbientMode;{if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Ambient="+ambient);}update();}
         @Override public Bundle onCommand(String action,int x,int y,int z,Bundle extras,boolean resultRequested){
@@ -92,6 +107,6 @@ public final class CleanWallpaper extends WallpaperService {
             return super.onCommand(action,x,y,z,extras,resultRequested);
         }
         @Override public void onSurfaceDestroyed(SurfaceHolder h){renderer.detach();super.onSurfaceDestroyed(h);}
-        @Override public void onDestroy(){SceneChannel.remove(this);unregisterReceiver(state);unregisterReceiver(scenes);if(regionObserverRegistered)getContentResolver().unregisterContentObserver(area);renderer.close();super.onDestroy();}
+        @Override public void onDestroy(){SceneChannel.remove(this);displayManager.unregisterDisplayListener(displays);unregisterReceiver(state);unregisterReceiver(scenes);if(regionObserverRegistered)getContentResolver().unregisterContentObserver(area);renderer.close();super.onDestroy();}
     }
 }

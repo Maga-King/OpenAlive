@@ -20,6 +20,8 @@ final class OfficialEditor implements AutoCloseable {
         void example();
         void follow();
         void apply();
+        default void keepLock(boolean value){}
+        default void continuous(String key,boolean value){}
     }
     private final Activity activity;
     private final OfficialUi ui;
@@ -38,6 +40,11 @@ final class OfficialEditor implements AutoCloseable {
     private int mode,topInset,bottomInset;
     private boolean selecting,busy,closed;
     private Panel visiblePanel;
+    private final LinearLayout cosmicControls;
+    private final View cosmicSettings;
+    private final CompoundButton keepLockSwitch;
+    private final CompoundButton cosmicAodSwitch,cosmicHomeSwitch;
+    private boolean bindingKeepLock;
 
     OfficialEditor(Activity activity,Actions actions,TextureView.SurfaceTextureListener listener)throws Exception {
         this.activity=activity;this.actions=actions;ui=new OfficialUi(activity);dialogs=new OfficialDialogs(ui);
@@ -77,6 +84,24 @@ final class OfficialEditor implements AutoCloseable {
         View switchView=ui.find(bars[0],"aod_switch");
         ViewGroup switchRow=(ViewGroup)switchView.getParent();
         switchRow.removeViewAt(1);switchRow.removeView(switchView);
+        cosmicControls=new LinearLayout(activity);cosmicControls.setOrientation(LinearLayout.VERTICAL);
+        keepLockSwitch=toggle(cosmicControls,"桌面保持锁屏效果");
+        cosmicAodSwitch=toggle(cosmicControls,"息屏动画持续播放");
+        cosmicHomeSwitch=toggle(cosmicControls,"锁屏与桌面动画持续播放");
+        View settingsBar=ui.inflate("editor_lockscreen_button_photo_wp_legacy_sysui",null);
+        cosmicSettings=ui.find(settingsBar,"btn_alive_texture");
+        ((ViewGroup)cosmicSettings.getParent()).removeView(cosmicSettings);
+        ((TextView)ui.find(cosmicSettings,"tv_alive_texture")).setText("动画设置");
+        ((FrameLayout)find("fl_button_container")).addView(cosmicSettings,new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER));
+        cosmicSettings.setVisibility(View.GONE);
+        cosmicSettings.setOnClickListener(v->{
+            if(busy)return;
+            if(cosmicControls.getParent()!=null)((ViewGroup)cosmicControls.getParent()).removeView(cosmicControls);
+            dialogs.content("动画设置",cosmicControls).show();
+        });
+        keepLockSwitch.setOnCheckedChangeListener((button,checked)->{if(!bindingKeepLock&&!busy&&options!=null&&options.cosmic!=0)actions.keepLock(checked);});
+        cosmicAodSwitch.setOnCheckedChangeListener((button,checked)->{if(!bindingKeepLock&&!busy&&options!=null&&options.cosmic!=0)actions.continuous("cosmic_continuous_aod",checked);});
+        cosmicHomeSwitch.setOnCheckedChangeListener((button,checked)->{if(!bindingKeepLock&&!busy&&options!=null&&options.cosmic!=0)actions.continuous("cosmic_continuous_home",checked);});
         click(bars[0],"aod_style",()->open(aodPanel));
         // Notification routing remains the native ColorOS setting; this button
         // has no portable notification-style backend yet.
@@ -104,6 +129,15 @@ final class OfficialEditor implements AutoCloseable {
     }
 
     private View find(String name){return ui.find(root,name);}
+    private CompoundButton toggle(LinearLayout parent,String label){
+        LinearLayout row=new LinearLayout(activity);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(16),dp(4),dp(16),dp(4));
+        TextView text=new TextView(ui);text.setText(label);text.setTextColor(-1);text.setTextSize(15);
+        row.addView(text,new LinearLayout.LayoutParams(0,-2,1));
+        View panel=ui.inflate("view_sysui_aod_plugin_panel",null);
+        CompoundButton button=(CompoundButton)ui.find(panel,"switch_sync_lockscreen_plugins");
+        ((ViewGroup)button.getParent()).removeView(button);button.setContentDescription(label);
+        row.addView(button,new LinearLayout.LayoutParams(-2,dp(44)));parent.addView(row,new LinearLayout.LayoutParams(-1,-2));return button;
+    }
     private int dp(int n){return Math.round(n*ui.getResources().getDisplayMetrics().density);}
     private int dimension(String name){return ui.getResources().getDimensionPixelSize(ui.id("dimen",name));}
     private View add(String container,String layout){
@@ -122,7 +156,12 @@ final class OfficialEditor implements AutoCloseable {
             Object tab=call(tabs,"h",new Class<?>[]{int.class},mode);
             call(tabs,"l",new Class<?>[]{tab.getClass(),boolean.class},tab,true);
         }finally{selecting=false;}
-        for(int i=0;i<3;i++)bars[i].setVisibility(i==mode?View.VISIBLE:View.GONE);
+        for(int i=0;i<3;i++)bars[i].setVisibility(chosen.cosmic==0&&i==mode?View.VISIBLE:View.GONE);
+        if(chosen.cosmic!=0)closePanel();
+        cosmicSettings.setVisibility(chosen.cosmic!=0?View.VISIBLE:View.GONE);cosmicSettings.setEnabled(!busy);
+        bindingKeepLock=true;keepLockSwitch.setChecked(chosen.cosmicKeepLock);
+        cosmicAodSwitch.setChecked(chosen.cosmicContinuousAod);cosmicHomeSwitch.setChecked(chosen.cosmicContinuousHome);
+        bindingKeepLock=false;setEnabled(cosmicControls,!busy);
         apply.setEnabled(!busy);
         for(View bar:bars)setEnabled(bar,!busy);
         clock.scene(chosen.aod==1&&mode==0);
@@ -169,6 +208,9 @@ final class OfficialEditor implements AutoCloseable {
         final RecyclerView list;
         final Items adapter;
         final ArrayList<Choice> choices=new ArrayList<>();
+        final LinearLayout sailControls;
+        final CompoundButton sailSwitch;
+        private boolean bindingSail;
         Panel(boolean aod)throws Exception{
             this.aod=aod;
             FrameLayout slot=(FrameLayout)find(aod?"fl_aod_panel_container":"fl_customization_panel_container");
@@ -184,7 +226,14 @@ final class OfficialEditor implements AutoCloseable {
             title.setOnClickListener(v->closePanel());
             FrameLayout body=(FrameLayout)ui.find(container,aod?"aod_panel_container":"custom_panel_container");
             View content=ui.inflate(aod?"view_editor_aod_panel":"view_editor_launcher_effect_panel",body);
-            body.addView(content,new FrameLayout.LayoutParams(-1,-1));
+            if(aod){
+                LinearLayout column=new LinearLayout(activity);column.setOrientation(LinearLayout.VERTICAL);
+                sailControls=new LinearLayout(activity);sailControls.setOrientation(LinearLayout.VERTICAL);
+                sailSwitch=toggle(sailControls,"息屏动画持续播放");
+                sailSwitch.setOnCheckedChangeListener((button,checked)->{if(!bindingSail&&!busy&&options!=null&&options.cosmic==0&&options.aod==0)actions.continuous("sail_continuous_aod",checked);});
+                column.addView(sailControls,new LinearLayout.LayoutParams(-1,-2));column.addView(content,new LinearLayout.LayoutParams(-1,0,1));
+                body.addView(column,new FrameLayout.LayoutParams(-1,-1));
+            }else{sailControls=null;sailSwitch=null;body.addView(content,new FrameLayout.LayoutParams(-1,-1));}
             list=(RecyclerView)ui.find(content,aod?"recycler_view":"recycler_view_launcher_effect");
             list.setLayoutManager(new GridLayoutManager(ui,3));list.setItemAnimator(null);
             adapter=new Items(this);list.setAdapter(adapter);
@@ -204,6 +253,7 @@ final class OfficialEditor implements AutoCloseable {
         void state(int state){call(behavior,"o",new Class<?>[]{int.class},state);}
         void refresh(){
             choices.clear();
+            if(aod){sailControls.setVisibility(options.cosmic==0&&options.aod==0?View.VISIBLE:View.GONE);bindingSail=true;sailSwitch.setChecked(options.sailContinuousAod);bindingSail=false;sailSwitch.setEnabled(!busy);}
             ((TextView)ui.find(container,"tv_title")).setText(aod?"息屏":mode==1?"纹理":"特效");
             if(aod){
                 if(options.pairedFrame()){

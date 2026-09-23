@@ -76,5 +76,65 @@
     "name": "白",
     "thumbnail": "v15.png",
     "officialVisible": false
+  },
+  {
+    "id": 101,
+    "name": "热爱",
+    "thumbnail": "v101.png",
+    "family": "phoenix"
+  },
+  {
+    "id": 102,
+    "name": "无界",
+    "thumbnail": "v102.png",
+    "family": "phoenix"
+  },
+  {
+    "id": 103,
+    "name": "未来",
+    "thumbnail": "v103.png",
+    "family": "phoenix"
+  },
+  {
+    "id": 104,
+    "name": "星际",
+    "thumbnail": "v104.png",
+    "family": "phoenix"
+  },
+  {
+    "id": 105,
+    "name": "星辰",
+    "thumbnail": "v105.png",
+    "family": "phoenix"
+  },
+  {
+    "id": 201,
+    "name": "波子汽水",
+    "thumbnail": "v201.png",
+    "family": "bubble"
+  },
+  {
+    "id": 202,
+    "name": "气泡黑咖",
+    "thumbnail": "v202.png",
+    "family": "bubble"
+  },
+  {
+    "id": 203,
+    "name": "抹茶拿铁",
+    "thumbnail": "v203.png",
+    "family": "bubble"
+  },
+  {
+    "id": 204,
+    "name": "桃香乌龙",
+    "thumbnail": "v204.png",
+    "family": "bubble"
+  },
+  {
+    "id": 205,
+    "name": "蓝莓苏打",
+    "thumbnail": "v205.png",
+    "family": "bubble"
   }
 ]

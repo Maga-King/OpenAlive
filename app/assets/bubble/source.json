@@ -1,0 +1,19 @@
+{
+  "source": "魅族22 FlymeOS / AliveWallPaper.apk",
+  "assets": {
+    "configuration/i": "793fbba35a6464221387dd5248363388ba2a899b29e12671b5343363223346e4",
+    "res/drawable-nodpi/mz_wallpaper_bubble.png": "67a4f877844c9da5e8025f2341e9be16739f165289050c4524b41f55c3558758",
+    "configuration/j": "3bc2c0cfb155db9f5d31fb93e2843ad39842c4184877227ac55ff8e9c632f7d2",
+    "res/drawable-nodpi/mz_wallpaper_bubble_v2.png": "2eac78c03e2618daf69ef8ddd02ed21cae80f3ed4cdce707516b13c79ecb12b8",
+    "configuration/k": "ccaa1a17b248e36a572a87b7e99d77716aea82d30903deb80467111f91e720c6",
+    "res/drawable-nodpi/mz_wallpaper_bubble_v3.png": "0cdcbad035c62e724894cd224046afc30a5c287173ba2b431a4a1c5e09159d04",
+    "configuration/l": "53dd385ba9076ab11fbc6c123d6ea94c02ea9cae975f6ccbe95463118dec0b8a",
+    "res/drawable-nodpi/mz_wallpaper_bubble_v4.png": "a7302236bf63540e15da7a5900c67b2073dd87e638870db9dc740216fc95ff37",
+    "configuration/m": "7837ddabd105889a938bafb43c10211dc5404afc3b017a735751c77260b7dd2e",
+    "res/drawable-nodpi/mz_wallpaper_bubble_v5.png": "3e9ba0f6172465fa18106ea99ae182253e9e607ee80f3fb6e671dca82b55302b",
+    "assets/shader/bubble/bubble_vertex.glsl": "69d9a24b28b74a3209fcef920f2fef886aee92f9932601690e54d66319fbf0ee",
+    "assets/shader/bubble/bubble_frag.glsl": "ccde22315ec42e1dd21a6c43d97c3359d8b6c44c5cefff789af7bd8673776ffb",
+    "assets/soundviz/disk.vert": "a57c7329220d9fbd9bf7e1ea7647f279d824ac96c50016535fa9572324cca7ae",
+    "assets/soundviz/disk.frag": "e07ea087cbe39ced81458c09c913d8559318aed23d8ae9ed5686b234e587e0e6"
+  }
+}

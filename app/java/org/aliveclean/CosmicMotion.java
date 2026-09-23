@@ -8,8 +8,8 @@ import org.json.*;
 import java.io.*;
 
 /** Cosmic's three official parameter sets and per-property transition curves. */
-final class CosmicMotion {
-    static final int SIZE=62;
+final class CosmicMotion implements WallpaperMotion {
+    static final int SIZE=95;
     final float[] values=new float[SIZE];
     private final float[][] states=new float[3][SIZE];
     private final float[] from=new float[SIZE];
@@ -18,8 +18,21 @@ final class CosmicMotion {
     private int mode,positionMs,scaleMs,scaleDelay,backgroundMs,materialMs,duration;
     private long started,last;
     private boolean transitioning;
+    private final boolean keepLock;
+    final boolean phoenix;
+    private final float viewportAspect;
+    private int cameraMs,flowMs,flowFactorsMs,noiseMs;
+    private Interpolator cameraCurve,flowCurve,flowFactorsCurve,noiseCurve;
     float time,angle;
     CosmicMotion(AssetManager assets,int variant,boolean dark,int scene)throws IOException{
+        this(assets,variant,dark,scene,false);
+    }
+    CosmicMotion(AssetManager assets,int variant,boolean dark,int scene,boolean keepLock)throws IOException{
+        this(assets,variant,dark,scene,keepLock,2.2f);
+    }
+    CosmicMotion(AssetManager assets,int variant,boolean dark,int scene,boolean keepLock,float viewportAspect)throws IOException{
+        this.keepLock=keepLock;
+        this.phoenix=variant>=101&&variant<=105;this.viewportAspect=viewportAspect;
         try{
             JSONObject config=new JSONObject(AssetGl.text(assets,"cosmic/v"+variant+(dark?"_dark":"")+".json"));
             String[] names={"aod","keyguard","unlock"};
@@ -35,19 +48,34 @@ final class CosmicMotion {
                     JSONObject gradient=object.getJSONObject("rotate_"+(90*r));
                     color(v,30+r*8,gradient.getString("startColor"));color(v,34+r*8,gradient.getString("endColor"));
                 }
+                if(phoenix){
+                    String[] noise={"OffsetSpeedX","OffsetSpeedY","TwistScale","OffsetScale","u_TwistSpeedX","u_TwistSpeedY","u_MaskScale"};
+                    for(int i=0;i<noise.length;i++)v[62+i]=(float)object.getDouble(noise[i]);
+                    String[] flow={"u_base_color_flow","u_stripe_color_flow_2","u_stripe_color_flow_1","u_stripe_color_flow_3"};
+                    for(int i=0;i<flow.length;i++)color(v,69+i*4,object.getString(flow[i]));
+                    String[] factors2={"u_stripe_divergent1","u_stripe_thickness1","u_highlight_thickness1","u_highlight_strength1","u_positionTime","u_normalTime"};
+                    for(int i=0;i<factors2.length;i++)v[85+i]=(float)object.getDouble(factors2[i]);
+                    JSONArray camera=object.getJSONArray("cameraPos");for(int i=0;i<3;i++)v[91+i]=(float)camera.getDouble(i);
+                    v[94]=(float)object.getDouble("cameraZoom");
+                }
             }
         }catch(JSONException|IllegalArgumentException e){throw new IOException("Invalid Cosmic configuration",e);}
-        mode=scene;System.arraycopy(states[mode],0,values,0,SIZE);
+        mode=keepLock&&scene==2?1:scene;System.arraycopy(states[mode],0,values,0,SIZE);
     }
     private static void color(float[] values,int offset,String color){
         int c=Color.parseColor(color);values[offset]=Color.red(c)/255f;values[offset+1]=Color.green(c)/255f;
         values[offset+2]=Color.blue(c)/255f;values[offset+3]=Color.alpha(c)/255f;
     }
-    void follow(float x,float y){
+    public void follow(float x,float y){
         states[0][0]=x;states[0][1]=y;
+        if(phoenix){
+            states[0][92]=-y*1440*viewportAspect*states[0][94];states[0][93]=x*1440*states[0][94];
+            if(mode==0&&!transitioning){values[92]=states[0][92];values[93]=states[0][93];}
+        }
         if(mode==0&&!transitioning){values[0]=x;values[1]=y;}
     }
-    void change(int next,boolean animate){
+    public void change(int next,boolean animate){
+        if(keepLock&&next==2)next=1;
         if(next==mode)return;
         int previous=mode;mode=next;
         System.arraycopy(values,0,from,0,SIZE);started=0;
@@ -69,11 +97,31 @@ final class CosmicMotion {
             scaleMs=433;scaleDelay=317;scale=new PathInterpolator(.34f,.03f,.16f,1);
         }
         duration=Math.max(1000,Math.max(positionMs,backgroundMs));transitioning=animate;
+        if(phoenix){
+            cameraMs=flowMs=flowFactorsMs=noiseMs=1000;cameraCurve=flowCurve=flowFactorsCurve=noiseCurve=smooth;
+            if(next==0){
+                cameraMs=previous==2?850:700;flowMs=noiseMs=700;flowFactorsMs=10;
+                cameraCurve=new PathInterpolator(.25f,.1f,previous==2?.1f:.25f,1);
+                flowCurve=new PathInterpolator(.25f,.1f,.25f,1);flowFactorsCurve=noiseCurve=position;
+                if(previous==2)noiseMs=600;
+            }else if(previous==0){
+                cameraMs=next==1?800:750;flowMs=next==1?800:950;flowFactorsMs=10;noiseMs=next==1?1200:950;
+                cameraCurve=new PathInterpolator(.25f,.03f,.24f,1);flowCurve=new PathInterpolator(.25f,.1f,.25f,1);
+                flowFactorsCurve=noiseCurve=position;if(next==1)backgroundMs=1600;
+            }else if(previous==1&&next==2){
+                cameraMs=500;flowMs=800;flowFactorsMs=0;noiseMs=433;
+                cameraCurve=flowCurve=new PathInterpolator(.25f,.1f,.25f,1);flowFactorsCurve=noiseCurve=scale;
+            }else if(previous==2&&next==1){
+                cameraMs=500;cameraCurve=new PathInterpolator(.25f,.1f,.25f,1);
+                flowFactorsMs=10;flowFactorsCurve=new PathInterpolator(.34f,.03f,.16f,1);
+            }
+            duration=Math.max(duration,Math.max(backgroundMs,Math.max(cameraMs,Math.max(flowMs,noiseMs))));
+        }
         if(!animate)System.arraycopy(states[mode],0,values,0,SIZE);
     }
-    void pause(){last=0;}
-    boolean active(){return transitioning;}
-    void advance(long now,float speed){
+    public void pause(){last=0;}
+    public boolean active(){return transitioning;}
+    public void advance(long now,float speed){
         if(transitioning){
             if(started==0)started=now;
             float ms=(now-started)/1_000_000f;
@@ -81,6 +129,10 @@ final class CosmicMotion {
                 int d=i<2?positionMs:i==2?scaleMs:i<5?1000:i<30?materialMs:backgroundMs;
                 Interpolator curve=i<2?position:i==2?scale:i<5?smooth:i<30?material:background;
                 float elapsed=ms-(i==2?scaleDelay:0);
+                if(phoenix&&i>=62){
+                    d=i<69?noiseMs:i<85?flowMs:i<91?flowFactorsMs:cameraMs;
+                    curve=i<69?noiseCurve:i<85?flowCurve:i<91?flowFactorsCurve:cameraCurve;
+                }
                 float t=d==0?1:curve.getInterpolation(Math.max(0,Math.min(1,elapsed/d)));
                 values[i]=from[i]+(states[mode][i]-from[i])*t;
             }

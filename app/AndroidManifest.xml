@@ -6,6 +6,7 @@
   <uses-feature android:name="android.software.live_wallpaper" android:required="true"/>
   <queries>
     <package android:name="org.lsposed.manager"/>
+    <package android:name="com.heytap.themestore"/><package android:name="com.oplus.themestore"/>
     <provider android:authorities="com.oplus.aod.AodMachineHelperProvider"/>
     <package android:name="com.coloros.gallery3d"/><package android:name="com.oplus.gallery3d"/>
     <package android:name="com.android.documentsui"/><package android:name="com.google.android.documentsui"/>
@@ -17,9 +18,11 @@
     <meta-data android:name="xposedminversion" android:value="82"/>
     <meta-data android:name="xposeddescription" android:value="OpenAlive · 当前壁纸的 ColorOS AOD 适配"/>
     <meta-data android:name="xposedscope" android:resource="@array/xposed_scope"/>
-    <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.Clean.Editor">
+    <activity android:name=".HomeActivity" android:exported="true">
       <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
     </activity>
+    <activity android:name=".DynamicLibraryActivity" android:exported="false"/>
+    <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.Clean.Editor"/>
     <activity android:name=".FrameCropActivity" android:exported="false" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <provider android:name=".SceneProvider" android:authorities="org.aliveclean.scene" android:exported="true" android:permission="android.permission.STATUS_BAR"/>
     <service android:name=".CleanWallpaper" android:exported="true" android:permission="android.permission.BIND_WALLPAPER">

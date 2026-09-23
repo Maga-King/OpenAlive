@@ -1,0 +1,26 @@
+{
+  "source": "魅族22 FlymeOS / AliveWallPaper.apk",
+  "assets": {
+    "assets/config/phoenix/cosmic_phoenix_v1.json": "ad0d1d2fa9473d0b3b2b5555dd87f9e059fa62552f9b2924f940e57d1facc6bb",
+    "assets/config/phoenix/cosmic_phoenix_v1_dark.json": "68fe18468262f7a9b7c76d8dd63e8a93711f4f79392e074d7f2f947526510df5",
+    "res/drawable-nodpi/mz_wallpaper_cosmic_phoenix_v1.png": "c9c4fba4f6bc947c91ac66e7f03f7d1ba49f0ef65b2189d364d539f81f557ca8",
+    "assets/config/phoenix/cosmic_phoenix_v2.json": "9e5306d2032c6690e42397940a1a7fdace752d607dd1b89cb1988ce6b3647263",
+    "assets/config/phoenix/cosmic_phoenix_v2_dark.json": "829164b4ebbc54b7a912ade7c4fcf5c1f3822b3204770e4925df8b2e767af65a",
+    "res/drawable-nodpi/mz_wallpaper_cosmic_phoenix_v2.png": "09afba375be65100844976eb24e1787d1fd9b09d30e696426615427717469be5",
+    "assets/config/phoenix/cosmic_phoenix_v3.json": "d32b51e90dd0c5e3f96dcb38363409c7f9be31f761e43f327988110a3d02d6ca",
+    "assets/config/phoenix/cosmic_phoenix_v3_dark.json": "03ff765ede8786211741e930838941281065587e743ee84ccdd798939d9f265f",
+    "res/drawable-nodpi/mz_wallpaper_cosmic_phoenix_v3.png": "acce25bd99c6d6eafc1e461e73d408774b271211f725920b0cdcbec31c38a7d9",
+    "assets/config/phoenix/cosmic_phoenix_v4.json": "cac70d39ab5c7170ac4a63089a08bdbe6755b673be25e2970b45b12cde2b9cc8",
+    "assets/config/phoenix/cosmic_phoenix_v4_dark.json": "91bce16b32d257cc73c4a81dbbf5552e588e8fe6400789354fec9fc093d0960c",
+    "res/drawable-nodpi/mz_wallpaper_cosmic_phoenix_v4.png": "6012fae8c34f29bbd6d5b77a98866a6e41dbab9c78df59e1e6863b3a684951ac",
+    "assets/config/phoenix/cosmic_phoenix_v5.json": "ebdf95684ce4ccc0a6e3a585edef8a16634921f65b743863635956bcbd9ba328",
+    "assets/config/phoenix/cosmic_phoenix_v5_dark.json": "a0d290618238e0a1c7260e36bf5090da725a568c6e81464d1c4df9ba488e1a51",
+    "res/drawable-nodpi/mz_wallpaper_cosmic_phoenix_v5.png": "3d53cda56b65e8d54d29164edd590cc95f8fb176ed2ad00f775aeef9f583d634",
+    "assets/shader/phoenix/cosmicPhoenix_vertex.glsl": "574b12496ff0ce1e31077fabfdfbe3efdab42e376f088426aee2a7e6ca77627a",
+    "assets/shader/cosmic/cosmic_utils.glsl": "1553d82d7edeb5d1d1c4fe43fda8092aa34d1392f6d0ae8f64bc2d37e56c092c",
+    "assets/shader/phoenix/cosmicPhoenix_frag.glsl": "cfd575061181c77372be9c39979c7e8e9d3a548f73c44e2b9770bd7ece522218",
+    "assets/shader/base/blend_utils.glsl": "ca1fdf31b151bb1a3880c5d55b9c47861e6730d2e526415aa033db12e7f4954b",
+    "assets/shader/phoenix/Noise6.png": "f87b3afb8e7b864b40079140fb9e1d95bb6d469b53f48a5e1674e192ea0b90b7",
+    "assets/model/new_9w_02.obj": "72d3c9540d2e71859fa714ed6eda2a55e00742544492b829ade417a9a069b384"
+  }
+}

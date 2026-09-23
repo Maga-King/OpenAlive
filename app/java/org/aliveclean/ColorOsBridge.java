@@ -26,6 +26,8 @@ final class ColorOsBridge {
     private static final SceneState stateOrder=new SceneState();
     private static ColorOsClockTracker clocks;
     private static ColorOsAodClock aodClock;
+    private static ColorOsContinuousAod continuousAod;
+    private static boolean continuousAodRequested;
     private static final Messenger clockFeedback=new Messenger(new Handler(Looper.getMainLooper(),message->{
         if(message.sendingUid==wallpaperUid&&wallpaperUid>=0&&message.what==1&&selected&&aodClock!=null){
             Bundle b=message.getData();aodClock.frameReady(b.getLong("token",0),b.getBoolean("submitted",false));
@@ -50,6 +52,7 @@ final class ColorOsBridge {
         clocks=new ColorOsClockTracker(cl);
         clocks.install();
         aodClock=new ColorOsAodClock(cl);clockApi=aodClock.install();
+        continuousAod=new ColorOsContinuousAod(cl);continuousAod.install();
         try{
             XposedHelpers.findAndHookMethod(application,"onCreate",new XC_MethodHook(){
                 @Override protected void afterHookedMethod(MethodHookParam p){initialize((Context)p.thisObject);}
@@ -110,6 +113,7 @@ final class ColorOsBridge {
             stateOrder.accept(mode,time,phase);
             if(stateOrder.mode()!=mode)return;
             lastMode=mode;lastPhase=stateOrder.phase();
+            updateContinuousAod();
             updateWallpaperColor(clocks.loader(),mode==0);
             clocks.scene(context,!aodClock.usesIndependentClock(),mode,state);
             aodClock.scene(mode,animate);
@@ -273,15 +277,19 @@ final class ColorOsBridge {
         else context.registerReceiver(updates,filter);
         refresh();
     }
+    private static void updateContinuousAod(){
+        continuousAod.configure(context,selected&&channel!=null&&continuousAodRequested&&lastMode==0);
+    }
     private static void configure(Bundle reply){
         int style=reply.getInt("aod",0);
-        main.post(()->{aodClock.configure(context,selected,style);if(aodClock.usesIndependentClock())clocks.scene(context,false,-1,"");});
+        boolean continuous=reply.getBoolean("continuous_aod",false);
+        main.post(()->{continuousAodRequested=continuous;updateContinuousAod();aodClock.configure(context,selected,style);if(aodClock.usesIndependentClock())clocks.scene(context,false,-1,"");});
     }
     private static void readConfiguration(){
         try{
             Bundle reply=context.getContentResolver().call(SceneProvider.CONFIGURATION,"configuration",null,null);
             if(reply!=null)configure(reply);
-        }catch(Throwable error){main.post(()->aodClock.configure(context,false,0));failure("clock configuration",error);}
+        }catch(Throwable error){main.post(()->{continuousAodRequested=false;updateContinuousAod();aodClock.configure(context,false,0);});failure("clock configuration",error);}
     }
     private static void refresh(){worker.post(()->{
         try{
@@ -298,8 +306,8 @@ final class ColorOsBridge {
             selected=info!=null&&"org.aliveclean".equals(info.getPackageName());
             {if(Diagnostics.TRACE)XposedBridge.log("AliveClean: lock wallpaper selected="+selected);}
             if(selected){connect();readConfiguration();}
-            else main.post(()->{aodClock.configure(context,false,0);clocks.scene(context,false,-1,"");stateOrder.disconnect();lastMode=-1;lastPhase=0;synchronized(ColorOsBridge.class){connectAttempts=0;}});
-        }catch(Throwable error){selected=false;main.post(()->aodClock.configure(context,false,0));failure("wallpaper selection",error);}
+            else main.post(()->{updateContinuousAod();aodClock.configure(context,false,0);clocks.scene(context,false,-1,"");stateOrder.disconnect();lastMode=-1;lastPhase=0;synchronized(ColorOsBridge.class){connectAttempts=0;}});
+        }catch(Throwable error){selected=false;main.post(()->{continuousAodRequested=false;updateContinuousAod();aodClock.configure(context,false,0);});failure("wallpaper selection",error);}
     });}
     private static synchronized void connect(){
         if(connecting||channel!=null||worker==null||!selected)return;connecting=true;
@@ -309,7 +317,7 @@ final class ColorOsBridge {
                 Bundle reply=context.getContentResolver().call(android.net.Uri.parse("content://org.aliveclean.scene"),"connect",null,request);
                 if(reply==null||reply.getBinder("channel")==null)throw new IllegalStateException("Missing scene channel");
                 IBinder binder=reply.getBinder("channel");
-                binder.linkToDeath(()->{channel=null;main.post(()->aodClock.rendererLost());if(selected)worker.postDelayed(ColorOsBridge::connect,500);},0);
+                binder.linkToDeath(()->{channel=null;main.post(()->{updateContinuousAod();aodClock.rendererLost();});if(selected)worker.postDelayed(ColorOsBridge::connect,500);},0);
                 channel=new Messenger(binder);
                 synchronized(ColorOsBridge.class){connectAttempts=0;}
                 configure(reply);
@@ -329,11 +337,11 @@ final class ColorOsBridge {
     static void send(int what,Bundle data){
         Messenger target=channel;
         if(target!=null)try{Message message=Message.obtain();message.what=what;message.setData(data);target.send(message);return;}
-        catch(RemoteException error){channel=null;}
+        catch(RemoteException error){channel=null;main.post(ColorOsBridge::updateContinuousAod);}
         if(context!=null){
             Intent event=new Intent(what==1?ACTION:ACTION_LAYOUT).setPackage("org.aliveclean").addFlags(Intent.FLAG_RECEIVER_FOREGROUND).putExtras(data);
             context.sendBroadcast(event);connect();
         }
     }
-    private static void failure(String stage,Throwable error){if(failures.add(stage)){XposedBridge.log("AliveClean: ColorOS "+stage+" unavailable: "+error);android.util.Log.w("AliveClean","ColorOS "+stage+" unavailable",error);}}
+    static void failure(String stage,Throwable error){if(failures.add(stage)){XposedBridge.log("AliveClean: ColorOS "+stage+" unavailable: "+error);android.util.Log.w("AliveClean","ColorOS "+stage+" unavailable",error);}}
 }

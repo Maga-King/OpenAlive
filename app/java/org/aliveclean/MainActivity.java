@@ -26,6 +26,12 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
         draft=getSharedPreferences(SceneOptions.DRAFT,0);
         if(!draft.contains("aod"))new SceneOptions(getSharedPreferences(SceneOptions.APPLIED,0)).save(draft);
         if(draft.getInt("aod",0)<0)draft.edit().putInt("aod",0).apply();
+        if(state==null){
+            mode=Math.max(0,Math.min(2,getIntent().getIntExtra("scene",1)));
+            int variant=getIntent().getIntExtra("cosmic_variant",0);
+            if(variant==1||variant==3||variant==4||(variant>=6&&variant<=15)||(variant>=101&&variant<=105)||(variant>=201&&variant<=205))draft.edit().putInt("cosmic",variant).apply();
+            else if(getIntent().getBooleanExtra("photo_editor",false))draft.edit().putInt("cosmic",0).apply();
+        }
         if(state!=null){mode=state.getInt("mode",1);awaitingApply=state.getBoolean("awaitingApply",false);previousWallpaperId=state.getInt("previousWallpaperId",0);importTarget=state.getInt("importTarget",0);}
         renderer=new RenderLoop(this,SceneOptions.DRAFT);
         try{
@@ -37,6 +43,8 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
                 @Override public void example(){loadPhotoExample();}
                 @Override public void follow(){draft.edit().putBoolean("home_follow_lock",true).apply();showScene();}
                 @Override public void apply(){applyDraft();}
+                @Override public void keepLock(boolean value){draft.edit().putBoolean("cosmic_keep_lock",value).apply();showScene();}
+                @Override public void continuous(String key,boolean value){draft.edit().putBoolean(key,value).apply();showScene();}
             },this);
             showScene();
         }catch(Exception e){
@@ -54,9 +62,9 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
         SceneOptions chosen=new SceneOptions(draft);
         importTarget=chosen.pairedFrame()?(mode==0?2:0):(mode==2?1:0);
         String title=chosen.pairedFrame()?(mode==0?"相框照片":"锁屏与桌面照片"):mode==2?"桌面照片":"照片";
-        editor.dialogs.choices(title,new String[]{"Alive 动态壁纸","魅族静态壁纸","自选照片"},(dialog,which)->{
-                if(which==0)CosmicLibrary.show(this,editor.dialogs,chosen.cosmic,variant->{draft.edit().putInt("cosmic",variant).apply();showScene();});
-                else if(which==1)WallpaperLibrary.show(this,editor.dialogs,asset->importImage(()->getAssets().open(asset)));
+        if(chosen.cosmic!=0){startActivity(new Intent(this,DynamicLibraryActivity.class));return;}
+        editor.dialogs.choices(title,new String[]{"魅族静态壁纸","自选照片"},(dialog,which)->{
+                if(which==0)WallpaperLibrary.show(this,editor.dialogs,asset->importImage(()->getAssets().open(asset)));
                 else editor.dialogs.choices("选择照片来源",PhotoSources.LABELS,(sourceDialog,source)->openPhotoSource(source)).show();
             }).show();
     }

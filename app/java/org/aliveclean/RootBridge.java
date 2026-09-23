@@ -28,7 +28,9 @@ final class RootBridge {
         for(String line:result.split("\n"))if(line.startsWith("ALIVE_RESULT ")){
             JSONObject json=new JSONObject(line.substring(13));
             if(process.exitValue()==0&&json.optBoolean("ok")){
-                return "壁纸已应用，已确认全景息屏模式和息屏开关";
+                return json.optBoolean("backgroundAllowed")
+                    ?"壁纸已应用，已开启全景息屏并允许后台运行"
+                    :"壁纸已应用；后台运行设置未确认，请在系统电池设置中选择完全允许后台行为";
             }
             String stage=json.optString("stage","unknown");
             String detail=json.optString("error","系统拒绝切换息屏模式");

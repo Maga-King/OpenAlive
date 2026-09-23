@@ -1,0 +1,167 @@
+{
+  "cameraBezier": {
+    "p1": [
+      2000,
+      -10,
+      -10
+    ],
+    "p2": [
+      2000,
+      920,
+      -10
+    ]
+  },
+  "aod": {
+    "baseColor": "#24ffb6",
+    "stripeColor1": "#079760",
+    "stripeColor2": "#03343a",
+    "stripeColor3": "#17ded0",
+    "stripeDivergent": 0.2,
+    "stripeThickness": 0.4,
+    "highlightThickness": 5,
+    "highlightStrength": 0.5,
+    "highlightColor": "#dbdbdb",
+    "alpha": 1,
+    "rotate_0": {
+      "startColor": "#000000",
+      "endColor": "#000000"
+    },
+    "rotate_90": {
+      "startColor": "#000000",
+      "endColor": "#000000"
+    },
+    "rotate_180": {
+      "startColor": "#000000",
+      "endColor": "#000000"
+    },
+    "rotate_270": {
+      "startColor": "#000000",
+      "endColor": "#000000"
+    },
+    "OffsetSpeedX": 0.06,
+    "OffsetSpeedY": 0.06,
+    "TwistScale": 2.66,
+    "OffsetScale": 0.22,
+    "u_TwistSpeedX": 0.055,
+    "u_TwistSpeedY": 0.06,
+    "u_MaskScale": 1,
+    "u_stripe_divergent1": 0.2,
+    "u_stripe_thickness1": 1,
+    "u_highlight_thickness1": 3.3,
+    "u_highlight_strength1": 1.8,
+    "u_positionTime": 0.3,
+    "u_normalTime": 0.2,
+    "u_base_color_flow": "#022a36",
+    "u_stripe_color_flow_1": "#1c1c1c",
+    "u_stripe_color_flow_2": "#454545",
+    "u_stripe_color_flow_3": "#013722",
+    "cameraPos": [
+      2000,
+      -940,
+      0
+    ],
+    "cameraZoom": 0.9
+  },
+  "keyguard": {
+    "baseColor": "#21e8a6",
+    "stripeColor1": "#007780",
+    "stripeColor2": "#004d57",
+    "stripeColor3": "#19d78e",
+    "stripeDivergent": 0.2,
+    "stripeThickness": 0.4,
+    "highlightThickness": 5,
+    "highlightStrength": 0.5,
+    "highlightColor": "#08afad",
+    "alpha": 1,
+    "rotate_0": {
+      "startColor": "#055765",
+      "endColor": "#089DAF"
+    },
+    "rotate_90": {
+      "startColor": "#055765",
+      "endColor": "#089DAF"
+    },
+    "rotate_180": {
+      "startColor": "#055765",
+      "endColor": "#089DAF"
+    },
+    "rotate_270": {
+      "startColor": "#055765",
+      "endColor": "#089DAF"
+    },
+    "OffsetSpeedX": 0.06,
+    "OffsetSpeedY": 0.06,
+    "TwistScale": 2.66,
+    "OffsetScale": 0.22,
+    "u_TwistSpeedX": 0.055,
+    "u_TwistSpeedY": 0.06,
+    "u_MaskScale": 1,
+    "u_stripe_divergent1": 0.2,
+    "u_stripe_thickness1": 1,
+    "u_highlight_thickness1": 3.3,
+    "u_highlight_strength1": 1.8,
+    "u_positionTime": 0.3,
+    "u_normalTime": 0.2,
+    "u_base_color_flow": "#04303e",
+    "u_stripe_color_flow_1": "#025043",
+    "u_stripe_color_flow_2": "#19d78e",
+    "u_stripe_color_flow_3": "#01476a",
+    "cameraPos": [
+      1881,
+      96,
+      200
+    ],
+    "cameraZoom": 0.2
+  },
+  "unlock": {
+    "baseColor": "#0fa6a9",
+    "stripeColor1": "#02085f",
+    "stripeColor2": "#006151",
+    "stripeColor3": "#19d78e",
+    "stripeDivergent": 0.2,
+    "stripeThickness": 0.4,
+    "highlightThickness": 5,
+    "highlightStrength": 0.5,
+    "highlightColor": "#08afad",
+    "alpha": 1,
+    "rotate_0": {
+      "startColor": "#089DAF",
+      "endColor": "#089DAF"
+    },
+    "rotate_90": {
+      "startColor": "#089DAF",
+      "endColor": "#089DAF"
+    },
+    "rotate_180": {
+      "startColor": "#089DAF",
+      "endColor": "#089DAF"
+    },
+    "rotate_270": {
+      "startColor": "#089DAF",
+      "endColor": "#089DAF"
+    },
+    "OffsetSpeedX": 0.06,
+    "OffsetSpeedY": 0.06,
+    "TwistScale": 2.66,
+    "OffsetScale": 0.22,
+    "u_TwistSpeedX": 0.055,
+    "u_TwistSpeedY": 0.06,
+    "u_MaskScale": 1,
+    "u_stripe_divergent1": 0.2,
+    "u_stripe_thickness1": 1,
+    "u_highlight_thickness1": 3.3,
+    "u_highlight_strength1": 1.8,
+    "u_positionTime": 0.3,
+    "u_normalTime": 0.2,
+    "u_base_color_flow": "#002242",
+    "u_stripe_color_flow_1": "#000000",
+    "u_stripe_color_flow_2": "#23e18f",
+    "u_stripe_color_flow_3": "#0b376f",
+    "cameraPos": [
+      883,
+      72,
+      120
+    ],
+    "cameraZoom": 0.16
+  }
+}

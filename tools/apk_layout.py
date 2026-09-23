@@ -26,4 +26,6 @@ def verify_apk(path):
     with zipfile.ZipFile(path) as archive:
         if 'assets/ui/editor-ui.apk' in archive.namelist():
             report['embedded_ui']=inspect(archive.read('assets/ui/editor-ui.apk'))
+        if 'assets/ui/settings-ui.apk' in archive.namelist():
+            report['settings_ui']=inspect(archive.read('assets/ui/settings-ui.apk'))
     return report

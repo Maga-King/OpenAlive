@@ -9,7 +9,7 @@ import android.widget.LinearLayout;
 final class OfficialDialogs {
     private final OfficialUi ui;
     private final java.util.ArrayList<Dialog> opened=new java.util.ArrayList<>();
-    OfficialDialogs(OfficialUi ui){this.ui=ui;}
+    OfficialDialogs(OfficialUi ui)throws Exception{this.ui=new OfficialUi(ui.getBaseContext(),true);}
 
     Dialog choices(String title,CharSequence[] items,DialogInterface.OnClickListener selection){
         return create(title,items,selection,null);
@@ -30,5 +30,5 @@ final class OfficialDialogs {
             opened.removeIf(previous->!previous.isShowing());opened.add(dialog);return dialog;
         }catch(ReflectiveOperationException e){throw new IllegalStateException("Official dialog binding",e);}
     }
-    void close(){for(Dialog dialog:opened)if(dialog.isShowing())dialog.dismiss();opened.clear();}
+    void close(){for(Dialog dialog:opened)if(dialog.isShowing())dialog.dismiss();opened.clear();ui.close();}
 }

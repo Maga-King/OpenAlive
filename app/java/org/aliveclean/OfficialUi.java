@@ -40,6 +40,10 @@ final class OfficialUi extends ContextWrapper implements AutoCloseable {
     }
 
     OfficialUi(Context base)throws Exception{
+        this(base,false);
+    }
+    @SuppressWarnings("deprecation")
+    OfficialUi(Context base,boolean forceDark)throws Exception{
         super(base);
         File file=unpack(base);
         // Original controls are an unchanged secondary DEX in this APK. This
@@ -54,7 +58,18 @@ final class OfficialUi extends ContextWrapper implements AutoCloseable {
         info.sharedLibraryFiles=null;
         // Load an APK resource namespace through PackageManager, rather than
         // attaching a loader to the framework's special android context.
-        resources=base.getPackageManager().getResourcesForApplication(info);
+        Resources source=base.getPackageManager().getResourcesForApplication(info);
+        resources=source;
+        if(forceDark){
+            Configuration config=new Configuration(source.getConfiguration());
+            config.uiMode=(config.uiMode&~Configuration.UI_MODE_NIGHT_MASK)|Configuration.UI_MODE_NIGHT_YES;
+            // Preserve PackageManager's application class loader for Flyme's
+            // XML drawables. The public Resources constructor uses the boot
+            // loader and cannot inflate MzPressAnimationDrawable on a cold start.
+            // This resource namespace belongs only to the dark editor bundle;
+            // the personalization home uses a separate APK and Resources.
+            resources.updateConfiguration(config,source.getDisplayMetrics());
+        }
         theme=resources.newTheme();theme.applyStyle(id("style","Theme.EditorActivity"),true);
     }
     int id(String type,String name){int id=resources.getIdentifier(name,type,"com.flyme.systemuieditor");if(id==0)throw new IllegalArgumentException(type+"/"+name);return id;}

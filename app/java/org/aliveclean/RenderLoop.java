@@ -20,8 +20,9 @@ final class RenderLoop {
     private EGLContext egl=EGL14.EGL_NO_CONTEXT;
     private EGLSurface window=EGL14.EGL_NO_SURFACE;
     private long scene;
-    private CosmicRenderer cosmic;
+    private WallpaperRenderer cosmic;
     private long cosmicUntil;
+    private boolean cosmicContinuousAod,cosmicContinuousHome,sailContinuousAod;
     private Surface attachedSurface;
     private SceneMotion motion;
     private TextureMotion textureMotion;
@@ -64,14 +65,14 @@ final class RenderLoop {
         handler.post(()->{displayId=display;aodRegion=region;applyAodRegion();schedule();});
     }
     private void applyAodRegion(){
-        if(cosmic!=null&&aodRegion!=null&&aodRegion.fits(displayId,width,height))cosmic.motion.follow(aodRegion.sceneX(),aodRegion.sceneY());
+        if(cosmic!=null&&aodRegion!=null&&aodRegion.fits(displayId,width,height))cosmic.motion().follow(aodRegion.sceneX(),aodRegion.sceneY());
         if(motion!=null&&aodRegion!=null&&aodRegion.fits(displayId,width,height)){
             if(frameMotion==null)motion.followClock(aodRegion.sceneX(),aodRegion.sceneY());
             else frameMotion.followClock(aodRegion.sceneX(),aodRegion.sceneY());
         }
     }
-    void mode(int next,boolean animate){handler.post(()->{if(mode!=next){stateReported=false;frameSample.clear();if(next==0)aodMotion.enter(System.nanoTime());else aodMotion.leave();}if(cosmic!=null&&mode!=next){cosmic.motion.change(next,animate);cosmicUntil=System.nanoTime()+5_000_000_000L;}mode=next;if(textureMotion!=null)textureMotion.change(next,animate);if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!visible)frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!visible)motion.pause(true);}schedule();});}
-    void visible(boolean value){handler.post(()->{visible=value;if(cosmic!=null)cosmic.motion.pause();if(motion!=null)motion.pause(!value);if(frameMotion!=null)frameMotion.pause(!value);stopFrames();if(value){pacer.reset();schedule();}else if(clockToken!=0)reportClock(false);});}
+    void mode(int next,boolean animate){handler.post(()->{if(mode!=next){stateReported=false;frameSample.clear();if(next==0)aodMotion.enter(System.nanoTime());else aodMotion.leave();}if(cosmic!=null&&mode!=next){cosmic.motion().change(next,animate);cosmicUntil=System.nanoTime()+5_000_000_000L;}mode=next;if(textureMotion!=null)textureMotion.change(next,animate);if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!visible)frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!visible)motion.pause(true);}schedule();});}
+    void visible(boolean value){handler.post(()->{if(visible==value)return;visible=value;if(cosmic!=null)cosmic.motion().pause();if(motion!=null)motion.pause(!value);if(frameMotion!=null)frameMotion.pause(!value);stopFrames();if(value){if(mode==0){long now=System.nanoTime();aodMotion.enter(now);cosmicUntil=now+5_000_000_000L;}pacer.reset();schedule();}else if(clockToken!=0)reportClock(false);});}
     void reload(){if(!closed){handler.removeCallbacks(reloadTask);handler.post(reloadTask);}}
     private void reloadScene(){if(scene==0&&cosmic==null)return;try{
         SceneOptions options=new SceneOptions(preferences);
@@ -84,9 +85,11 @@ final class RenderLoop {
     private void onVsync(long time){framePosted=false;frameTime=time;handler.post(renderTask);}
     private void stopFrames(){if(choreographer!=null)choreographer.removeFrameCallback(frame);framePosted=false;handler.removeCallbacks(renderTask);}
     private void createScene(SceneOptions options)throws IOException{
+        cosmicContinuousAod=options.cosmicContinuousAod;cosmicContinuousHome=options.cosmicContinuousHome;
+        sailContinuousAod=options.cosmic==0&&options.aod==0&&options.sailContinuousAod;
         if(options.cosmic!=0){
             boolean dark=(context.getResources().getConfiguration().uiMode&android.content.res.Configuration.UI_MODE_NIGHT_MASK)==android.content.res.Configuration.UI_MODE_NIGHT_YES;
-            cosmic=new CosmicRenderer(context.getAssets(),options.cosmic,dark,width,height,mode);
+            cosmic=WallpaperRenderer.create(context.getAssets(),options.cosmic,dark,width,height,mode,options.cosmicKeepLock);
             cosmicUntil=System.nanoTime()+5_000_000_000L;
             applyAodRegion();choreographer=Choreographer.getInstance();pacer.reset();return;
         }
@@ -135,7 +138,8 @@ final class RenderLoop {
         int[] version=new int[2];if(!EGL14.eglInitialize(display,version,0,version,1))throw new IllegalStateException("eglInitialize");
         EGLConfig[] configs=new EGLConfig[1];int[] count=new int[1];
         int[] attrs={EGL14.EGL_RENDERABLE_TYPE,0x40,EGL14.EGL_SURFACE_TYPE,EGL14.EGL_WINDOW_BIT,EGL14.EGL_RED_SIZE,8,EGL14.EGL_GREEN_SIZE,8,EGL14.EGL_BLUE_SIZE,8,EGL14.EGL_ALPHA_SIZE,8,EGL14.EGL_DEPTH_SIZE,options.cosmic!=0?16:0,EGL14.EGL_NONE};
-        if(!EGL14.eglChooseConfig(display,attrs,0,configs,0,1,count,0)||count[0]==0)throw new IllegalStateException("No GLES3 EGL config");
+        if(options.cosmic!=0)configs[0]=CosmicEgl.choose(display,EGL14.EGL_WINDOW_BIT);
+        else if(!EGL14.eglChooseConfig(display,attrs,0,configs,0,1,count,0)||count[0]==0)throw new IllegalStateException("No GLES3 EGL config");
         egl=EGL14.eglCreateContext(display,configs[0],EGL14.EGL_NO_CONTEXT,new int[]{EGL14.EGL_CONTEXT_CLIENT_VERSION,3,EGL14.EGL_NONE},0);
         window=EGL14.eglCreateWindowSurface(display,configs[0],surface,new int[]{EGL14.EGL_NONE},0);
         if(!EGL14.eglMakeCurrent(display,window,window,egl))throw new IllegalStateException("eglMakeCurrent");
@@ -166,9 +170,10 @@ final class RenderLoop {
         if(!visible||(scene==0&&cosmic==null))return;
         if(cosmic!=null){
             try{
-                float speed=preview?1:Math.max(0,Math.min(1,(cosmicUntil-time)/3_000_000_000f));
-                cosmic.motion.advance(time,speed);
-                boolean moving=cosmic.motion.active()||preview||time<cosmicUntil;
+                boolean continuous=preview||(mode==0?cosmicContinuousAod:cosmicContinuousHome);
+                float speed=continuous?1:Math.max(0,Math.min(1,(cosmicUntil-time)/3_000_000_000f));
+                cosmic.motion().advance(time,speed);
+                boolean moving=cosmic.motion().active()||continuous||time<cosmicUntil;
                 if(pacer.due(time)||!moving){
                     cosmic.render();
                     if(!EGL14.eglSwapBuffers(display,window))throw new IllegalStateException("Cosmic EGL swap failed");
@@ -179,7 +184,7 @@ final class RenderLoop {
         }
         try{
             boolean resumedSample=frameMotion!=null&&frameSample.pending;
-            motion.advance(time,preview||mode!=0?1f:aodMotion.speed(time));
+            motion.advance(time,preview||mode!=0||sailContinuousAod?1f:aodMotion.speed(time));
             if(frameMotion!=null){
                 // Do not chase a newer animator sample while waiting for its mask:
                 // a busy app can otherwise starve every intermediate mask until
@@ -190,7 +195,7 @@ final class RenderLoop {
                 if(!NativeScene.frame(scene,frameSample.effect))throw new IllegalStateException("Invalid frame effect packet");
             }
             if(Diagnostics.TRACE&&mode==0&&!stateReported&&motion.values[0]>.999f){stateReported=true;Log.i("AliveClean","AOD frame lensScale="+motion.values[4]+" x="+motion.values[8]+" y="+motion.values[9]+" viewport="+width+"x"+height+" photo="+photo);}
-            boolean moving=textureMotion.active()||motion.transitionActive()||(frameMotion!=null?frameMotion.active():mode==0&&(preview||aodMotion.running(time)));
+            boolean moving=textureMotion.active()||motion.transitionActive()||(frameMotion!=null?frameMotion.active():mode==0&&(preview||sailContinuousAod||aodMotion.running(time)));
             if(pacer.due(time)||!moving){
                 if(!NativeScene.effects(scene,frameMotion==null?textureMotion.packet():frameSample.textures))throw new IllegalStateException("Invalid texture effect packet");
                 if(!NativeScene.render(scene,photo,decorator,aspect,frameMotion==null?motion.packet():frameSample.base))throw new IllegalStateException("Invalid native frame packet");

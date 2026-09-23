@@ -20,5 +20,10 @@ __pycache__/
 !/tools/build_release.py
 !/tools/check_clock_scope.py
 !/tools/check_layout.py
+!/tools/check_hans_lease.py
+!/tools/check_render_lifecycle.py
 !/tools/import_cosmic.py
+!/tools/import_phoenix.py
+!/tools/import_bubble.py
+!/tools/import_settings_ui.py
 !/tools/ui-api/

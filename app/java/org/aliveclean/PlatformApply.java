@@ -48,6 +48,9 @@ public final class PlatformApply {
             if(after!=target||on!=1)throw new IllegalStateException("AOD verification failed: expected="+target+", actual="+after+", enabled="+on);
             report=new JSONObject().put("ok",true).put("before",before).put("mode",after);
             }
+            // A missing vendor battery interface must not undo a successful wallpaper apply.
+            try{ColorOsBackgroundPolicy.allow();report.put("backgroundAllowed",true);}
+            catch(Exception background){report.put("backgroundAllowed",false).put("backgroundError",background.toString());}
             // Release both leases before exiting: System.exit does not run finally blocks.
             System.out.println("ALIVE_RESULT "+report);System.exit(0);
         }catch(Throwable error){
