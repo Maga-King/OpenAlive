@@ -62,6 +62,19 @@ final class ClockScope {
         return view instanceof View?(View)view:null;
     }
     boolean excludes(View view){return (launcher!=null&&within(view,launcher))||(launcherDual!=null&&within(view,launcherDual));}
+    View targetTime(int uiState,int clockSize){
+        // SceneKt.resolveScene: panoramic AOD uses the selected keyguard layout;
+        // workshop AOD has its own entry. Never choose the first visible copy.
+        String scene=uiState==3?"AOD":uiState==5?(clockSize==0?"KEYGUARD_SMALL":clockSize==2?"KEYGUARD_IMMERSED":"KEYGUARD_BIG"):null;
+        if(scene==null||clockContainer==null||sceneMap==null)return null;
+        try{
+            Object value=sceneMap.invoke(clockContainer);if(!(value instanceof Map))return null;
+            for(Map.Entry<?,?> entry:((Map<?,?>)value).entrySet())if(scene.equals(String.valueOf(entry.getKey()))){
+                View view=entryView(entry.getValue(),false);return view!=null&&!excludes(view)?view:null;
+            }
+        }catch(ReflectiveOperationException|RuntimeException ignored){}
+        return null;
+    }
     boolean allowsPluginFallback(){
         // DigitalClockImpl ignores the requested scene while a follow-hand
         // transition is active and measures its animationView instead.

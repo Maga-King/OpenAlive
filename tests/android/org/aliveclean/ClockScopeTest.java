@@ -71,10 +71,16 @@ public final class ClockScopeTest {
         View desktop=root.container.add("UNLOCK");View desktopDigit=new View(c);((FrameLayout)desktop).addView(desktopDigit);
         for(String key:new String[]{"KEYGUARD_SMALL","KEYGUARD_BIG","KEYGUARD_IMMERSED","AOD"})root.container.add(key);
         scope.refresh();check(scope.excludes(desktopDigit),"Known desktop descendant included");
+        check(scope.targetTime(3,1)==root.container.entries.get("AOD").view,"Workshop target mismatch");
+        check(scope.targetTime(5,0)==root.container.entries.get("KEYGUARD_SMALL").view,"Small panoramic target mismatch");
+        check(scope.targetTime(5,1)==root.container.entries.get("KEYGUARD_BIG").view,"Big panoramic target mismatch");
+        check(scope.targetTime(5,2)==root.container.entries.get("KEYGUARD_IMMERSED").view,"Immersed panoramic target mismatch");
+        check(scope.targetTime(1,1)==null,"Launcher accepted as destination");
         check(!scope.excludes(root.container),"Shared mount excluded with desktop copy");
         root.container.anchor=new Anchor(root.container.entries.get("UNLOCK").single);
         check(scope.allowsPluginFallback(),"Inactive follow-hand incorrectly blocked native AOD fallback");
         root.container.engine.progress=.4f;
+        check(scope.targetTime(5,1)==root.container.entries.get("KEYGUARD_BIG").view,"Launcher handoff contaminated target selection");
         check(!scope.allowsPluginFallback(),"Plugin fallback reintroduced launcher animation view");
         root.container.anchor=new Anchor(root.container.entries.get("KEYGUARD_BIG").single);
         check(scope.allowsPluginFallback(),"Keyguard animation fallback rejected");
