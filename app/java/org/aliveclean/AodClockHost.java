@@ -13,7 +13,7 @@ final class AodClockHost {
     private AodClockView clock;
     private ValueAnimator fade,stockFade;
     private int generation,lastBottom;
-    private boolean owning,holdingClock;
+    private boolean owning,holdingClock,holdingUnlock;
     private float stockAlpha;
     private Runnable boundsChanged=()->{};
     private final IdentityHashMap<View,Float> suppressed=new IdentityHashMap<>();
@@ -43,7 +43,7 @@ final class AodClockHost {
         // The AOD overlay itself must stay in the stable notification window.
         if(clockScope==null&&(!descendant(t,parent)||!descendant(d,parent))){hide();return;}
         if(root==parent&&scope==clockScope&&clock!=null){
-            cancelFade();cancelStockFade();holdingClock=false;stockAlpha=0;owning=true;time=t;date=d;maskContents();return;
+            cancelFade();cancelStockFade();holdingClock=false;holdingUnlock=false;stockAlpha=0;owning=true;time=t;date=d;maskContents();return;
         }
         hide();
         AodClockView next=new AodClockView(parent.getContext(),false);
@@ -109,6 +109,18 @@ final class AodClockHost {
     void contentAlpha(float value){if(clock!=null){clock.setAlpha(Math.max(0,Math.min(1,value)));clock.active(value>0);}}
     int notificationTop(){return !owning||clock==null||clock.getHeight()==0?0:clock.notificationTop();}
     void leave(){leave(false);}
+    // UNLOCK is announced before the native NormalUnlockAnim hides keyguard.
+    // Keep only our existing clock-leaf mask through that interval. Wallpaper,
+    // notifications, widgets and the launcher's own clock remain native.
+    void leaveUnlocked(){
+        if(owning||holdingClock){
+            holdingUnlock=true;cancelStockFade();stockAlpha=0;maskContents();leave(true);
+        }else leave(false);
+    }
+    void unlockFinished(){
+        if(!holdingUnlock)return;
+        releaseClock();if(clock==null)hide();
+    }
     void leave(boolean waitForFrame){
         if(waitForFrame&&owning){owning=false;holdingClock=true;releaseNotificationSpace();}
         else if(!waitForFrame)releaseClock();
@@ -125,7 +137,7 @@ final class AodClockHost {
     // Only a successfully submitted expanded wallpaper frame releases this gate.
     // No delay/timeout guesses at the duration of the photo animation.
     void frameReady(){
-        if(!holdingClock||stockFade!=null)return;
+        if(!holdingClock||holdingUnlock||stockFade!=null)return;
         ValueAnimator animation=ValueAnimator.ofFloat(stockAlpha,1);stockFade=animation;
         animation.setDuration(167);animation.setInterpolator(new PathInterpolator(.33f,0,.67f,1));
         animation.addUpdateListener(a->{if(stockFade==a&&holdingClock){stockAlpha=(float)a.getAnimatedValue();maskContents();}});
@@ -135,7 +147,7 @@ final class AodClockHost {
     private void cancelStockFade(){if(stockFade!=null){ValueAnimator old=stockFade;stockFade=null;old.cancel();}}
     private void cancelFade(){generation++;if(fade!=null){ValueAnimator old=fade;fade=null;old.cancel();}}
     private void releaseClock(){
-        owning=false;holdingClock=false;cancelStockFade();
+        owning=false;holdingClock=false;holdingUnlock=false;cancelStockFade();
         for(Map.Entry<View,Float> item:suppressed.entrySet())restore(item);
         suppressed.clear();written.clear();targets.clear();
         releaseNotificationSpace();

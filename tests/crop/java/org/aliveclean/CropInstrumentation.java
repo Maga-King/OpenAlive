@@ -32,6 +32,7 @@ public final class CropInstrumentation extends Instrumentation {
     }
     public static final class COETextureView extends View {COETextureView(Context c){super(c);}}
     private int checks;
+    private boolean onlyClockHost;
     private final ArrayList<String> observations=new ArrayList<>();
     interface Step {void run() throws Exception;}
     private void main(Step step){
@@ -181,6 +182,26 @@ public final class CropInstrumentation extends Instrumentation {
                 host.hide();host.show(root,time,date);host.contentAlpha(0);host.leave(true);
                 near(time.getTransitionAlpha(),0);host.frameReady();((android.animation.ValueAnimator)stockField.get(host)).end();near(time.getTransitionAlpha(),1);
                 if(host.shown())throw new AssertionError("Wake from AOD_OFF retained overlay");checks++;
+                for(float visible:new float[]{0,1}){
+                    host.show(root,time,date);host.contentAlpha(visible);host.leaveUnlocked();
+                    android.animation.ValueAnimator customFade=(android.animation.ValueAnimator)fadeField.get(host);
+                    if(customFade!=null)customFade.end();
+                    // Both a late wallpaper frame and a repeated UNLOCK event
+                    // must leave the native normal-unlock clock concealed.
+                    host.frameReady();host.leaveUnlocked();root.getViewTreeObserver().dispatchOnPreDraw();
+                    near(time.getTransitionAlpha(),0);near(date.getTransitionAlpha(),0);near(notifications.getAlpha(),1);
+                    if(stockField.get(host)!=null||host.ownsClock()||host.notificationTop()!=0)throw new AssertionError("Direct unlock reused lock reveal");checks++;
+                    host.unlockFinished();near(time.getTransitionAlpha(),1);near(date.getTransitionAlpha(),1);
+                    if(host.shown())throw new AssertionError("Native unlock completion retained overlay");checks++;
+                }
+                host.show(root,time,date);host.leave(true);host.frameReady();
+                android.animation.ValueAnimator cancelledReveal=(android.animation.ValueAnimator)stockField.get(host);
+                cancelledReveal.setCurrentPlayTime(80);host.leaveUnlocked();cancelledReveal.end();
+                near(time.getTransitionAlpha(),0);host.frameReady();near(time.getTransitionAlpha(),0);
+                host.show(root,time,date);host.unlockFinished();near(time.getTransitionAlpha(),0);
+                if(!host.ownsClock())throw new AssertionError("Stale unlock completion released new AOD");checks++;
+                host.leaveUnlocked();host.leave(false);near(time.getTransitionAlpha(),1);
+                host.unlockFinished();near(time.getTransitionAlpha(),1);
                 host.show(root,time,date);host.contentAlpha(1);
                 if(!host.shown())throw new AssertionError("Cancelled wake fade removed reentered AOD");checks++;
                 host.hide();near(time.getAlpha(),.45f);near(date.getAlpha(),.6f);near(notifications.getAlpha(),1);
@@ -233,8 +254,12 @@ public final class CropInstrumentation extends Instrumentation {
         });
         close(false);
     }
-    @Override public void onCreate(Bundle args){super.onCreate(args);start();}
+    @Override public void onCreate(Bundle args){super.onCreate(args);onlyClockHost=args!=null&&"true".equals(args.getString("onlyClockHost"));start();}
     @Override public void onStart(){Bundle result=new Bundle();try{
+        if(onlyClockHost){
+            fixture("accepted.png",600,400);aodClockHost();
+            result.putString("stream","CLOCK_HOST_OK checks="+checks+"\n"+String.join("\n",observations));finish(Activity.RESULT_OK,result);return;
+        }
         for(int[] size:new int[][]{{800,1200},{1200,800},{800,800}}){
             String name="fixture-"+size[0]+"x"+size[1]+".png";fixture(name,size[0],size[1]);
             prefs().edit().clear().putString("photo","shared-wallpaper.png").putString("frame_photo",name).commit();

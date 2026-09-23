@@ -58,6 +58,12 @@ final class ColorOsAodClock {
             XposedHelpers.findAndHookMethod(oneShotState,"isOneShotEnabled",separateClock);
             for(String method:new String[]{"willSupportOneShotForUnlock","willSupportRapidUnlockOneShot","isUnlockOneShotFromClockReady"})
                 XposedHelpers.findAndHookMethod(oneShot,method,separateClock);
+            Class<?> mediator=XposedHelpers.findClass("com.oplus.systemui.keyguard.OplusKeyguardViewMediatorExImpl",loader);
+            XposedHelpers.findAndHookMethod(mediator,"keyguardGone",new XC_MethodHook(){
+                @Override protected void afterHookedMethod(MethodHookParam p){
+                    if(!p.hasThrowable())onMain(()->{if(enabled&&mode==2)host.unlockFinished();});
+                }
+            });
             // Leave feature initialization and callbacks intact. Native
             // startLockAnim/startUnlockAnim take their normal disabled/fallback
             // branches, including completion callbacks, rather than a skipped call.
@@ -106,7 +112,7 @@ final class ColorOsAodClock {
     }
     private void reconcile(){
         if(!enabled||context==null){host.hide();return;}
-        if(mode!=0){host.leave(wakeToken!=0);return;}
+        if(mode!=0){if(mode==2)host.leaveUnlocked();else host.leave(wakeToken!=0);return;}
         try{
             Object data=XposedHelpers.callStaticMethod(XposedHelpers.findClass("com.oplus.systemui.aod.aodclock.constant.AodData",loader),"getInstance",context);
             if(!(boolean)XposedHelpers.callMethod(data,"isPanoramicAod")){host.hide();return;}
