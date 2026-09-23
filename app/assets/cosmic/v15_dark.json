@@ -1,0 +1,86 @@
+{
+    "aod": {
+        "baseColor": "#01040B",
+        "stripeColor1": "#1F3666",
+        "stripeColor2": "#0A1333",
+        "stripeColor3": "#345594",
+        "stripeDivergent": 0.3,
+        "stripeThickness": 1.8,
+        "highlightThickness": 2.6,
+        "highlightStrength": 1,
+        "highlightColor": "#E1EEFF",
+        "alpha": 1,
+        "rotate_0": {
+            "startColor": "#000000",
+            "endColor": "#000000"
+        },
+        "rotate_90": {
+            "startColor": "#000000",
+            "endColor": "#000000"
+        },
+        "rotate_180": {
+            "startColor": "#000000",
+            "endColor": "#000000"
+        },
+        "rotate_270": {
+            "startColor": "#000000",
+            "endColor": "#000000"
+        }
+    },
+    "keyguard": {
+        "baseColor": "#091330",
+        "stripeColor1": "#204082",
+        "stripeColor2": "#A37A25",
+        "stripeColor3": "#315CB0",
+        "stripeDivergent": 0.16,
+        "stripeThickness": 1.3,
+        "highlightThickness": 2.8,
+        "highlightStrength": 0.9,
+        "highlightColor": "#F1EEDE",
+        "alpha": 1,
+        "rotate_0": {
+            "startColor": "#0D1220",
+            "endColor": "#1B304F"
+        },
+        "rotate_90": {
+            "startColor": "#0D1220",
+            "endColor": "#1B304F"
+        },
+        "rotate_180": {
+            "startColor": "#0D1220",
+            "endColor": "#1B304F"
+        },
+        "rotate_270": {
+            "startColor": "#0D1220",
+            "endColor": "#1B304F"
+        }
+    },
+    "unlock": {
+        "baseColor": "#142043",
+        "stripeColor1": "#173162",
+        "stripeColor2": "#A08D5A",
+        "stripeColor3": "#15234B",
+        "stripeDivergent": 0.7,
+        "stripeThickness": 0.65,
+        "highlightThickness": 3,
+        "highlightStrength": 1.3,
+        "highlightColor": "#000000",
+        "alpha": 1,
+        "rotate_0": {
+            "startColor": "#000000",
+            "endColor": "#000000"
+        },
+        "rotate_90": {
+            "startColor": "#000000",
+            "endColor": "#000000"
+        },
+        "rotate_180": {
+            "startColor": "#000000",
+            "endColor": "#000000"
+        },
+        "rotate_270": {
+            "startColor": "#000000",
+            "endColor": "#000000"
+        }
+    }
+}

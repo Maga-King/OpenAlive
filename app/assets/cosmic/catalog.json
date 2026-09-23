@@ -1,0 +1,80 @@
+[
+  {
+    "id": 1,
+    "name": "星云绿",
+    "thumbnail": "v1.png",
+    "officialVisible": false
+  },
+  {
+    "id": 3,
+    "name": "朝阳金",
+    "thumbnail": "v3.png",
+    "officialVisible": false
+  },
+  {
+    "id": 4,
+    "name": "定胜青",
+    "thumbnail": "v4.png",
+    "officialVisible": true
+  },
+  {
+    "id": 6,
+    "name": "悦动黄",
+    "thumbnail": "v6.png",
+    "officialVisible": false
+  },
+  {
+    "id": 7,
+    "name": "热爱粉",
+    "thumbnail": "v7.png",
+    "officialVisible": false
+  },
+  {
+    "id": 8,
+    "name": "曙光银",
+    "thumbnail": "v8.png",
+    "officialVisible": false
+  },
+  {
+    "id": 9,
+    "name": "太空银",
+    "thumbnail": "v9.png",
+    "officialVisible": false
+  },
+  {
+    "id": 10,
+    "name": "先锋灰",
+    "thumbnail": "v10.png",
+    "officialVisible": false
+  },
+  {
+    "id": 11,
+    "name": "星纪摩卡",
+    "thumbnail": "v11.png",
+    "officialVisible": false
+  },
+  {
+    "id": 12,
+    "name": "星辰黑",
+    "thumbnail": "v12.png",
+    "officialVisible": false
+  },
+  {
+    "id": 13,
+    "name": "破晓灰",
+    "thumbnail": "v13.png",
+    "officialVisible": false
+  },
+  {
+    "id": 14,
+    "name": "晨曦紫",
+    "thumbnail": "v14.png",
+    "officialVisible": false
+  },
+  {
+    "id": 15,
+    "name": "白",
+    "thumbnail": "v15.png",
+    "officialVisible": false
+  }
+]

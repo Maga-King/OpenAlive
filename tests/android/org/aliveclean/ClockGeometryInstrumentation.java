@@ -13,7 +13,8 @@ public final class ClockGeometryInstrumentation extends Instrumentation {
         android.app.Activity activity=waitForMonitorWithTimeout(monitor,10000);removeMonitor(monitor);
         if(activity==null){result.putString("stream","Layout test activity did not open");finish(1,result);return;}
         runOnMainSync(()->{try{AodSpacingTest.attached(activity);}catch(Throwable t){error[0]=t;}finally{activity.finish();}});
+        if(error[0]==null)try{CosmicRenderTest.run(getTargetContext());}catch(Throwable t){error[0]=t;}
         if(error[0]!=null){result.putString("stream",error[0].toString());finish(1,result);return;}
-        result.putString("stream","CLOCK_GEOMETRY_OK checks="+(ClockInkBoundsTest.checks+ClockScopeTest.checks+ClockTargetBoundsTest.checks+AodSpacingTest.checks));finish(-1,result);
+        result.putString("stream","CLOCK_GEOMETRY_OK checks="+(ClockInkBoundsTest.checks+ClockScopeTest.checks+ClockTargetBoundsTest.checks+AodSpacingTest.checks)+" COSMIC_GL_CHECKS="+CosmicRenderTest.checks);finish(-1,result);
     }
 }

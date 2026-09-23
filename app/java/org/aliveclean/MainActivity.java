@@ -31,7 +31,7 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
         try{
             editor=new OfficialEditor(this,new OfficialEditor.Actions(){
                 @Override public void scene(int value){mode=value;showScene();}
-                @Override public void choose(String key,int value){draft.edit().putInt(key,value).apply();showScene();}
+                @Override public void choose(String key,int value){SharedPreferences.Editor edit=draft.edit().putInt(key,value);if(key.equals("aod"))edit.putInt("cosmic",0);edit.apply();showScene();}
                 @Override public void photo(){choosePhoto();}
                 @Override public void crop(){openFrameCrop(new SceneOptions(draft).framePhoto,false);}
                 @Override public void example(){loadPhotoExample();}
@@ -54,8 +54,9 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
         SceneOptions chosen=new SceneOptions(draft);
         importTarget=chosen.pairedFrame()?(mode==0?2:0):(mode==2?1:0);
         String title=chosen.pairedFrame()?(mode==0?"相框照片":"锁屏与桌面照片"):mode==2?"桌面照片":"照片";
-        editor.dialogs.choices(title,new String[]{"魅族壁纸","自选照片"},(dialog,which)->{
-                if(which==0)WallpaperLibrary.show(this,editor.dialogs,asset->importImage(()->getAssets().open(asset)));
+        editor.dialogs.choices(title,new String[]{"Alive 动态壁纸","魅族静态壁纸","自选照片"},(dialog,which)->{
+                if(which==0)CosmicLibrary.show(this,editor.dialogs,chosen.cosmic,variant->{draft.edit().putInt("cosmic",variant).apply();showScene();});
+                else if(which==1)WallpaperLibrary.show(this,editor.dialogs,asset->importImage(()->getAssets().open(asset)));
                 else editor.dialogs.choices("选择照片来源",PhotoSources.LABELS,(sourceDialog,source)->openPhotoSource(source)).show();
             }).show();
     }
@@ -160,7 +161,7 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
                     if(isFinishing()||isDestroyed()){completed.delete();return;}
                     // Immutable image + one preference transaction keeps the active wallpaper intact.
                     if(target==2){importBusy(false);openFrameCrop(completed.getName(),true);return;}
-                    SharedPreferences.Editor edit=draft.edit().putString(target==1?"home_photo":"photo",completed.getName());
+                    SharedPreferences.Editor edit=draft.edit().putInt("cosmic",0).putString(target==1?"home_photo":"photo",completed.getName());
                     if(target==1)edit.putBoolean("home_follow_lock",false);
                     edit.apply();importBusy(false);showScene();
                 });
@@ -185,7 +186,7 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
                 runOnUiThread(()->{
                     if(isFinishing()||isDestroyed()){selectedFrame.delete();selectedBackground.delete();return;}
                     draft.edit().putInt("aod",1).putBoolean("frame_pair",true).putString("frame_photo",selectedFrame.getName())
-                        .putString("photo",selectedBackground.getName()).putFloat("frame_x",.5f).putFloat("frame_y",.5f)
+                        .putInt("cosmic",0).putString("photo",selectedBackground.getName()).putFloat("frame_x",.5f).putFloat("frame_y",.5f)
                         .putFloat("frame_size",1).putFloat("frame_angle",0).apply();
                     importBusy(false);showScene();toast("示例已载入，两处照片均可自行更换");
                 });

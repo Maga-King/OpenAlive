@@ -20,4 +20,5 @@ __pycache__/
 !/tools/build_release.py
 !/tools/check_clock_scope.py
 !/tools/check_layout.py
+!/tools/import_cosmic.py
 !/tools/ui-api/

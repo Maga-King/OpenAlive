@@ -1,0 +1,86 @@
+{
+  "aod": {
+    "baseColor": "#0E0D0C",
+    "stripeColor1": "#D2BF98",
+    "stripeColor2": "#BB8553",
+    "stripeColor3": "#949E9B",
+    "stripeDivergent": 0.2,
+    "stripeThickness": 1.1,
+    "highlightThickness": 5,
+    "highlightStrength": 0.6,
+    "highlightColor": "#ffffff",
+    "alpha": 1,
+    "rotate_0": {
+      "startColor": "#000000",
+      "endColor": "#000000"
+    },
+    "rotate_90": {
+      "startColor": "#000000",
+      "endColor": "#000000"
+    },
+    "rotate_180": {
+      "startColor": "#000000",
+      "endColor": "#000000"
+    },
+    "rotate_270": {
+      "startColor": "#000000",
+      "endColor": "#000000"
+    }
+  },
+  "keyguard": {
+    "baseColor": "#BABEC1",
+    "stripeColor1": "#CDC2AC",
+    "stripeColor2": "#BB8553",
+    "stripeColor3": "#949E9B",
+    "stripeDivergent": 0.2,
+    "stripeThickness": 1.3,
+    "highlightThickness": 2,
+    "highlightStrength": 0.8,
+    "highlightColor": "#ffffff",
+    "alpha": 1,
+    "rotate_0": {
+      "startColor": "#B8BEC2",
+      "endColor": "#CDC9C1"
+    },
+    "rotate_90": {
+      "startColor": "#B8BEC2",
+      "endColor": "#CDC9C1"
+    },
+    "rotate_180": {
+      "startColor": "#B8BEC2",
+      "endColor": "#CDC9C1"
+    },
+    "rotate_270": {
+      "startColor": "#B8BEC2",
+      "endColor": "#CDC9C1"
+    }
+  },
+  "unlock": {
+    "baseColor": "#B2B6B9",
+    "stripeColor1": "#CDC2AC",
+    "stripeColor2": "#BB8553",
+    "stripeColor3": "#949E9B",
+    "stripeDivergent": 0.8,
+    "stripeThickness": 0.9,
+    "highlightThickness": 3,
+    "highlightStrength": 2,
+    "highlightColor": "#FFFFFF",
+    "alpha": 1,
+    "rotate_0": {
+      "startColor": "#C0C7CD",
+      "endColor": "#CFD3D6"
+    },
+    "rotate_90": {
+      "startColor": "#C0C7CD",
+      "endColor": "#CFD3D6"
+    },
+    "rotate_180": {
+      "startColor": "#C0C7CD",
+      "endColor": "#CFD3D6"
+    },
+    "rotate_270": {
+      "startColor": "#C0C7CD",
+      "endColor": "#CFD3D6"
+    }
+  }
+}

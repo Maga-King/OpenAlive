@@ -5,14 +5,15 @@ import android.content.SharedPreferences;
 /** A complete snapshot; preview edits never change the applied snapshot. */
 final class SceneOptions {
     static final String APPLIED="scene", DRAFT="scene.preview";
-    final int aod,lock,home,color;
+    final int aod,lock,home,color,cosmic;
     final String photo,homePhoto,framePhoto;
     final boolean followLock,framePair;
     final float frameX,frameY,frameSize,frameAngle;
 
     SceneOptions(SharedPreferences prefs) {
         int a=prefs.getInt("aod",0),l=prefs.getInt("lock",2),h=prefs.getInt("home",6);
-        aod=a==-1||a==0||PhotoStyle.supported(a)||a==101?a:0;
+        int c=prefs.getInt("cosmic",0);cosmic=c==1||c==3||c==4||(c>=6&&c<=15)?c:0;
+        aod=cosmic!=0?0:a==-1||a==0||PhotoStyle.supported(a)||a==101?a:0;
         lock=l>=0&&l<=5?l:2;
         home=h>=6&&h<=9?h:6;
         color=prefs.getInt("color",0xff264552);
@@ -34,7 +35,7 @@ final class SceneOptions {
     boolean pairedFrame(){return aod==1&&framePair;}
 
     boolean save(SharedPreferences target) {
-        return target.edit().putInt("aod",aod).putInt("lock",lock)
+        return target.edit().putInt("aod",aod).putInt("cosmic",cosmic).putInt("lock",lock)
             .putInt("home",home).putInt("color",color).putString("photo",photo)
             .putString("home_photo",homePhoto).putBoolean("home_follow_lock",followLock)
             .putBoolean("frame_pair",framePair).putString("frame_photo",framePhoto)
