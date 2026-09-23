@@ -21,6 +21,7 @@ final class RenderLoop {
     private EGLSurface window=EGL14.EGL_NO_SURFACE;
     private long scene;
     private SceneMotion motion;
+    private TextureMotion textureMotion;
     private FrameMotion frameMotion;
     private final FrameSample frameSample=new FrameSample();
     private MaskFrames masks;
@@ -65,7 +66,7 @@ final class RenderLoop {
             else frameMotion.followClock(aodRegion.sceneX(),aodRegion.sceneY());
         }
     }
-    void mode(int next,boolean animate){handler.post(()->{if(mode!=next){stateReported=false;frameSample.clear();if(next==0)aodMotion.enter(System.nanoTime());else aodMotion.leave();}mode=next;if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!visible)frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!visible)motion.pause(true);}schedule();});}
+    void mode(int next,boolean animate){handler.post(()->{if(mode!=next){stateReported=false;frameSample.clear();if(next==0)aodMotion.enter(System.nanoTime());else aodMotion.leave();}mode=next;if(textureMotion!=null)textureMotion.change(next,animate);if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!visible)frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!visible)motion.pause(true);}schedule();});}
     void visible(boolean value){handler.post(()->{visible=value;if(motion!=null)motion.pause(!value);if(frameMotion!=null)frameMotion.pause(!value);stopFrames();if(value){pacer.reset();schedule();}else if(clockToken!=0)reportClock(false);});}
     void reload(){if(!closed){handler.removeCallbacks(reloadTask);handler.post(reloadTask);}}
     private void reloadScene(){if(scene==0)return;try{if(motion!=null)motion.close();closeFrame();NativeScene.destroy(scene);scene=0;GLES30.glDeleteTextures(1,new int[]{photo},0);photo=0;clearAuxiliary();SceneOptions options=new SceneOptions(preferences);photo=loadPhoto(options.photo,true);createScene(options);schedule();}catch(Exception e){Log.e("AliveClean","Scene reload failed",e);release();}}
@@ -74,10 +75,11 @@ final class RenderLoop {
     private void onVsync(long time){framePosted=false;frameTime=time;handler.post(renderTask);}
     private void stopFrames(){if(choreographer!=null)choreographer.removeFrameCallback(frame);framePosted=false;handler.removeCallbacks(renderTask);}
     private void createScene(SceneOptions options)throws IOException{
-        int lock=options.pairedFrame()?0:options.lock,home=options.pairedFrame()?6:options.home;
+        int lock=options.lock,home=options.home;
         scene=NativeScene.create(width,height,mode,options.aod,lock,home);
         if(scene==0)throw new IllegalStateException("Native scene creation failed; see shader log");
-        motion=new SceneMotion(width,height,mode,PhotoStyle.supported(options.aod)?-1:options.aod,lock,home);
+        motion=new SceneMotion(width,height,mode,PhotoStyle.supported(options.aod)?-1:options.aod,lock,home,false);
+        textureMotion=new TextureMotion(width,height,mode,lock,home);
         if(PhotoStyle.supported(options.aod)){
             PhotoStyle style=PhotoStyle.get(options.aod);
             frameMotion=new FrameMotion(width,height,mode,options.pairedFrame(),style);
@@ -102,7 +104,7 @@ final class RenderLoop {
         if(!options.pairedFrame()&&!options.followLock&&!options.homePhoto.equals(options.photo)&&new File(context.getFilesDir(),options.homePhoto).isFile()){
             auxiliary[4]=loadPhoto(options.homePhoto,false);NativeScene.texture(scene,4,auxiliary[4],homeWidth,homeHeight);
         }
-        if(options.lock==3){loadAuxiliary(1,"shader/photo/lock/groundGlass/gray.png",false);loadAuxiliary(2,"shader/photo/lock/groundGlass/mask.png",true);}
+        if(options.lock==3||options.home==9){loadAuxiliary(1,"shader/photo/lock/groundGlass/gray.png",false);loadAuxiliary(2,"shader/photo/lock/groundGlass/mask.png",true);}
         if(options.aod==101)loadAuxiliary(3,"shader/photo/aod/fullAod/gray.png",false);
     }
     private void loadAuxiliary(int slot,String path,boolean repeat)throws IOException{
@@ -153,13 +155,15 @@ final class RenderLoop {
                 // Do not chase a newer animator sample while waiting for its mask:
                 // a busy app can otherwise starve every intermediate mask until
                 // the final one. Geometry, photo blend and paper share one sample.
+                if(!frameSample.pending)frameSample.captureTextures(textureMotion);
                 frameSample.capture(frameMotion,motion,SystemClock.uptimeMillis());
                 if(!masks.upload(frameSample.mask,auxiliary[0])){if(!masks.failed())schedule();else reportClock(false);return;}
                 if(!NativeScene.frame(scene,frameSample.effect))throw new IllegalStateException("Invalid frame effect packet");
             }
             if(Diagnostics.TRACE&&mode==0&&!stateReported&&motion.values[0]>.999f){stateReported=true;Log.i("AliveClean","AOD frame lensScale="+motion.values[4]+" x="+motion.values[8]+" y="+motion.values[9]+" viewport="+width+"x"+height+" photo="+photo);}
-            boolean moving=motion.transitionActive()||(frameMotion!=null?frameMotion.active():mode==0&&(preview||aodMotion.running(time)));
+            boolean moving=textureMotion.active()||motion.transitionActive()||(frameMotion!=null?frameMotion.active():mode==0&&(preview||aodMotion.running(time)));
             if(pacer.due(time)||!moving){
+                if(!NativeScene.effects(scene,frameMotion==null?textureMotion.packet():frameSample.textures))throw new IllegalStateException("Invalid texture effect packet");
                 if(!NativeScene.render(scene,photo,decorator,aspect,frameMotion==null?motion.packet():frameSample.base))throw new IllegalStateException("Invalid native frame packet");
                 if(!EGL14.eglSwapBuffers(display,window))throw new IllegalStateException("EGL swap error "+EGL14.eglGetError());
                 if(clockToken!=0&&mode==1){if(frameMotion==null)reportClock(false);else if(frameSample.expanded)reportClock(true);}
@@ -171,6 +175,6 @@ final class RenderLoop {
             if(moving||frameSample.pending||resumedSample)schedule();
         }catch(Exception e){Log.e("AliveClean","Frame failed",e);release();}
     }
-    private void closeFrame(){if(scene!=0)reportClock(false);frameSample.clear();if(frameMotion!=null){frameMotion.close();frameMotion=null;}if(masks!=null){masks.close();masks=null;}}
+    private void closeFrame(){if(textureMotion!=null){textureMotion.close();textureMotion=null;}if(scene!=0)reportClock(false);frameSample.clear();if(frameMotion!=null){frameMotion.close();frameMotion=null;}if(masks!=null){masks.close();masks=null;}}
     private void release(){stopFrames();handler.removeCallbacks(reloadTask);closeFrame();if(motion!=null){motion.close();motion=null;}if(display!=EGL14.EGL_NO_DISPLAY){if(scene!=0){NativeScene.destroy(scene);scene=0;}clearAuxiliary();GLES30.glDeleteTextures(2,new int[]{photo,decorator},0);photo=decorator=0;EGL14.eglMakeCurrent(display,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_CONTEXT);if(window!=EGL14.EGL_NO_SURFACE)EGL14.eglDestroySurface(display,window);if(egl!=EGL14.EGL_NO_CONTEXT)EGL14.eglDestroyContext(display,egl);EGL14.eglTerminate(display);EGL14.eglReleaseThread();}display=EGL14.EGL_NO_DISPLAY;egl=EGL14.EGL_NO_CONTEXT;window=EGL14.EGL_NO_SURFACE;}
 }

@@ -20,11 +20,16 @@ final class ColorOsClockTracker {
     private final ClockInkBounds ink=new ClockInkBounds();
     private final Rect inkBounds=new Rect();
     private Object plugin;
-    private int officialClockSize=-1;
     private boolean active,workshop,failed;
     private int aodUiState;
     private final Rect bounds=new Rect(),last=new Rect();
     private final Point displaySize=new Point();
+    private final Rect transitionBounds=new Rect();
+    private int sceneMode=-1,transitionStable;
+    private boolean aodTransition;
+    private boolean aodAnchorLocked;
+    private int officialClockSize=-1;
+    private String targetAodState="";
     private int lastDisplay=-1,lastWidth,lastHeight;
     private final ViewTreeObserver.OnPreDrawListener predraw=()->{measure();return true;};
     ColorOsClockTracker(ClassLoader loader){this.loader=loader;}
@@ -43,8 +48,18 @@ final class ColorOsClockTracker {
         });
     }
     void scene(Context context,boolean selected,int mode,String state){
+        int previous=sceneMode;sceneMode=mode;
         active=selected&&mode==0;workshop=state.equals("WORKSHOP_AOD")||state.equals("PANORAMIC_AOD");
         aodUiState=state.equals("WORKSHOP_AOD")?3:5;
+        // The clock tree is rebuilt after the scene callback.  During a
+        // lock/home -> AOD transition its first few bounds can describe the
+        // moving handoff view rather than the settled AOD clock.  Require two
+        // equal official samples before publishing a changed anchor.
+        aodTransition=active&&previous!=0;
+        if(mode!=0||aodTransition||!state.equals(targetAodState))officialClockSize=-1;
+        if(mode!=0||aodTransition)aodAnchorLocked=false;
+        targetAodState=state;
+        transitionBounds.setEmpty();transitionStable=0;
         if(active){attach();main.postDelayed(this::attach,80);main.postDelayed(this::attach,350);}
         else detach();
     }
@@ -71,7 +86,7 @@ final class ColorOsClockTracker {
                 Object host=classic.get();if(host!=null){Object v=XposedHelpers.getObjectField(host,"mAodViewFromApk");candidate=v instanceof View?(View)v:host instanceof View?(View)host:null;}
             }
             if(candidate==null)return;
-            if(root!=candidate){detach();root=candidate;scope=new ClockScope(root);officialClockSize=-1;last.setEmpty();root.getViewTreeObserver().addOnPreDrawListener(predraw);}
+            if(root!=candidate){detach();root=candidate;scope=new ClockScope(root);last.setEmpty();root.getViewTreeObserver().addOnPreDrawListener(predraw);}
             scope.refresh();
             timeView=findTimeView(root,0);
             digits.clear();findDigits(root,0);
@@ -111,10 +126,13 @@ final class ColorOsClockTracker {
             Display display=root.getDisplay();if(display==null)return;
             display.getRealSize(displaySize);
             bounds.setEmpty();String source="digits";
+            scope.refresh();
+            if(aodTransition&&workshop&&!scope.allowsPluginFallback())return;
             boolean officialClock=workshop&&readOfficialClockRect(bounds);
             if(officialClock)source="official-clock";
+            if(aodTransition&&workshop&&!officialClock)return;
+            View artwork=scope.artwork();
             if(!officialClock){
-                View artwork=scope.artwork();
                 if(artwork!=null&&artwork.getGlobalVisibleRect(bounds)&&validBounds())source="artwork";
                 else bounds.setEmpty();
             }
@@ -145,12 +163,25 @@ final class ColorOsClockTracker {
                 Bundle query=new Bundle();query.putInt("uiState",aodUiState);
                 Object controller=keyguard.get();
                 if(controller==null)return;
-                query.putInt("clockSize",((Number)XposedHelpers.callMethod(controller,"pluginClockSize")).intValue());
+                query.putInt("clockSize",clockSize(controller));
                 Object value=XposedHelpers.callMethod(plugin,"getClockVisibleRect",query);
                 if(value instanceof Rect)bounds.set((Rect)value);
                 else if(value instanceof Bundle){Object rect=((Bundle)value).getParcelable("visibleRect");if(rect instanceof Rect)bounds.set((Rect)rect);}
             }else if(!validBounds()&&!workshop){bounds.setEmpty();root.getGlobalVisibleRect(bounds);source="root";}
             if(!validBounds())return;
+            if(aodTransition){
+                if(transitionBounds.isEmpty()||!transitionBounds.equals(bounds)){
+                    transitionBounds.set(bounds);transitionStable=1;
+                }else transitionStable++;
+                if(transitionStable<2)return;
+                aodTransition=false;
+            }
+            // One AOD session has one official clock anchor.  SystemUI may
+            // rebuild the clock tree again after the mask animation and
+            // briefly expose the launcher/hand-off bounds; accepting that
+            // second rectangle is the source of the end-of-transition jump.
+            if(aodAnchorLocked)return;
+            aodAnchorLocked=true;
             int displayId=display.getDisplayId();
             if(last.equals(bounds)&&lastDisplay==displayId&&lastWidth==displaySize.x&&lastHeight==displaySize.y)return;
             boolean first=last.isEmpty();
@@ -166,13 +197,16 @@ final class ColorOsClockTracker {
             if(plugin==null)return false;
             Bundle query=new Bundle();query.putInt("uiState",aodUiState);
             Object controller=keyguard.get();if(controller==null)return false;
-            if(officialClockSize<0)officialClockSize=((Number)XposedHelpers.callMethod(controller,"pluginClockSize")).intValue();
-            query.putInt("clockSize",officialClockSize);
+            query.putInt("clockSize",clockSize(controller));
             Object value=XposedHelpers.callMethod(plugin,"getClockVisibleRect",query);
             if(value instanceof Rect)out.set((Rect)value);
             else if(value instanceof Bundle){Object rect=((Bundle)value).getParcelable("visibleRect");if(rect instanceof Rect)out.set((Rect)rect);}
             return validBounds();
         }catch(Throwable ignored){return false;}
+    }
+    private int clockSize(Object controller)throws Throwable{
+        if(officialClockSize<0)officialClockSize=((Number)XposedHelpers.callMethod(controller,"pluginClockSize")).intValue();
+        return officialClockSize;
     }
     private void detach(){
         if(root!=null&&root.getViewTreeObserver().isAlive())root.getViewTreeObserver().removeOnPreDrawListener(predraw);

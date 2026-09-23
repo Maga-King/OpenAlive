@@ -28,8 +28,8 @@ struct Image { id:u32, width:i32, height:i32 }
 
 struct Scene {
     quad:Quad, copy:Program, lock_program:Program, aod_program:Program,
-    home_program:Program, blend:Program, down:Program, gaussian:Program, up:Program,
-    targets:Vec<Target>, images:[Image;6], color:[f32;3], frame:Option<[f32;36]>, frame_crop:[f32;4],
+    home_program:Program, home_effect_program:Program, blend:Program, down:Program, gaussian:Program, up:Program,
+    targets:Vec<Target>, images:[Image;6], color:[f32;3], frame:Option<[f32;36]>, effects:Option<[f32;20]>, frame_crop:[f32;4],
     w:i32, h:i32, aod:i32, lock:i32, home:i32,
 }
 
@@ -62,12 +62,18 @@ impl Scene {
                     "vec3 contentColor=u_pair?frameColor:texture(u_photo,v_content_texCoord).rgb;");
             Program::new(vertex,&fragment)?
         }else{program(aod_path)?};
-        let home_path=match home {7=>"photo/launcher/blur/blur",9=>"photo/lock/fillMask/fill_mask",_=>"photo/launcher/original/original"};
+        let home_path="photo/launcher/original/original";
+        let home_effect_path=match home {
+            7=>"photo/lock/straightGlass/straight_glass",
+            8=>"photo/lock/curveGlass/curve_glass",
+            9=>"photo/lock/groundGlass/ground_glass",
+            _=>"photo/launcher/original/original",
+        };
         Ok(Self {
             quad:Quad::new(),copy:Program::new(COPY_V,COPY_F)?,lock_program:program(lock_path)?,
-            aod_program,home_program:program(home_path)?,blend:program(blend_path)?,
+            aod_program,home_program:program(home_path)?,home_effect_program:program(home_effect_path)?,blend:program(blend_path)?,
             down:program("blur/down_sample")?,gaussian:program("blur/gaussian")?,up:program("blur/up_sample")?,
-            targets,images:[Image::default();6],color:[0.15,0.27,0.32],frame:None,frame_crop:[0.5,0.5,1.,0.],w,h,aod,lock,home,
+            targets,images:[Image::default();6],color:[0.15,0.27,0.32],frame:None,effects:None,frame_crop:[0.5,0.5,1.,0.],w,h,aod,lock,home,
         })
     }
     fn copy(&mut self,input:u32,target:usize,aspect:f32,flip:bool) {
@@ -92,16 +98,17 @@ impl Scene {
         self.targets[5].texture
     }
     unsafe fn lock_pass(&mut self,frame:&Frame) {
+        let effect=self.effect_values(frame,0);
         self.targets[1].bind();
         if self.lock==4 {glClearColor(self.color[0],self.color[1],self.color[2],1.);glClear(0x4000);return;}
         let p=&mut self.lock_program;p.bind();p.texture("u_lockTex",0,self.targets[0].texture);p.texture("u_texture",0,self.targets[0].texture);
         p.v4("u_display_uv_rect",[0.,0.,1.,1.]);p.v3("u_color",self.color);
         if self.lock==1||self.lock==2 {
-            let g=&frame.0[13..19];
+            let g=&effect;
             p.f("u_tiling",g[0]);p.f("u_lineWidth",g[1]);p.f("u_lineOffset",g[2]);p.f("u_maskThreshold",g[3]);p.v2("u_offsetStrength",g[4],g[5]);p.f("u_lineFrequency",40.);p.f("u_lineAmplitude",0.045);
         } else if self.lock==3 {
             let gray=self.images[1];p.texture("u_grayTex",1,gray.id);p.texture("u_maskTex",2,self.images[2].id);
-            p.v2("u_maskOffset",frame.0[23],frame.0[24]);p.f("u_minGray",frame.0[19]);p.f("u_maskThreshold",frame.0[20]);
+            p.v2("u_maskOffset",effect[8],effect[9]);p.f("u_minGray",effect[6]);p.f("u_maskThreshold",effect[7]);
             p.v2("u_dudv",1./gray.width.max(1) as f32,1./gray.height.max(1) as f32);
         }
         self.quad.draw();
@@ -112,7 +119,10 @@ impl Scene {
             let Some(f)=self.frame else{self.targets[2].bind();return;};
             let source=self.blurred(self.targets[1].texture,f[33],12.);
             self.targets[2].bind();let p=&mut self.aod_program;p.bind();
-            p.texture("u_photo",0,source);p.texture("u_launcher_effect",1,self.targets[3].texture);
+            p.texture("u_photo",0,source);
+            // Paired photos expand into the current screen's texture selection.
+            let endpoint=if self.aod==1&&self.images[5].id!=0&&frame.ratio()[1]>0.{1}else{3};
+            p.texture("u_launcher_effect",1,self.targets[endpoint].texture);
             let image=self.images[5];p.i("u_pair",if self.aod==1&&image.id!=0{1}else{0});
             if image.id!=0{
                 p.texture("u_frame_photo",3,image.id);
@@ -147,11 +157,26 @@ impl Scene {
         let matrix=math::mul(math::translate(0.,1.),math::mul(math::scale(1.,-1.),matrix));
         p.m4("u_texture_matrix",&matrix);p.m4("u_decorator_matrix",&frame.matrix(41));self.quad.draw();
     }
-    unsafe fn home_pass(&mut self) {
-        let input=if self.home==7{self.blurred(self.targets[0].texture,22.,4.4)}else{self.targets[0].texture};
+    unsafe fn home_pass(&mut self,frame:&Frame) {
+        let effect=self.effect_values(frame,10);
         self.targets[3].bind();
-        if self.home==8 {glClearColor(self.color[0],self.color[1],self.color[2],1.);glClear(0x4000);return;}
-        let p=&mut self.home_program;p.bind();p.texture("u_texture",0,input);p.v3("u_color",self.color);p.v4("u_display_uv_rect",[0.,0.,1.,1.]);self.quad.draw();
+        let style=self.home.saturating_sub(6);
+        if style==0 {
+            let p=&mut self.home_program;p.bind();p.texture("u_texture",0,self.targets[0].texture);p.v3("u_color",self.color);p.v4("u_display_uv_rect",[0.,0.,1.,1.]);self.quad.draw();return;
+        }
+        let p=&mut self.home_effect_program;p.bind();p.texture("u_lockTex",0,self.targets[0].texture);p.texture("u_texture",0,self.targets[0].texture);
+        p.v4("u_display_uv_rect",[0.,0.,1.,1.]);p.v3("u_color",self.color);
+        if style==1||style==2 {
+            p.f("u_tiling",effect[0]);p.f("u_lineWidth",effect[1]);p.f("u_lineOffset",effect[2]);p.f("u_maskThreshold",effect[3]);p.v2("u_offsetStrength",effect[4],effect[5]);p.f("u_lineFrequency",40.);p.f("u_lineAmplitude",0.045);
+        } else {
+            let gray=self.images[1];p.texture("u_grayTex",1,gray.id);p.texture("u_maskTex",2,self.images[2].id);
+            p.v2("u_maskOffset",effect[8],effect[9]);p.f("u_minGray",effect[6]);p.f("u_maskThreshold",effect[7]);p.v2("u_dudv",1./gray.width.max(1) as f32,1./gray.height.max(1) as f32);
+        }
+        self.quad.draw();
+    }
+    fn effect_values(&self,frame:&Frame,offset:usize)->[f32;10] {
+        if let Some(values)=self.effects {return values[offset..offset+10].try_into().unwrap();}
+        let mut values=[0.;10];values[..8].copy_from_slice(&frame.0[13..21]);values[8..].copy_from_slice(&frame.0[23..25]);values
     }
     unsafe fn draw(&mut self,photo:u32,decor:u32,aspect:f32,frame:&Frame) {
         let l=frame.lens();
@@ -159,13 +184,13 @@ impl Scene {
         let aod_visible=ratio[0]>0.;
         let lock_visible=ratio[1]>0.||(aod_visible&&self.aod>=0);
         let home_visible=ratio[2]>0.;
-        if (lock_visible&&self.lock!=4)||(home_visible&&self.home!=8){self.copy(photo,0,aspect,true);}
+        if lock_visible||home_visible {self.copy(photo,0,aspect,true);}
         if lock_visible{self.lock_pass(frame);}
         if !(1..=5).contains(&self.aod)&&aod_visible{self.aod_pass(frame,decor);}
         if home_visible||(1..=5).contains(&self.aod)&&aod_visible{
             let home=if (1..=5).contains(&self.aod)&&self.images[5].id!=0{Image::default()}else{self.images[4]};
             if home.id!=0{self.copy(home.id,0,home.width as f32/home.height as f32,true);}
-            self.home_pass();
+            self.home_pass(frame);
         }
         if (1..=5).contains(&self.aod)&&aod_visible{self.aod_pass(frame,decor);}
         glBindFramebuffer(0x8D40,0);glViewport(0,0,self.w,self.h);self.blend.bind();
@@ -198,6 +223,20 @@ pub unsafe extern "C" fn alive_scene_frame(handle:i64,values:*const f32,count:us
     let mut data=[0.;36];std::ptr::copy_nonoverlapping(values,data.as_mut_ptr(),36);
     if data.iter().any(|v|!v.is_finite())||data[35]!=1.||!(0.0..=1.0).contains(&data[32]){return 0;}
     (*(handle as *mut Scene)).frame=Some(data);1
+}
+#[no_mangle]
+pub unsafe extern "C" fn alive_scene_effects(handle:i64,values:*const f32,count:usize)->u8 {
+    if handle==0||values.is_null()||count!=20{return 0;}
+    let mut data=[0.;20];std::ptr::copy_nonoverlapping(values,data.as_mut_ptr(),20);
+    if data.iter().any(|v|!v.is_finite()){return 0;}
+    (*(handle as *mut Scene)).effects=Some(data);1
+}
+#[cfg(target_os="android")]
+#[no_mangle]
+pub unsafe extern "system" fn Java_org_aliveclean_NativeScene_effects(env:*mut jni_sys::JNIEnv,_:jni_sys::jclass,handle:i64,buffer:jni_sys::jobject)->u8 {
+    if env.is_null()||buffer.is_null(){return 0;}let jni=&**env;
+    if jni.GetDirectBufferCapacity.unwrap()(env,buffer)!=80{return 0;}
+    alive_scene_effects(handle,jni.GetDirectBufferAddress.unwrap()(env,buffer).cast(),20)
 }
 #[cfg(target_os="android")]
 #[no_mangle]

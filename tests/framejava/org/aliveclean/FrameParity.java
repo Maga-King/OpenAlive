@@ -87,6 +87,26 @@ public final class FrameParity {
             if(!wakeSample.expanded)throw new AssertionError("Final sample lost completion");checks++;
             AnimatorSet reverse=waking.prepare(0,400);seek(reverse,450);wakeSample.clear();wakeSample.capture(waking,wakingCommon,13);
             if(wakeSample.expanded)throw new AssertionError("AOD return reported lockscreen completion");checks++;
+            // A full-screen frame releases the lock clock while a longer
+            // texture reveal continues. Keep the actual submitted sample
+            // authoritative if decoding stalls across that boundary.
+            for(boolean paired:new boolean[]{false,true})for(int lockStyle=0;lockStyle<=3;lockStyle++){
+                FrameMotion openingFrame=new FrameMotion(1440,3168,0,paired);
+                SceneMotion textured=new SceneMotion(1440,3168,0,-1,lockStyle,6);
+                AnimatorSet opening=openingFrame.prepare(1,textured.blendDuration(0));
+                FrameSample sample=new FrameSample();
+                seek(opening,516);sample.capture(openingFrame,textured,1);
+                if(sample.expanded)throw new AssertionError("Clock released before photo expanded");checks++;
+                seek(opening,567);
+                if(!openingFrame.expanded())throw new AssertionError("Texture delayed lock clock style="+lockStyle);checks++;
+                if(lockStyle!=0&&openingFrame.ratios[0]<=0)throw new AssertionError("Fixture lost unfinished texture blend");checks++;
+                sample.capture(openingFrame,textured,2);
+                if(sample.expanded)throw new AssertionError("Unsubmitted frame released clock");checks++;
+                sample.clear();sample.capture(openingFrame,textured,3);
+                if(!sample.expanded)throw new AssertionError("Expanded sample still waits for texture");checks++;
+                openingFrame.prepare(0,textured.blendDuration(1));
+                if(openingFrame.expanded())throw new AssertionError("Sleep reversal released clock");checks++;
+            }
             JSONArray frames=new JSONArray();
             for(style=1;style<=5;style++)for(int tr=0;tr<6;tr++){
                 FrameMotion f=new FrameMotion(96,192,PAIRS[tr][0],false,PhotoStyle.get(style));SceneMotion base=new SceneMotion(96,192,PAIRS[tr][0],-1,0,6);

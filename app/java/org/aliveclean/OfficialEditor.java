@@ -129,9 +129,9 @@ final class OfficialEditor implements AutoCloseable {
         ui.find(bars[2],"btn_following_lockscreen").setVisibility(chosen.pairedFrame()?View.GONE:View.VISIBLE);
         ImageView following=(ImageView)ui.find(bars[2],"iv_following_lockscreen");
         following.setImageDrawable(ui.getDrawable(ui.id("drawable","ic_wallpaper_picker")));following.setSelected(chosen.followLock);
-        ui.find(bars[1],"btn_alive_texture").setVisibility(chosen.pairedFrame()?View.GONE:View.VISIBLE);
-        ui.find(bars[2],"btn_alive_effect").setVisibility(chosen.pairedFrame()?View.GONE:View.VISIBLE);
-        ui.find(bars[2],"split_line").setVisibility(chosen.pairedFrame()?View.GONE:View.VISIBLE);
+        ui.find(bars[1],"btn_alive_texture").setVisibility(View.VISIBLE);
+        ui.find(bars[2],"btn_alive_effect").setVisibility(View.VISIBLE);
+        ui.find(bars[2],"split_line").setVisibility(View.VISIBLE);
         // Keep the official photo button but make the shared-photo destination explicit.
         ((TextView)ui.find(bars[1],"tv_wallpaper_picker")).setText(chosen.pairedFrame()?"锁屏与桌面照片":"壁纸");
         if(visiblePanel!=null)visiblePanel.refresh();
@@ -225,7 +225,9 @@ final class OfficialEditor implements AutoCloseable {
                 choices.add(new Choice(3,"雾花","alive_photo_wallpaper_lockscreen_frosted_glass.png"));
             }else{
                 choices.add(new Choice(6,"无","alive_photo_wallpaper_lockscreen_source.png"));
-                choices.add(new Choice(7,"模糊","alive_photo_wallpaper_lockscreen_frosted_glass.png"));
+                choices.add(new Choice(7,"长虹","alive_photo_wallpaper_lockscreen_straight_line.png"));
+                choices.add(new Choice(8,"波浪","alive_photo_wallpaper_lockscreen_curve.png"));
+                choices.add(new Choice(9,"雾花","alive_photo_wallpaper_lockscreen_frosted_glass.png"));
             }
             adapter.notifyDataSetChanged();
         }

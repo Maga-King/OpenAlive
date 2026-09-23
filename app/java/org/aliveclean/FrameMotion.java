@@ -67,7 +67,16 @@ final class FrameMotion {
     void finish(){if(animation!=null)animation.end();}
     void pause(boolean paused){if(animation!=null){if(paused)animation.pause();else animation.resume();}}
     boolean active(){return animation!=null&&animation.isStarted();}
-    boolean expanded(){return mode!=0&&ratios[0]<.00001f&&Math.abs(values[1])<.00001f&&Math.abs(values[2]-2.35f)<.00001f&&Math.abs(values[5])<.00001f&&values[6]>=style.endMicros-1;}
+    boolean expanded(){
+        // The frame's final mask already covers the screen once its geometry
+        // has opened. The composition ratio can keep running for a longer
+        // lockscreen texture (e.g. ground glass); it must not hold the clock.
+        // Other photo styles keep their original completion condition.
+        return mode!=0&&(style.id==1||ratios[0]<.00001f)
+                &&Math.abs(values[1])<.00001f&&Math.abs(values[2]-2.35f)<.00001f
+                &&Math.abs(values[4])<.00001f&&Math.abs(values[5])<.00001f
+                &&values[6]>=style.endMicros-1;
+    }
     void followClock(float x,float y){
         if(style.id==1)return;
         anchorX=x;anchorY=y;

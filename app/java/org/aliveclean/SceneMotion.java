@@ -28,6 +28,7 @@ final class SceneMotion {
     private final FloatBuffer floats=packet.asFloatBuffer();
     private final SceneMatrices matrices;
     private final int aod,lock,home;
+    private final boolean textureTracks;
     private final float expandedScale;
     private final Random random=new Random();
     private AnimatorSet animation;
@@ -46,6 +47,10 @@ final class SceneMotion {
     private static final FloatProperty<SceneMotion>[] PROPERTIES=properties();
 
     SceneMotion(int width,int height,int mode,int aod,int lock,int home) {
+        this(width,height,mode,aod,lock,home,true);
+    }
+    SceneMotion(int width,int height,int mode,int aod,int lock,int home,boolean textureTracks) {
+        this.textureTracks=textureTracks;
         this.mode=mode;this.aod=aod;this.lock=lock;this.home=home;
         expandedScale="2.33".equals(new DecimalFormat("#.##").format((double)height/width))?1.3f:1.24f;
         matrices=new SceneMatrices(width,height);
@@ -185,7 +190,7 @@ final class SceneMotion {
         int previous=mode,tr=transition(previous,next);
         ArrayList<Animator> tracks=new ArrayList<>();
         if(aod==0)lens(tracks,tr,next);else if(aod==101)full(tracks,tr,next);
-        if(lock==1||lock==2)glass(tracks,tr,next);else if(lock==3)ground(tracks,tr,next);
+        if(textureTracks){if(lock==1||lock==2)glass(tracks,tr,next);else if(lock==3)ground(tracks,tr,next);}
         final float[] source={values[0],values[1],values[2]};
         ValueAnimator blend=ValueAnimator.ofFloat(0,1);
         blend.setDuration(blendDuration(tr));blend.setInterpolator(tr==2||tr==3?EASE:LINEAR);
@@ -196,6 +201,8 @@ final class SceneMotion {
         mode=next;return animation;
     }
     void change(int next){if(mode!=next)prepare(next).start();}
+    /** Switch composition owner without creating a second texture timeline. */
+    void preserveMode(int next){mode=next;}
     void finish(){if(animation!=null)animation.end();}
     boolean active(){return animation!=null&&animation.isStarted()||aod==0&&mode==0;}
     boolean transitionActive(){return animation!=null&&animation.isStarted();}
