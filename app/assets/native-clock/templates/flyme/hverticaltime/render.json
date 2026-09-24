@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "flyme.alive.hverticaltime",
+  "width": 500,
+  "height": 500,
+  "texts": [
+    {
+      "x": 250.0,
+      "y": 185.0,
+      "size": 150.0,
+      "align": "center",
+      "alignV": "center",
+      "font": "SFPRO-SemiCondensedMedium.otf",
+      "field": "hour"
+    },
+    {
+      "x": 250.0,
+      "y": 345.0,
+      "size": 150.0,
+      "align": "center",
+      "alignV": "center",
+      "font": "SFPRO-SemiCondensedMedium.otf",
+      "field": "minute"
+    }
+  ]
+}

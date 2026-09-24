@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<AodConfig>
+
+  <!-- 是否支持修改颜色；1 支持，0不支持，默认为0 -->
+  <support_colour>0</support_colour>
+  <!-- 定义其他模块元素的颜色；默认白色 -->
+  <set_colour>#FFFFFF</set_colour>
+   <!-- 定义其他模块的排版，0居中、1居左、2居右；默认0> -->
+  <align>0</align>
+
+  <!-- 声明主模块定制了哪些元素。0未定制，1已定制，默认为 0-->
+
+  <!-- 定制时间-已定制 -->
+  <time_enable>1</time_enable>
+  <!-- 定制公历-已定制 -->
+  <calendar_enable>0</calendar_enable>  
+  <!-- 定制农历-已定制 -->
+  <lunar_calendar_enable>0</lunar_calendar_enable>
+  <!-- 定制电量-未定制 -->
+  <battery_enable>0</battery_enable>
+  <!-- 定制天气-未定制 -->
+  <weather_enable>0</weather_enable>
+  <!-- 定制步数-未定制 -->
+  <step_enable>0</step_enable>
+  <!-- 定制拿起手机次数-未定制 -->
+  <pickup_phone_enable>0</pickup_phone_enable>
+  <screen_width>500</screen_width>
+  <screen_height>500</screen_height>
+
+ 
+</AodConfig>

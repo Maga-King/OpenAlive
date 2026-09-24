@@ -6,7 +6,9 @@
 
 另有魅族动态壁纸和通知光效：可以选择来通知时短暂点亮息屏、系统光效，或 Flyme 圆圈与双侧光带；圆圈支持预设和自定义颜色。
 
-需要 **Root + LSPosed**。安装后启用模块，勾选系统框架和系统界面，重启，再打开应用选择并应用壁纸。目前主要在 ColorOS 17 上适配，其他系统还需要慢慢调。
+ColorOS 系统锁屏编辑器里也加入了魅族和澎湃时钟，可调字体、颜色和效果，并支持息屏衔接与留光。
+
+需要 **Root + LSPosed**。安装后启用模块，勾选系统框架、系统界面和壁纸与个性化（`com.oplus.wallpapers`），重启，再打开应用选择并应用壁纸。目前主要在 ColorOS 17 上适配，其他系统还需要慢慢调。
 
 下载：[Releases](https://github.com/Maga-King/OpenAlive/releases) · 编译：[BUILD.md](BUILD.md)
 

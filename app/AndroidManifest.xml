@@ -1,10 +1,12 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.aliveclean" android:versionCode="34" android:versionName="0.4.18-preview">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.aliveclean" android:versionCode="35" android:versionName="0.4.19-preview">
   <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="35"/>
   <uses-permission android:name="android.permission.SET_WALLPAPER"/>
   <uses-permission android:name="android.permission.AMBIENT_WALLPAPER"/>
   <uses-feature android:glEsVersion="0x00030000" android:required="true"/>
   <uses-feature android:name="android.software.live_wallpaper" android:required="true"/>
   <queries>
+    <package android:name="com.android.systemui"/>
+    <package android:name="com.oplus.wallpapers"/>
     <package android:name="org.lsposed.manager"/>
     <package android:name="com.heytap.themestore"/><package android:name="com.oplus.themestore"/>
     <provider android:authorities="com.oplus.aod.AodMachineHelperProvider"/>
@@ -26,6 +28,7 @@
     <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.Clean.Editor"/>
     <activity android:name=".FrameCropActivity" android:exported="false" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <provider android:name=".SceneProvider" android:authorities="org.aliveclean.scene" android:exported="true" android:permission="android.permission.STATUS_BAR"/>
+    <provider android:name=".NativeClockStatusProvider" android:authorities="org.aliveclean.clock.runtime" android:exported="true" android:directBootAware="true"/>
     <service android:name=".CleanWallpaper" android:exported="true" android:permission="android.permission.BIND_WALLPAPER">
       <intent-filter><action android:name="android.service.wallpaper.WallpaperService"/></intent-filter>
       <meta-data android:name="android.service.wallpaper" android:resource="@xml/wallpaper"/>

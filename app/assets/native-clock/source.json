@@ -1,0 +1,86 @@
+[
+  {
+    "file": "flyme/FlymeNumber-VF.ttf",
+    "source": "flyme",
+    "apk_sha256": "069e1977149da5d1d311b0100876ddea108e4558a803b3438bf84ba029fad856",
+    "member": "assets/fonts/FlymeNumber-VF.ttf",
+    "original_file": "original/flyme/FlymeNumber-VF.ttf",
+    "original_sha256": "edb0102fe45c45d1266707e624f24a104d1a8d16d238e97adfc25f14cc5ce9fb",
+    "sha256": "89d7514ac98c75662258f903d1311fae206bdca94f91fd0ce46d648423cfd80d",
+    "adaptation": "hhea/OS2/head and CFF FontBBox line metrics; glyphs and advances unchanged",
+    "metric_reference": "assets/fonts/fixed/OPPODigit01.ttf",
+    "metric_reference_sha256": "955552a97040b6d5dd96cfcdb12fa8d85a59d3d5ec0cc192917932f2357b7eb3"
+  },
+  {
+    "file": "flyme/SixCaps-Regular.ttf",
+    "source": "flyme",
+    "apk_sha256": "069e1977149da5d1d311b0100876ddea108e4558a803b3438bf84ba029fad856",
+    "member": "assets/fonts/SixCaps-Regular.ttf",
+    "original_file": "original/flyme/SixCaps-Regular.ttf",
+    "original_sha256": "a707f13f97455f4addb3c38492bb473372db3cc03448b062be70d67c6bf4e599",
+    "sha256": "db29bdbec9bea91bad92a44aba9dcc99a30c0ae038482398f2551af6469535f5",
+    "adaptation": "hhea/OS2/head and CFF FontBBox line metrics; glyphs and advances unchanged",
+    "metric_reference": "assets/fonts/fixed/OPPODigit01.ttf",
+    "metric_reference_sha256": "955552a97040b6d5dd96cfcdb12fa8d85a59d3d5ec0cc192917932f2357b7eb3"
+  },
+  {
+    "file": "flyme/DMSerifDisplay-Regular.ttf",
+    "source": "flyme",
+    "apk_sha256": "069e1977149da5d1d311b0100876ddea108e4558a803b3438bf84ba029fad856",
+    "member": "assets/fonts/DMSerifDisplay-Regular.ttf",
+    "original_file": "original/flyme/DMSerifDisplay-Regular.ttf",
+    "original_sha256": "5b659b6bb4bc5c583fc9a620794a0e0ddddb3cb2ccbac7634d863e74903466d6",
+    "sha256": "9c07e28f9160d2a6574b97778d8fc2579fcf0cb8b792cc593267bb2ec4c9956c",
+    "adaptation": "hhea/OS2/head and CFF FontBBox line metrics; glyphs and advances unchanged",
+    "metric_reference": "assets/fonts/fixed/OPPODigit01.ttf",
+    "metric_reference_sha256": "955552a97040b6d5dd96cfcdb12fa8d85a59d3d5ec0cc192917932f2357b7eb3"
+  },
+  {
+    "file": "hyperos/MiSansRCFVF.ttf",
+    "source": "hyperos",
+    "apk_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "member": "assets/MiSansRCFVF.ttf",
+    "original_file": "original/hyperos/MiSansRCFVF.ttf",
+    "original_sha256": "31bcafb28cbe90bbb567271c4549352433e458d19b534e1d038832e588526ea2",
+    "sha256": "49e0a254c8f53c7aacea8ac68f68637665b7d8b88e5cd757861bb11b3c4c1862",
+    "adaptation": "hhea/OS2/head and CFF FontBBox line metrics; glyphs and advances unchanged",
+    "metric_reference": "assets/fonts/fixed/OPPODigit01.ttf",
+    "metric_reference_sha256": "955552a97040b6d5dd96cfcdb12fa8d85a59d3d5ec0cc192917932f2357b7eb3"
+  },
+  {
+    "file": "hyperos/MiSansRoundedFVF.ttf",
+    "source": "hyperos",
+    "apk_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "member": "assets/MiSansRoundedFVF.ttf",
+    "original_file": "original/hyperos/MiSansRoundedFVF.ttf",
+    "original_sha256": "11f3f9430137d1dae33ddc4c3e1ee84304a3f9d13d220e5c744fa0f75f38d380",
+    "sha256": "839320a3ad847f4e85d566a1e693af9df6a4a57509820cf92b0cf1e217883c41",
+    "adaptation": "hhea/OS2/head and CFF FontBBox line metrics; glyphs and advances unchanged",
+    "metric_reference": "assets/fonts/fixed/OPPODigit01.ttf",
+    "metric_reference_sha256": "955552a97040b6d5dd96cfcdb12fa8d85a59d3d5ec0cc192917932f2357b7eb3"
+  },
+  {
+    "file": "hyperos/MiSerifFVF.ttf",
+    "source": "hyperos",
+    "apk_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "member": "assets/MiSerifFVF.ttf",
+    "original_file": "original/hyperos/MiSerifFVF.ttf",
+    "original_sha256": "acceaa80749b2d6302de26c7ed359038e47cfca14d29e4a3ea63c6f510ec0678",
+    "sha256": "ac42af2bb6c09c79a3d8e04ee6b4099a1b24641d7232c4e6049c1adb646dc6ba",
+    "adaptation": "hhea/OS2/head and CFF FontBBox line metrics; glyphs and advances unchanged",
+    "metric_reference": "assets/fonts/fixed/OPPODigit01.ttf",
+    "metric_reference_sha256": "955552a97040b6d5dd96cfcdb12fa8d85a59d3d5ec0cc192917932f2357b7eb3"
+  },
+  {
+    "file": "hyperos/MiClock-Light.otf",
+    "source": "hyperos",
+    "apk_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "member": "assets/fonts/MiClock-Light.otf",
+    "original_file": "original/hyperos/MiClock-Light.otf",
+    "original_sha256": "f4cc9808908ee77834c4ea0ab1461b62910c7637addc5ce0d891e571c7a781c9",
+    "sha256": "2806dbb51026535cee37ec966254627ab8e87e51f0077d4d1d915543c0b0d5a3",
+    "adaptation": "hhea/OS2/head and CFF FontBBox line metrics; glyphs and advances unchanged",
+    "metric_reference": "assets/fonts/fixed/OPPODigit01.ttf",
+    "metric_reference_sha256": "955552a97040b6d5dd96cfcdb12fa8d85a59d3d5ec0cc192917932f2357b7eb3"
+  }
+]

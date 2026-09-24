@@ -8,6 +8,9 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 public final class CleanHooks implements IXposedHookLoadPackage {
     private static boolean ambientHooked;
     @Override public void handleLoadPackage(XC_LoadPackage.LoadPackageParam p){
+        if("com.oplus.wallpapers".equals(p.packageName))NativeClockApplyPolicy.install(p.classLoader);
+        if("com.android.systemui".equals(p.packageName)||"com.oplus.wallpapers".equals(p.packageName))
+            ColorOsNativeClockFonts.install(p.classLoader);
         if(!"android".equals(p.packageName)&&!"com.android.systemui".equals(p.packageName))return;
         if(!ambientHooked){
             XposedHelpers.findAndHookMethod(WallpaperInfo.class,"supportsAmbientMode",new XC_MethodHook(){@Override protected void afterHookedMethod(MethodHookParam call){WallpaperInfo info=(WallpaperInfo)call.thisObject;if("org.aliveclean".equals(info.getPackageName()))call.setResult(true);}});

@@ -1,0 +1,27 @@
+{
+  "source": "魅族22 FlymeOS / SystemUIEditor.apk",
+  "apk_sha256": "d8ecff5234bc4360cc810adf4d627b52ecae5630dc7c75bee9e79736a216b146",
+  "templates": [
+    {
+      "id": "flyme.alive.hverticaltime",
+      "member": "assets/aod/zkAod/hidden/hverticaltime.zip",
+      "zip_sha256": "ff02afa69f094b78c626fb1e04cff9fd149a992d567f5681ea44b4e6f1578d46",
+      "files": {
+        "aod.xml": "2b8a9e40da5e93d3070277157e33f27a6c73be4867916696305d42ec254a84b6",
+        "cover_0.png": "f4db60322a1815e744f4e076faf4b02ef198db0dc90c5c110cddec50b613e953",
+        "manifest.xml": "5faf6a3aed4a7dc2bf93b32fb38c916707e39e5d9e5b83ae43f435d7910eb7d3",
+        "SFPRO-SemiCondensedMedium.otf": "8b29cd42c555fca97598831c0b49c05170a6c17af7ac3eec4abb1bc4ec4b225a"
+      }
+    },
+    {
+      "id": "flyme.alive.hhorizontaltime",
+      "member": "assets/aod/zkAod/hidden/hhorizontaltime.zip",
+      "zip_sha256": "458f24b236ddde8cc7a53eaaf059a7528b046e6466b676c6d31b0066ef51b0f8",
+      "files": {
+        "aod.xml": "3484ccdf5998dd853c8f96bc54a028e0fc759a72466d28cfd4f08ce20a41ec7d",
+        "manifest.xml": "ad33381af18321cf0f983ac22ac467e12aa628c430e5184ca879fb47c08d241a",
+        "SFPRO-SemiCondensedMedium.otf": "8b29cd42c555fca97598831c0b49c05170a6c17af7ac3eec4abb1bc4ec4b225a"
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Lockscreen version="1" frameRate="30" vibrate="false" displayDesktop="true" screenWidth="500" screenHeight="500" id="" >
+	<Var name="notification" expression="1"/>
+
+<!-- visibility="eq(#cover_visibility,1)" -->
+	<Image x="-100" y="-160" w="700" h="852" src="cover_0.png" />
+	<!-- <Video name="bgv" x="-100" y="-160" w="700" h="852" src="bg_0.mp4"  sound="1"  play="true" looping="false" /> -->
+
+<Group y="0">
+	<Text x="700/2-100" y="365-180"   align="center" alignV="center"   color="#ffffff"  size="150" format="%d%d"  paras="#hour24/10%10,#hour24%10" bold="true" typeface="SFPRO-SemiCondensedMedium.otf" />
+	<Text x="700/2-100" y="475-130"   align="center" alignV="center"   color="#ffffff"  size="150" format="%d%d"  paras="#minute/10%10,#minute%10" bold="true" typeface="SFPRO-SemiCondensedMedium.otf" />
+</Group>
+<!-- <Group>
+    <Image  x="184" y="178" src="time.png" srcid="int((#hour)/10)" />
+    <Image  x="254" y="178" src="time.png" srcid="int((#hour)%10)" />
+
+    <Image  x="184" y="298" src="time.png" srcid="int((#minute)/10)" />
+    <Image  x="254" y="298" src="time.png" srcid="int((#minute)%10)" />
+</Group> -->
+	
+
+</Lockscreen>

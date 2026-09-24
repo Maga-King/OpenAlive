@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Lockscreen version="1" frameRate="30" vibrate="false" displayDesktop="true" screenWidth="230" screenHeight="110" id="" >
+
+	<!-- 时针定义 -->
+	<Var name="m_angle" expression="#minute*6" threshold="6"/>
+	<Var name="miao" expression="#time/1000*6" />
+
+
+<!-- <Image w="610" h="320" src="bg.png"/> -->
+
+<Text x="10" y="0"    color="#ffffff"  size="108" format="%d%d:%d%d"  paras="#hour24/10%10,#hour24%10,#minute/10%10,#minute%10" bold="true" typeface="SFPRO-SemiCondensedMedium.otf" colorStyle="#user_color" gradientColors="#gradient_colors"/>
+
+</Lockscreen>

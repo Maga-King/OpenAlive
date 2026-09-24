@@ -13,6 +13,11 @@
 - `app/assets/bubble/`、`app/assets/soundviz/`：官方 Bubble 系列的数值配置和流动背景着色器；来源校验值见 `bubble/source.json`。
 - `docs/donate.png`：项目维护者提供的赞赏码，不属于代码许可范围。
 - `app/assets/notification/`：魅族 22 SystemUI 的原始通知光环和双侧光带动画，来源及文件校验值见同目录 `source.json`；使用已包含的官方 SVGA 运行库解码和绘制。
+- `app/assets/native-clock/`：魅族 22 SystemUI 与澎湃 MIUIAod 的数字字体。`original/` 保留未修改文件，使用副本按 ColorOS 固定字体约定调整行高与留白，字形和字宽不变；来源、适配说明及校验值见 `source.json`。
+- `app/assets/native-clock/templates/flyme/`：魅族 22 SystemUIEditor 的 ALIVE 横排、竖排息屏时钟模板及配套字体，保留原始 XML 和字体；来源及校验值见各模板的 `source.json`。
+- `app/assets/native-clock/runtime/hyperos/fonts/`：澎湃备用机系统分区的原始时钟字体，供独立澎湃控件使用，未修改字形或度量；来源及校验值见上级目录 `source.json`。
+- `app/assets/native-clock/runtime/hyperos/runtime.apk`：备用机 MIUIAod 的原始程序与资源，供独立类加载器调用其中的时钟控件；版本、来源及校验值见同目录 `source.json`，文件未修改。
+- `app/assets/native-clock/previews/`：使用上述原始澎湃控件及魅族 SystemUIEditor 原始透视时钟控件绘制的选择器缩略图；模板参数、原始运行库和图片校验值见 `source.json`。
 
 资源来源标注不代表魅族或其他权利人授予了再分发或商用许可。使用这些资源时，仍需遵守其适用许可；MIT 仅授权本项目有权授权的自实现代码。
 

@@ -1,0 +1,279 @@
+{
+  "flyme-perspective.png": {
+    "sha256": "589510dabe5ed425e056be3189f9fa0f1db70131e5cb28ddc7474fa62ef671a2",
+    "source": "Unmodified Flyme PerspectiveDigitClockView and layout_distinctive_self",
+    "resource_sha256": "ffc85195a80813668ebd39151bef9398bfc1bc728c7f8d7b9f2b70ba78bf7f65",
+    "dex_sha256": "d5ffa262e76c969c62bf32ad4373962f20a92e4ec976a245e44cfb3e07eab627",
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "d8b2fa2d5af2b34460888380cd09f84cd42c266ea407842b80cb987801403ced"
+  },
+  "hyperos-classic-vertical.png": {
+    "sha256": "4249e4b7d6a986fc65355c721666110a28c1955b30ba4452973b2ba94176b987",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "classic_plus",
+    "variant": 21,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-classic-horizontal.png": {
+    "sha256": "5fd5abd764fe5b3e9c8a19a638dfb4b255f2d2e86a721e178916a062137260b8",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "classic",
+    "variant": 21,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-all_in_one-1.png": {
+    "sha256": "765daac3f59d868b4ad55494120cbda63fa2b20f603abde48dd78e842c0c10a5",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "all_in_one",
+    "variant": 1,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-all_in_one-2.png": {
+    "sha256": "2683e5c797bf9f3c6cd43a64ed3bb80fea37009fdcae2c6b68aa068daa9395ac",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "all_in_one",
+    "variant": 2,
+    "font": 21,
+    "weight": 378,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-all_in_one-3.png": {
+    "sha256": "c2b1f110c64a422255b52f40b3ffc3c639b235d39db451e499233724ea176f8e",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "all_in_one",
+    "variant": 3,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-all_in_one-4.png": {
+    "sha256": "ff1efcad06dd1ac0fbdc66e3b843903921ef21a4df0695aba45612bbf8e94db7",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "all_in_one",
+    "variant": 4,
+    "font": 21,
+    "weight": 700,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-all_in_one-5.png": {
+    "sha256": "239317cb0bfa6a4dd9466575787a9b3d87531fc5778636fe4c2e128486ad875d",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "all_in_one",
+    "variant": 5,
+    "font": 22,
+    "weight": 450,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-all_in_one-6.png": {
+    "sha256": "8ede7554f5785c7e7a6ac85d7ea1426483417dad9ca9a6694dac8c1193a7c11c",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "all_in_one",
+    "variant": 6,
+    "font": 21,
+    "weight": 700,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-all_in_one-7.png": {
+    "sha256": "9bc695859ad52ecda95edf503825a405cf03ae518e15bcfe349152084fc0721e",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "all_in_one",
+    "variant": 7,
+    "font": 22,
+    "weight": 450,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-all_in_one-8.png": {
+    "sha256": "5a25ed135e90ea9e3a66759b49fb7196e37df379698ce23cbb0c05f5dbebe866",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "all_in_one",
+    "variant": 8,
+    "font": 23,
+    "weight": 630,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-rhombus-4.png": {
+    "sha256": "9f32d5fb68b6789ac40d2c126936845b3e3e9926e09874a09f0ed3a4b4ed3478",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "rhombus",
+    "variant": 4,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-eastern_a-1.png": {
+    "sha256": "dd1abfa6eb144e5f932da43802f4c0f70626d70288da2a144f92c9722022c759",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "eastern_a",
+    "variant": 1,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-eastern_b-2.png": {
+    "sha256": "2d2e10493b9bee1dc4d447add240b6fe4d5442698e7d7119af68c9bfd9957726",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "eastern_b",
+    "variant": 2,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-eastern_c-1.png": {
+    "sha256": "db672f62212494d1fa3a4d17736008fadeaed81615b9eea1b085e1e2882750b5",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "eastern_c",
+    "variant": 1,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-magazine_a-3.png": {
+    "sha256": "2137e2c3e846c1f5fbffee85002b1e92cfaed178d9a967ddc96cc45806156485",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "magazine_a",
+    "variant": 3,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-magazine_b-1.png": {
+    "sha256": "f9b6df15c167002a26095638bd36a0eb6877e0d67106a51b22c2c194d7677ce7",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "magazine_b",
+    "variant": 1,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-magazine_c-5.png": {
+    "sha256": "806397a149b5d05a06a54499313dec7b9a01253c78be50a9f499559159da6f3e",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "magazine_c",
+    "variant": 5,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-doodle-1.png": {
+    "sha256": "5c8ba50d261156a36a01b2b3adbb7b7149f4719a40619e4d9ba48c890a111610",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "doodle",
+    "variant": 1,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  },
+  "hyperos-doodle-2.png": {
+    "sha256": "a08e92048d21f4f446b4be9c46002cfd14df72e64d7a311c5ab7aa081f929d09",
+    "source": "Unmodified HyperOS controls rendered by HyperOsWrappedInstrumentation",
+    "runtime_sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "template": "doodle",
+    "variant": 2,
+    "font": 21,
+    "weight": 420,
+    "size": [
+      540,
+      900
+    ],
+    "validation_sha256": "308122bcfdf51a45eec16921f44a39898f8384f8fed3d9ba7c814189183d47d8"
+  }
+}

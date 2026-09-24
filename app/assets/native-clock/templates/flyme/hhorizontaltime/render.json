@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "id": "flyme.alive.hhorizontaltime",
+  "width": 230,
+  "height": 110,
+  "texts": [
+    {
+      "x": 10.0,
+      "y": 0.0,
+      "size": 108.0,
+      "align": "left",
+      "alignV": "top",
+      "font": "SFPRO-SemiCondensedMedium.otf",
+      "field": "time"
+    }
+  ]
+}

@@ -116,26 +116,33 @@ final class ColorOsAodClock {
             if(current==null){host.hide();return;}
             Object plugin=XposedHelpers.getObjectField(current,"clockPlugin");
             if(plugin==null){host.hide();return;}
-            Object time=XposedHelpers.callMethod(plugin,"getView",8),date=XposedHelpers.callMethod(plugin,"getView",20);
-            // IDs 8/20 in digital/base and text clocks refer to different view classes.
-            if(!(time instanceof View)||!(date instanceof View)){host.hide();return;}
-            String timeType=time.getClass().getSimpleName(),dateType=date.getClass().getSimpleName();
-            boolean digital=timeType.equals("ClockTimeView")&&dateType.equals("DateMessageView");
-            boolean text=timeType.equals("TextTimeTextView")&&dateType.equals("TextDateInformationView");
-            if(!digital&&!text){host.hide();return;}
-            if(text){date=XposedHelpers.callMethod(date,"getLocalDate");if(!(date instanceof View)){host.hide();return;}}
-            View t=(View)time,d=(View)date;
             Object container=XposedHelpers.getObjectField(current,"keyguardStyleClock");
             Object scope=XposedHelpers.callMethod(plugin,"getView",1);
             if(!(container instanceof View)||!(scope instanceof View)){host.hide();return;}
-            if(text&&!scope.getClass().getName().equals("com.oplus.keyguard.clock.text.ui.view.ClockViewRoot")){host.hide();return;}
+            View content=AodClockHost.nativeContent((View)scope),t=content,d=null;
+            if(content==null){
+                Object time=XposedHelpers.callMethod(plugin,"getView",8),date=XposedHelpers.callMethod(plugin,"getView",20);
+                // Stock digital/text clocks expose separate time and date leaves.
+                if(!(time instanceof View)||!(date instanceof View)){host.hide();return;}
+                String timeType=time.getClass().getSimpleName(),dateType=date.getClass().getSimpleName();
+                boolean digital=timeType.equals("ClockTimeView")&&dateType.equals("DateMessageView");
+                boolean text=timeType.equals("TextTimeTextView")&&dateType.equals("TextDateInformationView");
+                if(!digital&&!text){host.hide();return;}
+                if(text){
+                    if(!scope.getClass().getName().equals("com.oplus.keyguard.clock.text.ui.view.ClockViewRoot")){host.hide();return;}
+                    date=XposedHelpers.callMethod(date,"getLocalDate");if(!(date instanceof View)){host.hide();return;}
+                }
+                t=(View)time;d=(View)date;
+            }
             View root=((View)container).getRootView();
             if(!(root instanceof ViewGroup)||!root.isAttachedToWindow())return;
             boolean fresh=!host.same((ViewGroup)root,t,d);
             // Mask from sleep-start, even before the native AOD show flag. The
             // custom face becomes visible only in the native display window.
             if(fresh&&!showing)contentAlpha=0;
-            host.show((ViewGroup)root,t,d,(View)scope);host.contentAlpha(contentAlpha);host.tick(System.currentTimeMillis());
+            if(content!=null)host.showNative((ViewGroup)root,content,(View)scope);
+            else host.show((ViewGroup)root,t,d,(View)scope);
+            host.contentAlpha(contentAlpha);host.tick(System.currentTimeMillis());
             bindWidgets(current);
             if(fresh&&host.shown()){if(Diagnostics.TRACE)android.util.Log.i("AliveClean","AOD clock attached; system lock clock retained");}
             if(Diagnostics.TRACE){long minute=System.currentTimeMillis()/60000;if(host.shown()&&minute!=lastMinute){lastMinute=minute;android.util.Log.i("AliveClean","AOD clock minute="+minute+" updated in native display window");}}

@@ -1,0 +1,70 @@
+{
+  "source": "HyperOS spare device /product/fonts",
+  "build_fingerprint": "Redmi/marble/marble:17/CP2A.260605.016/OS4.0.0.26.XPCCNXM:user/release-keys",
+  "modified": false,
+  "scope": "Isolated HyperOS ClockStyleInfo runtime only; not the ColorOS font selector",
+  "files": {
+    "MiHaus.ttf": {
+      "source_path": "/product/fonts/MiHaus.ttf",
+      "sha256": "361a7cce9cb301bb3500633a450855b235d794eda268eb85f3613f1cd135afe6",
+      "bytes": 147608
+    },
+    "MiSansRCF.ttf": {
+      "source_path": "/product/fonts/MiSansRCF.ttf",
+      "sha256": "04d8642ae950ea08534a49614f09d3e75f8e63bf5cfe2fd6b040c1a8dda3da64",
+      "bytes": 203280
+    },
+    "MiSansRoundedF.ttf": {
+      "source_path": "/product/fonts/MiSansRoundedF.ttf",
+      "sha256": "a691c11b247f618013500aeb17d33378caeab76405943615b68dbe88ace76da6",
+      "bytes": 143576
+    },
+    "MiSansSquareF.ttf": {
+      "source_path": "/product/fonts/MiSansSquareF.ttf",
+      "sha256": "3a4e0a7445a1bc1b035fe6a000497606fb3cbd689b0e5a70eff1f89879b64f66",
+      "bytes": 142412
+    },
+    "MiSerif.ttf": {
+      "source_path": "/product/fonts/MiSerif.ttf",
+      "sha256": "cc7cfdc73205b4802441da6e7ea8216ccd677780fca51ec41200e65bf86498e0",
+      "bytes": 303844
+    },
+    "MiSerifSCVF.ttf": {
+      "source_path": "/product/fonts/MiSerifSCVF.ttf",
+      "sha256": "7dbacc6e1bc6f0cfcde052b5f106a075da3babbb6e3df180e3cfa4c7e5011673",
+      "bytes": 234332
+    },
+    "MiSerifTCVF.ttf": {
+      "source_path": "/product/fonts/MiSerifTCVF.ttf",
+      "sha256": "3517d6bfc0e5e528f6e4ee5fb7b3ee85f146fef13af007b5efad4e51b0a9f0a6",
+      "bytes": 264192
+    },
+    "BebasNeue-Mono.otf": {
+      "source_path": "/product/fonts/BebasNeue-Mono.otf",
+      "sha256": "9ee342c2d11954be176e315dc89fae8b792f6d90cf0073cb4479a1e6804c0f0b",
+      "bytes": 5280
+    },
+    "CommutersSansMono.otf": {
+      "source_path": "/product/fonts/CommutersSansMono.otf",
+      "sha256": "21e68640a3b4f784fe1a58ad773b90ebdafe3fb38ca3db7b407639c5642fbdea",
+      "bytes": 3368
+    },
+    "MiSansVF.ttf": {
+      "source_path": "/product/fonts/MiSansVF.ttf",
+      "sha256": "0ddef90648998900175cfdca9a6f087a2544c182f130b0ad4f7e94a03a115e79",
+      "bytes": 20093424
+    },
+    "NeumaticCompressed.otf": {
+      "source_path": "/product/fonts/NeumaticCompressed.otf",
+      "sha256": "62d2344b12723fbb8d048d4a4e54b745fe77023951b5837b7f16c17cf7514c96",
+      "bytes": 34612
+    }
+  },
+  "runtime": {
+    "source_package": "com.miui.aod",
+    "version_name": "2445.3.0.1-08241650",
+    "sha256": "9ff06ad561bc522005715616c9dd7eeb16f480c3da29850ff3c3b5753684bc9b",
+    "bytes": 57569892,
+    "modified": false
+  }
+}

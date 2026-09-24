@@ -8,6 +8,7 @@ import de.robv.android.xposed.*;
 
 /** Event-driven adapter for the verified ColorOS 17 SystemUI classes. */
 final class ColorOsBridge {
+    static boolean ownsWallpaper(){return selected;}
     static final String ACTION="org.aliveclean.SCENE";
     static final String ACTION_LAYOUT="org.aliveclean.AOD_LAYOUT";
     static final String SENDER_PERMISSION="android.permission.STATUS_BAR";

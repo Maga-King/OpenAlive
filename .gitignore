@@ -28,4 +28,8 @@ __pycache__/
 !/tools/import_settings_ui.py
 !/tools/import_notification_effects.py
 !/tools/check_notification_effects.py
+!/tools/import_clock_fonts.py
+!/tools/check_native_clock_fonts.py
+!/tools/import_alive_clock_templates.py
+!/tools/import_native_clock_previews.py
 !/tools/ui-api/

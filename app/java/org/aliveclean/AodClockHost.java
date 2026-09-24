@@ -48,6 +48,18 @@ final class AodClockHost {
         // A verified plugin scope may migrate into a SurfaceControlViewHost.
         // The AOD overlay itself must stay in the stable notification window.
         if(clockScope==null&&(!descendant(t,parent)||!descendant(d,parent))){hide();return;}
+        attach(parent,t,d,clockScope);
+    }
+    static View nativeContent(View scope){
+        if(scope==null)return null;
+        View content=scope.findViewWithTag("org.aliveclean.native_clock_content");
+        return content!=scope&&content instanceof ViewGroup&&descendant(content,scope)?content:null;
+    }
+    void showNative(ViewGroup parent,View content,View clockScope){
+        if(parent==null||!parent.isAttachedToWindow()||content==null||content!=nativeContent(clockScope)){hide();return;}
+        attach(parent,content,null,clockScope);
+    }
+    private void attach(ViewGroup parent,View t,View d,View clockScope){
         if(root==parent&&scope==clockScope&&clock!=null){
             cancelFade();cancelStockFade();holdingClock=false;holdingUnlock=false;stockAlpha=0;owning=true;time=t;date=d;maskContents();return;
         }
@@ -62,6 +74,7 @@ final class AodClockHost {
         }catch(RuntimeException error){next.active(false);if(next.getParent()==parent)parent.removeView(next);hide();throw error;}
     }
     private void discover(View view){
+        if("org.aliveclean.native_clock_content".equals(view.getTag())){target(view);return;}
         String name=view.getClass().getSimpleName();
         if(name.equals("ClockTimeView")||name.equals("DateMessageView")||name.equals("TextTimeTextView")){target(view);return;}
         if(name.equals("TextDateInformationView")){
