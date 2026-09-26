@@ -26,7 +26,7 @@ final class ColorOsNativeClockStyles {
         catch(Throwable unavailable){return false;}
     }
 
-    static void attach(ClassLoader loader){
+    static boolean attach(ClassLoader loader){
         List<XC_MethodHook.Unhook> hooks=new ArrayList<>();
         try{
             Class<?> provider=Class.forName(FACTORY,false,loader);
@@ -91,9 +91,11 @@ final class ColorOsNativeClockStyles {
             }));
             installMaterialBootstrap(loader);
             if(DEBUG)android.util.Log.i("OpenAliveClock","independent factory and selector hooks attached");
+            return true;
         }catch(Throwable unsupported){
             for(XC_MethodHook.Unhook hook:hooks)hook.unhook();
             reportLoadFailure("Original clock provider hook unavailable",unsupported);
+            return false;
         }
     }
     private static void installMaterialBootstrap(ClassLoader loader){

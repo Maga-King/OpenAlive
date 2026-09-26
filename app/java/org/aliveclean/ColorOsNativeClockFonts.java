@@ -22,8 +22,71 @@ final class ColorOsNativeClockFonts {
     private static final String CACHE = "com.oplus.keyguard.clock.digital.util.FontTypefaceCache";
     private static final Set<ClassLoader> installed = Collections.newSetFromMap(new IdentityHashMap<>());
     private static boolean watching;
+    private static boolean startupObserved;
+    private static boolean startupComplete;
+    private static final Set<Class<?>> observedServices=Collections.newSetFromMap(new IdentityHashMap<>());
+
+    static void systemUiStarted(Context host) {
+        Context application=host.getApplicationContext();
+        Context app=application==null?host:application;
+        if(!"com.android.systemui".equals(app.getPackageName()))return;
+        synchronized(ColorOsNativeClockFonts.class){
+            if(startupComplete){NativeClockAvailability.announce(app);return;}
+            if(startupObserved)return;
+            startupObserved=true;
+        }
+        NativeClockLoadState.startup("SystemUI context available");
+        new Thread(()->{
+            try{
+                Context plugin=app.createPackageContext(PLUGIN,
+                        Context.CONTEXT_INCLUDE_CODE|Context.CONTEXT_IGNORE_SECURITY);
+                NativeClockLoadState.startup("Clock package context created");
+                if(attach(plugin.getClassLoader())){
+                    synchronized(ColorOsNativeClockFonts.class){startupComplete=true;}
+                    NativeClockLoadState.startup("Clock factory hooks attached");
+                    NativeClockAvailability.announce(app);
+                }
+            }catch(Throwable unavailable){
+                NativeClockLoadState.failure("Clock startup initialization",unavailable);
+                android.util.Log.w("OpenAliveClock","Clock startup initialization failed",unavailable);
+            }finally{
+                synchronized(ColorOsNativeClockFonts.class){startupObserved=false;}
+            }
+        },"OpenAlive-clock-bootstrap").start();
+    }
+
+    private static void observeSystemUiService(ClassLoader loader) {
+        // SystemUI can hand us its stub loader first and its implementation loader
+        // later. Resolve this on each callback, independently of the Context hooks.
+        Class<?> service=XposedHelpers.findClassIfExists("com.android.systemui.SystemUIService",loader);
+        if(service==null||observedServices.contains(service))return;
+        try{
+            XposedHelpers.findAndHookMethod(service,"onCreate",new XC_MethodHook(){
+                @Override protected void afterHookedMethod(MethodHookParam call){
+                    if(!call.hasThrowable())systemUiStarted((Context)call.thisObject);
+                }
+            });
+            XposedHelpers.findAndHookMethod(service,"dump",java.io.FileDescriptor.class,
+                    java.io.PrintWriter.class,String[].class,new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam call){
+                    String[] args=(String[])call.args[2];
+                    if(args==null||args.length!=1||!"openalive-clock".equals(args[0]))return;
+                    java.io.PrintWriter out=(java.io.PrintWriter)call.args[1];
+                    android.os.Bundle state=NativeClockLoadState.snapshot();
+                    out.println("OpenAlive clock runtime (SystemUI)");
+                    for(String key:state.keySet())out.println(key+"="+state.get(key));
+                    call.setResult(null);
+                }
+            });
+            observedServices.add(service);
+        }catch(Throwable unavailable){
+            NativeClockLoadState.failure("Clock SystemUI lifecycle hook",unavailable);
+            android.util.Log.w("OpenAliveClock","Clock SystemUI lifecycle hook unavailable",unavailable);
+        }
+    }
 
     static synchronized void install(ClassLoader hostLoader) {
+        observeSystemUiService(hostLoader);
         if (watching) return;
         try {
             Class<?> contextImpl = XposedHelpers.findClass("android.app.ContextImpl", hostLoader);
@@ -36,14 +99,21 @@ final class ColorOsNativeClockFonts {
             };
             XposedBridge.hookAllMethods(contextImpl, "createPackageContextAsUser", contextCreated);
             XposedBridge.hookAllMethods(contextImpl, "createPackageContext", contextCreated);
+            // Covers late module/package callbacks too. Posting once lets the
+            // application finish being created; this is not a polling loop.
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
+                Context app=android.app.AndroidAppHelper.currentApplication();
+                if(app!=null)systemUiStarted(app);
+            });
             watching = true;
         } catch (Throwable unavailable) {
-            if (Diagnostics.TRACE) XposedBridge.log("OpenAlive: native clock package loader unavailable: " + unavailable);
+            NativeClockLoadState.failure("Clock package loader hook",unavailable);
+            android.util.Log.w("OpenAliveClock","Clock package loader hook unavailable",unavailable);
         }
     }
 
-    private static synchronized void attach(ClassLoader loader) {
-        if (installed.contains(loader)) return;
+    private static synchronized boolean attach(ClassLoader loader) {
+        if (installed.contains(loader)) return true;
         List<XC_MethodHook.Unhook> added = new ArrayList<>();
         try {
             // Resolve the entire supported contract before offering a selectable entry.
@@ -86,20 +156,24 @@ final class ColorOsNativeClockFonts {
                     }
                 }
             }));
+            if(!ColorOsNativeClockStyles.attach(loader)){
+                for(XC_MethodHook.Unhook hook:added)hook.unhook();
+                return false;
+            }
             installed.add(loader);
-            ColorOsNativeClockStyles.attach(loader);
+            return true;
         } catch (Throwable unsupported) {
             for (XC_MethodHook.Unhook hook : added) hook.unhook();
-            if (Diagnostics.TRACE) XposedBridge.log("OpenAlive: native clock font contract unavailable: " + unsupported);
+            NativeClockLoadState.failure("Clock font contract",unsupported);
+            android.util.Log.w("OpenAliveClock","Clock font contract unavailable",unsupported);
+            return false;
         }
     }
 
     private static final class Assets {
         private AssetManager manager;
-        private boolean unavailable;
         private final WeakHashMap<Context, WeakReference<Context>> contexts = new WeakHashMap<>();
         synchronized Context wrap(Context base) {
-            if (unavailable) return null;
             try {
                 if (manager == null) {
                     AssetManager candidate = base.createPackageContext("org.aliveclean", 0).getAssets();
@@ -116,7 +190,10 @@ final class ColorOsNativeClockFonts {
                 }
                 return wrapped;
             } catch (Exception missing) {
-                unavailable = true;
+                // A missing package during boot/update is transient. Retry on
+                // the next native font request, rather than disabling fonts for
+                // the whole lifetime of SystemUI/the editor.
+                NativeClockLoadState.failure("Clock font assets",missing);
                 if (Diagnostics.TRACE) XposedBridge.log("OpenAlive: native clock font assets unavailable: " + missing);
                 return null;
             }

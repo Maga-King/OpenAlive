@@ -131,7 +131,7 @@ final class NativeClockEditor {
         NativeClockStylePanel panel=new NativeClockStylePanel(nativeContext,selected,(id,config)->{
             try{
                 if(NativeClockProvider.contains(id)&&!NativeClockAvailability.ready(originalContext)){
-                    android.widget.Toast.makeText(nativeContext,"系统尚未加载新版时钟模块，请正常重启手机后再选择",android.widget.Toast.LENGTH_LONG).show();
+                    android.widget.Toast.makeText(nativeContext,NativeClockAvailability.unavailableMessage(),android.widget.Toast.LENGTH_LONG).show();
                     return false;
                 }
                 beforeSelect.run();session.select(id,config);afterSelect.run();return true;

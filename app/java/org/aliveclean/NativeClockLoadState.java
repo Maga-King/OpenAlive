@@ -16,6 +16,10 @@ final class NativeClockLoadState {
     }
     static synchronized void materialSeeded(){materialSeeds++;}
     private static String lastRequest="",lastEntry="",firstFailure="";
+    private static String startup="No SystemUI context observed";
+    private static String lastRegistration="No clock registration attempted";
+    static synchronized void startup(String value){startup=value;}
+    static synchronized void registration(String value){lastRegistration=value;}
     static synchronized void provider(){providers++;}
     static synchronized void request(String id,String entry,boolean custom){
         requests++;if(custom)customRequests++;lastRequest=id;lastEntry=entry;
@@ -28,6 +32,8 @@ final class NativeClockLoadState {
     }
     static synchronized Bundle snapshot(){
         Bundle out=new Bundle();out.putInt("providers",providers);out.putInt("requests",requests);
+        out.putString("startup",startup);
+        out.putString("lastRegistration",lastRegistration);
         out.putInt("customRequests",customRequests);out.putInt("created",created);
         out.putString("lastRequest",lastRequest);out.putString("lastEntry",lastEntry);
         out.putInt("materialSeeds",materialSeeds);

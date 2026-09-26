@@ -22,11 +22,11 @@ def run(*args, **kwargs):
         kwargs.setdefault('errors', 'replace')
     return subprocess.run(list(map(str,args)), check=True, **kwargs)
 
-def instrument_foreground(component, timeout=90):
+def instrument_foreground(component, timeout=90, hidden_api=False):
     # Instrumentation restarts the test process, so opening a window before it
     # starts does not bypass HyperOS's background launch gate. Wait for the
     # test's explicit launch stage, then open this disposable activity via adb.
-    process=subprocess.Popen([*ADB,'shell','am','instrument','-w',component],
+    process=subprocess.Popen([*ADB,'shell','am','instrument',*(['--no-hidden-api-checks'] if hidden_api else []),'-w',component],
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',errors='replace')
     lines=queue.Queue()
     def read_output():
@@ -108,6 +108,8 @@ with zipfile.ZipFile(OUT/'base.apk') as base, zipfile.ZipFile(OUT/'unsigned.apk'
 run(BT/'zipalign.exe','-f',RESOURCE_ALIGNMENT,OUT/'unsigned.apk',OUT/'aligned.apk')
 run(JAVA/'java.exe','-jar',BT/'lib/apksigner.jar','sign','--alignment-preserved','true','--ks',ROOT/'local/development.jks','--ks-pass','pass:android','--ks-key-alias','development','--out',OUT/'test.apk',OUT/'aligned.apk')
 run(*ADB,'install','-r',OUT/'test.apk')
+if '--prepare-only' in sys.argv:
+    sys.exit(0)
 try:
     if '--effects' in sys.argv:
         probe=run(*ADB,'shell','am','instrument','--no-hidden-api-checks','-w','org.aliveclean.nativeclocktest/org.aliveclean.NativeClockEffectsInstrumentation',capture_output=True,text=True,timeout=180)
@@ -159,7 +161,7 @@ try:
     raster = run(*ADB,'exec-out','run-as','org.aliveclean.nativeclocktest','cat','files/alive-templates.png',capture_output=True)
     (OUT/(sys.argv[1]+'-templates.png')).write_bytes(raster.stdout)
     if '--boot' in sys.argv:
-        boot = run(*ADB,'shell','am','instrument','--no-hidden-api-checks','-w','org.aliveclean.nativeclocktest/org.aliveclean.NativeClockBootInstrumentation',capture_output=True,text=True,timeout=60)
+        boot = instrument_foreground('org.aliveclean.nativeclocktest/org.aliveclean.NativeClockBootInstrumentation', timeout=90, hidden_api=True)
         (OUT/(sys.argv[1]+'-boot.txt')).write_text(boot.stdout+boot.stderr,encoding='utf8')
         print(boot.stdout)
         assert 'NATIVE_CLOCK_BOOT_OK' in boot.stdout, boot.stdout
@@ -237,4 +239,5 @@ try:
         assert 'ORIGINAL_VIEW_BLOCKED' not in original.stdout, original.stdout
         assert original.stdout.count('ORIGINAL_VIEW_DRAWN ') == 45, original.stdout
 finally:
-    run(*ADB,'uninstall','org.aliveclean.nativeclocktest')
+    if '--keep-test-install' not in sys.argv:
+        run(*ADB,'uninstall','org.aliveclean.nativeclocktest')

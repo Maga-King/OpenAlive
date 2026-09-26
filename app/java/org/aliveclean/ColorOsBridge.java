@@ -269,13 +269,17 @@ final class ColorOsBridge {
         }catch(Throwable error){failure("power hooks",error);}
     }
     private static synchronized void initialize(Context c) {
+        ColorOsNativeClockFonts.systemUiStarted(c);
         if(context!=null)return;context=c.getApplicationContext();if(context==null)context=c;
         try{wallpaperUid=context.getPackageManager().getApplicationInfo("org.aliveclean",0).uid;}catch(android.content.pm.PackageManager.NameNotFoundException error){failure("wallpaper identity",error);}
         HandlerThread thread=new HandlerThread("AliveWallpaperObserver");thread.start();worker=new Handler(thread.getLooper());
         IntentFilter filter=new IntentFilter(Intent.ACTION_WALLPAPER_CHANGED);
         filter.addAction("android.intent.action.USER_SWITCHED");
         filter.addAction(Intent.ACTION_USER_UNLOCKED);
-        BroadcastReceiver updates=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){refresh();}};
+        BroadcastReceiver updates=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent i){
+            if(Intent.ACTION_USER_UNLOCKED.equals(i.getAction()))ColorOsNativeClockFonts.systemUiStarted(c);
+            refresh();
+        }};
         if(Build.VERSION.SDK_INT>=33)context.registerReceiver(updates,filter,Context.RECEIVER_NOT_EXPORTED);
         else context.registerReceiver(updates,filter);
         refresh();

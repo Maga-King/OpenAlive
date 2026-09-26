@@ -16,8 +16,14 @@ public final class PlatformApply {
         System.out.println("ALIVE_ADAPTER_STARTED");
         try{
             if(Process.myUid()!=1000)throw new SecurityException("Platform adapter requires the system UID");
-            if(args.length!=1||(!"local-aod".equals(args[0])&&!"panoramic-aod".equals(args[0])))throw new IllegalArgumentException("Unsupported operation");
+            if(args.length!=1||(!"local-aod".equals(args[0])&&!"panoramic-aod".equals(args[0])&&!"clock-startup".equals(args[0])))throw new IllegalArgumentException("Unsupported operation");
             if(android.os.Build.VERSION.SDK_INT<31)throw new UnsupportedOperationException("Local AOD adapter requires Android 12 or later");
+            if("clock-startup".equals(args[0])){
+                stage="clock-startup";
+                ColorOsClockStartupPolicy.allow();
+                System.out.println("ALIVE_RESULT "+new JSONObject().put("ok",true).put("clockStartupAllowed",true));
+                System.exit(0);
+            }
             stage="wallpaper";
             Looper.prepareMainLooper();
             Class<?> thread=Class.forName("android.app.ActivityThread");Object instance=thread.getMethod("systemMain").invoke(null);

@@ -17,9 +17,11 @@ public final class NativeClockBootInstrumentation extends Instrumentation {
     @Override public void onStart(){
         Bundle result=new Bundle();
         try{
+            Bundle launch=new Bundle();launch.putString("stream","test activity launch\n");sendStatus(1,launch);
             Context real=getTargetContext();
             AtomicBoolean unlocked=new AtomicBoolean(false);
             AtomicInteger calls=new AtomicInteger();
+            AtomicInteger lateFailures=new AtomicInteger();
             CountDownLatch exhausted=new CountDownLatch(3),recovered=new CountDownLatch(1);
             Binder lifetime=new Binder();
             NativeClockLoadState.request("test.original.clock","test bridge",true);
@@ -39,6 +41,8 @@ public final class NativeClockBootInstrumentation extends Instrumentation {
                         finally{request.recycle();response.recycle();}
                         calls.incrementAndGet();
                         if(!unlocked.get()){exhausted.countDown();throw new IllegalStateException("Simulated early-boot service unavailable");}
+                        if(lateFailures.getAndUpdate(value->Math.max(0,value-1))>0)
+                            throw new IllegalArgumentException("Unknown authority org.aliveclean.clock.runtime");
                         if(extras.getInt("api")!=NativeClockAvailability.API||!extras.getBinder("owner").isBinderAlive())
                             throw new AssertionError("Not a live versioned renderer");
                         Bundle reply=new Bundle();reply.putBinder("lifetime",lifetime);recovered.countDown();return reply;
@@ -86,7 +90,11 @@ public final class NativeClockBootInstrumentation extends Instrumentation {
             try(OfficialUi flyme=new OfficialUi(resources)){
                 if(flyme.id("layout","layout_distinctive_self")==0)throw new AssertionError("Flyme resource missing");
             }
-            NativeClockAvailability.announce(host);
+            Context wrappedHost=new ContextWrapper(host){
+                @Override public String getPackageName(){return "com.oplus.keyguard.personality.clocks";}
+                @Override public Context getApplicationContext(){return host;}
+            };
+            NativeClockAvailability.announce(wrappedHost);
             if(!exhausted.await(12,TimeUnit.SECONDS))throw new AssertionError("Early-boot failure sequence not exercised");
             if(listener[0]==null||NativeClockAvailability.ready(host))throw new AssertionError("Lost unlock callback or advertised stale readiness");
             unlocked.set(true);
@@ -105,7 +113,22 @@ public final class NativeClockBootInstrumentation extends Instrumentation {
             int completed=calls.get();NativeClockAvailability.announce(host);
             if(listener[0]!=null||!NativeClockAvailability.ready(host)||calls.get()!=completed)
                 throw new AssertionError("Recovery mismatch: listener="+(listener[0]!=null)+" ready="+NativeClockAvailability.ready(host)+" calls="+calls.get()+" expected="+completed+" unlocked="+userManager.isUserUnlocked());
-            result.putString("stream","NATIVE_CLOCK_BOOT_OK de_cache=true flyme_resources=true early_failures=3 unlock_recovered=true live_receipt=true\n");
+            // A provider that appears only after the initial startup window must
+            // recover without another unlock, reselecting a clock or a reboot.
+            java.lang.reflect.Field receipt=NativeClockAvailability.class.getDeclaredField("receipt");
+            receipt.setAccessible(true);
+            synchronized(NativeClockAvailability.class){receipt.set(null,null);}
+            lateFailures.set(4);
+            // The first latch was already signalled above; count calls to prove
+            // that the fifth attempt eventually obtained a fresh receipt.
+            int beforeLate=calls.get();
+            NativeClockAvailability.announce(host);
+            long lateDeadline=SystemClock.uptimeMillis()+22000;
+            while(calls.get()<beforeLate+5&&SystemClock.uptimeMillis()<lateDeadline)SystemClock.sleep(50);
+            if(calls.get()<beforeLate+5||receipt.get(null)==null)
+                throw new AssertionError("Late provider did not recover: calls="+(calls.get()-beforeLate)
+                        +" registration="+NativeClockLoadState.snapshot().getString("lastRegistration"));
+            result.putString("stream","NATIVE_CLOCK_BOOT_OK de_cache=true flyme_resources=true early_failures=3 unlock_recovered=true late_provider_recovered=true live_receipt=true\n");
             finish(-1,result);
         }catch(Throwable failure){result.putString("stream",android.util.Log.getStackTraceString(failure));finish(0,result);}
     }
