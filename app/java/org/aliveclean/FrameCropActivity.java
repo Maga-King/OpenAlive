@@ -10,6 +10,7 @@ import java.io.*;
 
 /** Official layout and PhotoView, with a local square/angle configuration adapter. */
 public final class FrameCropActivity extends Activity {
+    @Override protected void attachBaseContext(android.content.Context base){super.attachBaseContext(I18n.wrap(base));}
     private OfficialUi ui;
     private ImageView photo;
     private Bitmap bitmap;
@@ -50,17 +51,17 @@ public final class FrameCropActivity extends Activity {
         // PhotoView gestures execute unchanged official code in isolated resources.
         for(int i=0;i<((ViewGroup)root).getChildCount();i++)if(((ViewGroup)root).getChildAt(i) instanceof SurfaceView)((ViewGroup)root).getChildAt(i).setVisibility(View.GONE);
         View cancel=ui.find(root,"btn_cancel");cancel.setOnClickListener(v->finish());cancel.bringToFront();
-        TextView done=(TextView)ui.find(root,"btn_apply");done.setText("完成");done.setOnClickListener(v->save());done.bringToFront();
+        TextView done=(TextView)ui.find(root,"btn_apply");done.setText(I18n.t("完成"));done.setOnClickListener(v->save());done.bringToFront();
         FrameLayout preview=(FrameLayout)ui.find(root,"sysui_legacy_aod_preview_container");
         View crop=ui.inflate("sysui_aod_preview_image_clock",preview);
         FrameLayout.LayoutParams position=new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER);
         position.bottomMargin=Math.round(200*getResources().getDisplayMetrics().density);preview.addView(crop,position);
         photo=(ImageView)ui.find(crop,"iv_date_time_custom");
-        ((TextView)ui.find(crop,"tv_datetime")).setText("双指缩放，拖动选择中心");ui.find(crop,"tv_lunar_calendar").setVisibility(View.GONE);
+        ((TextView)ui.find(crop,"tv_datetime")).setText(I18n.t("双指缩放，拖动选择中心"));ui.find(crop,"tv_lunar_calendar").setVisibility(View.GONE);
         FrameLayout panel=(FrameLayout)ui.find(root,"fl_aod_panel_container");
         View tools=ui.inflate("view_aod_image_edit_panel",panel);
         panel.addView(tools,new FrameLayout.LayoutParams(-1,Math.round(240*getResources().getDisplayMetrics().density),Gravity.BOTTOM));
-        ((TextView)ui.find(tools,"aod_image_choose_wallpaper_btn")).setText("重置取景");
+        ((TextView)ui.find(tools,"aod_image_choose_wallpaper_btn")).setText(I18n.t("重置取景"));
         ui.find(tools,"aod_image_choose_wallpaper_btn").setOnClickListener(v->{try{restore(new FrameCrop(.5f,.5f,1,0));}catch(Exception e){fail(e);}});
         angleLabel=(TextView)ui.find(tools,"label_style_tv");
         ui.find(tools,"iv_size_smaller").setVisibility(View.GONE);ui.find(tools,"iv_size_larger").setVisibility(View.GONE);
@@ -90,20 +91,20 @@ public final class FrameCropActivity extends Activity {
         wanted.postRotate(pending.angle);wanted.postScale(scale,scale);wanted.postTranslate(photo.getWidth()/2f,photo.getHeight()/2f);
         Object attacher=photo.getClass().getMethod("getAttacher").invoke(photo);
         Matrix base=(Matrix)attacher.getClass().getField("m").get(attacher),inverse=new Matrix();
-        if(!base.invert(inverse))throw new IOException("取景矩阵不可用");
+        if(!base.invert(inverse))throw new IOException(I18n.t("取景矩阵不可用"));
         Matrix supplement=new Matrix(wanted);supplement.preConcat(inverse);
         ((Matrix)attacher.getClass().getField("o").get(attacher)).set(supplement);
         attacher.getClass().getMethod("a").invoke(attacher);
         settingAngle=true;angle.setProgress(Math.round((pending.angle+45)*100));settingAngle=false;
-        angleLabel.setText(String.format(java.util.Locale.getDefault(),"角度 %.1f°",pending.angle));
+        angleLabel.setText(String.format(java.util.Locale.getDefault(),I18n.t("角度 %.1f°"),pending.angle));
     }
     private void save(){
         FrameCrop c=current();
         boolean ok=getSharedPreferences(SceneOptions.DRAFT,0).edit().putBoolean("frame_pair",true).putString("frame_photo",source)
                 .putFloat("frame_x",c.x).putFloat("frame_y",c.y).putFloat("frame_size",c.size).putFloat("frame_angle",c.angle).commit();
-        if(ok){committed=true;setResult(RESULT_OK);finish();}else Toast.makeText(this,"取景保存失败",Toast.LENGTH_LONG).show();
+        if(ok){committed=true;setResult(RESULT_OK);finish();}else Toast.makeText(this,I18n.t("取景保存失败"),Toast.LENGTH_LONG).show();
     }
-    private void fail(Exception e){if(isDestroyed())return;android.util.Log.e("AliveClean","Official crop host failed",e);Toast.makeText(this,"取景页面无法打开："+e.getMessage(),Toast.LENGTH_LONG).show();finish();}
+    private void fail(Exception e){if(isDestroyed())return;android.util.Log.e("AliveClean","Official crop host failed",e);Toast.makeText(this,I18n.t("取景页面无法打开：")+e.getMessage(),Toast.LENGTH_LONG).show();finish();}
     @Override protected void onSaveInstanceState(Bundle state){FrameCrop c=current();state.putFloat("x",c.x);state.putFloat("y",c.y);state.putFloat("size",c.size);state.putFloat("angle",c.angle);super.onSaveInstanceState(state);}
     @Override protected void onDestroy(){
         if(photo!=null)photo.setImageDrawable(null);if(bitmap!=null)bitmap.recycle();

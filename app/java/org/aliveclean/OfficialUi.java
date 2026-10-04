@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 /** Private resource namespace: official 0x7f IDs never enter the app's Resources. */
 final class OfficialUi extends ContextWrapper implements AutoCloseable {
     private final Resources resources;
+    private boolean module;
     private final Resources.Theme theme;
     private final ClassLoader loader;
     private LayoutInflater inflater;
@@ -60,6 +61,8 @@ final class OfficialUi extends ContextWrapper implements AutoCloseable {
         // attaching a loader to the framework's special android context.
         Resources source=base.getPackageManager().getResourcesForApplication(info);
         resources=source;
+        // Clock faces also use this bundle inside SystemUI; only module screens follow the app language.
+        if(module="org.aliveclean".equals(base.getPackageName())){I18n.localize(resources);LocaleOverlay.attach(base,resources,"com.flyme.systemuieditor");}
         if(forceDark){
             Configuration config=new Configuration(source.getConfiguration());
             config.uiMode=(config.uiMode&~Configuration.UI_MODE_NIGHT_MASK)|Configuration.UI_MODE_NIGHT_YES;
@@ -75,7 +78,7 @@ final class OfficialUi extends ContextWrapper implements AutoCloseable {
     int id(String type,String name){int id=resources.getIdentifier(name,type,"com.flyme.systemuieditor");if(id==0)throw new IllegalArgumentException(type+"/"+name);return id;}
     View inflate(String name,ViewGroup parent){return LayoutInflater.from(this).inflate(id("layout",name),parent,false);}
     View find(View root,String name){return root.findViewById(id("id",name));}
-    @Override public Resources getResources(){return resources;}
+    @Override public Resources getResources(){if(module)I18n.ensure(resources);return resources;}
     @Override public AssetManager getAssets(){return resources.getAssets();}
     @Override public ClassLoader getClassLoader(){return loader;}
     @Override public Resources.Theme getTheme(){return theme;}

@@ -11,6 +11,7 @@ import java.io.*;
 
 /** Fixed display-aspect crop. Source remains private and untouched until confirmation. */
 public final class PhotoCropActivity extends Activity {
+    @Override protected void attachBaseContext(android.content.Context base){super.attachBaseContext(I18n.wrap(base));}
     private final PhotoViewport viewport=new PhotoViewport();
     private String source;
     private Bitmap bitmap;
@@ -35,19 +36,19 @@ public final class PhotoCropActivity extends Activity {
             return insets;
         });root.requestApplyInsets();
         LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(16),dp(8),dp(16),dp(8));root.addView(top,new LinearLayout.LayoutParams(-1,dp(58)));
-        TextView cancel=button("取消",false);top.addView(cancel,new LinearLayout.LayoutParams(dp(72),-1));cancel.setOnClickListener(v->finish());
-        TextView title=text("裁切照片",18);top.addView(title,new LinearLayout.LayoutParams(0,-1,1));
-        done=button("完成",true);top.addView(done,new LinearLayout.LayoutParams(dp(72),-1));done.setEnabled(false);done.setOnClickListener(v->save());
+        TextView cancel=button(I18n.t("取消"),false);top.addView(cancel,new LinearLayout.LayoutParams(dp(72),-1));cancel.setOnClickListener(v->finish());
+        TextView title=text(I18n.t("裁切照片"),18);top.addView(title,new LinearLayout.LayoutParams(0,-1,1));
+        done=button(I18n.t("完成"),true);top.addView(done,new LinearLayout.LayoutParams(dp(72),-1));done.setEnabled(false);done.setOnClickListener(v->save());
         cropView=new CropView();root.addView(cropView,new LinearLayout.LayoutParams(-1,0,1));
-        TextView hint=text("双指缩放，拖动调整位置",14);hint.setTextColor(0xffbbbbbb);root.addView(hint,new LinearLayout.LayoutParams(-1,dp(36)));
-        TextView reset=button("复位",false);LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(dp(86),dp(38));rp.gravity=Gravity.CENTER;rp.bottomMargin=dp(18);root.addView(reset,rp);reset.setOnClickListener(v->{if(!saving){viewport.reset();cropView.invalidate();}});
+        TextView hint=text(I18n.t("双指缩放，拖动调整位置"),14);hint.setTextColor(0xffbbbbbb);root.addView(hint,new LinearLayout.LayoutParams(-1,dp(36)));
+        TextView reset=button(I18n.t("复位"),false);LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(dp(86),dp(38));rp.gravity=Gravity.CENTER;rp.bottomMargin=dp(18);root.addView(reset,rp);reset.setOnClickListener(v->{if(!saving){viewport.reset();cropView.invalidate();}});
         new Thread(()->{try{
             Bitmap decoded=ImageDecoder.decodeBitmap(ImageDecoder.createSource(new File(getFilesDir(),source)),(decoder,info,input)->{
                 int w=info.getSize().getWidth(),h=info.getSize().getHeight();float scale=Math.min(1,2048f/Math.max(w,h));
                 decoder.setTargetSize(Math.max(1,Math.round(w*scale)),Math.max(1,Math.round(h*scale)));decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
             runOnUiThread(()->{if(isDestroyed()||isFinishing()){decoded.recycle();return;}bitmap=decoded;viewport.dimensions(bitmap.getWidth(),bitmap.getHeight(),screenWidth,screenHeight);done.setEnabled(true);cropView.invalidate();});
-        }catch(Exception e){runOnUiThread(()->{if(!isDestroyed()){Toast.makeText(this,"无法读取照片："+e.getMessage(),Toast.LENGTH_LONG).show();finish();}});}},"PhotoCropDecode").start();
+        }catch(Exception e){runOnUiThread(()->{if(!isDestroyed()){Toast.makeText(this,I18n.t("无法读取照片：")+e.getMessage(),Toast.LENGTH_LONG).show();finish();}});}},"PhotoCropDecode").start();
     }
     private int dp(float value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private TextView text(String label,int size){TextView v=new TextView(this);v.setText(label);v.setTextColor(Color.WHITE);v.setTextSize(size);v.setGravity(Gravity.CENTER);return v;}
@@ -58,7 +59,7 @@ public final class PhotoCropActivity extends Activity {
         final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
         final ScaleGestureDetector scale;
         float lastX,lastY;boolean touching;
-        CropView(){super(PhotoCropActivity.this);setContentDescription("照片裁切区域，可双指缩放和拖动");
+        CropView(){super(PhotoCropActivity.this);setContentDescription(I18n.t("照片裁切区域，可双指缩放和拖动"));
             scale=new ScaleGestureDetector(PhotoCropActivity.this,new ScaleGestureDetector.SimpleOnScaleGestureListener(){
                 @Override public boolean onScale(ScaleGestureDetector detector){
                     viewport.scale(detector.getScaleFactor(),(detector.getFocusX()-frame.left)/frame.width(),(detector.getFocusY()-frame.top)/frame.height());invalidate();return true;
@@ -106,13 +107,13 @@ public final class PhotoCropActivity extends Activity {
         Bitmap result=Bitmap.createScaledBitmap(decoded,outWidth,outHeight,true);if(result!=decoded)decoded.recycle();return result;
     }
     private void save(){
-        if(bitmap==null||saving)return;saving=true;done.setEnabled(false);done.setText("保存中");
+        if(bitmap==null||saving)return;saving=true;done.setEnabled(false);done.setText(I18n.t("保存中"));
         PhotoViewport selected=new PhotoViewport();selected.dimensions(bitmap.getWidth(),bitmap.getHeight(),screenWidth,screenHeight);selected.restore(viewport.centerX(),viewport.centerY(),viewport.zoom());
         new Thread(()->{File output=null;try{
             Bitmap image=export(new File(getFilesDir(),source),selected,screenWidth,screenHeight);
-            try{output=File.createTempFile("crop-",".png",getFilesDir());try(FileOutputStream out=new FileOutputStream(output)){if(!image.compress(Bitmap.CompressFormat.PNG,100,out))throw new IOException("无法保存裁切结果");}}finally{image.recycle();}
+            try{output=File.createTempFile("crop-",".png",getFilesDir());try(FileOutputStream out=new FileOutputStream(output)){if(!image.compress(Bitmap.CompressFormat.PNG,100,out))throw new IOException(I18n.t("无法保存裁切结果"));}}finally{image.recycle();}
             File ready=output;runOnUiThread(()->{if(isDestroyed()||isFinishing()){ready.delete();return;}setResult(RESULT_OK,new Intent().putExtra("photo",ready.getName()));finish();});
-        }catch(Exception e){if(output!=null)output.delete();runOnUiThread(()->{if(!isDestroyed()){saving=false;done.setEnabled(true);done.setText("完成");Toast.makeText(this,"保存失败："+e.getMessage(),Toast.LENGTH_LONG).show();}});}},"PhotoCropExport").start();
+        }catch(Exception e){if(output!=null)output.delete();runOnUiThread(()->{if(!isDestroyed()){saving=false;done.setEnabled(true);done.setText(I18n.t("完成"));Toast.makeText(this,I18n.t("保存失败：")+e.getMessage(),Toast.LENGTH_LONG).show();}});}},"PhotoCropExport").start();
     }
     @Override protected void onSaveInstanceState(Bundle state){state.putFloat("x",viewport.centerX());state.putFloat("y",viewport.centerY());state.putFloat("zoom",viewport.zoom());super.onSaveInstanceState(state);}
     @Override protected void onDestroy(){if(bitmap!=null){bitmap.recycle();bitmap=null;}if(isFinishing()&&source!=null&&source.matches("photo-[A-Za-z0-9._-]+"))new File(getFilesDir(),source).delete();super.onDestroy();}

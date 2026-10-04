@@ -54,6 +54,11 @@ public final class NativeClockStatusProvider extends ContentProvider {
             renderer=owner;api=version;
             Bundle reply=new Bundle();reply.putBinder("lifetime",lifetime);return reply;
         }
+        if("language".equals(method)){
+            if(Binder.getCallingUid()!=android.os.Process.myUid()&&!caller("com.oplus.wallpapers"))
+                throw new SecurityException("Clock editor required");
+            Bundle reply=new Bundle();String choice=I18n.storedOrNull(getContext());if(choice!=null)reply.putString("choice",choice);return reply;
+        }
         if(!"status".equals(method))throw new IllegalArgumentException("Unknown clock runtime operation");
         if(Binder.getCallingUid()!=android.os.Process.myUid()&&!caller("com.oplus.wallpapers")&&!caller("com.android.systemui"))
             throw new SecurityException("Clock editor required");

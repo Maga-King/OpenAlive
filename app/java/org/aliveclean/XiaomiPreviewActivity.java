@@ -134,7 +134,7 @@ public class XiaomiPreviewActivity extends Activity implements SurfaceHolder.Cal
     private void apply(){if(busy||!ready)return;busy=true;ui.find(detail,"apply_btn").setEnabled(false);updateProgress();
         new Thread(()->{try{
             // Save only after pressing Apply; cancel never alters the installed scene.
-            previousLand=XiaomiPacks.land(this,pack);if(!XiaomiPacks.saveLand(this,pack,land))throw new IOException("无法保存落地点");
+            previousLand=XiaomiPacks.land(this,pack);if(!XiaomiPacks.saveLand(this,pack,land))throw new IOException(I18n.t("无法保存落地点"));
             try{XiaomiApply.apply(this,pack);}catch(Exception e){runOnUiThread(this::systemApply);return;}
             applied();
         }catch(Exception e){runOnUiThread(()->{busy=false;ui.find(detail,"apply_btn").setEnabled(true);updateProgress();failure(e);});}},"XiaomiApply").start();
@@ -143,8 +143,8 @@ public class XiaomiPreviewActivity extends Activity implements SurfaceHolder.Cal
         WallpaperManager m=WallpaperManager.getInstance(this);previousWallpaperId=m.getWallpaperId(WallpaperManager.FLAG_SYSTEM);previousLockId=m.getWallpaperId(WallpaperManager.FLAG_LOCK);awaitingPicker=true;
         startActivityForResult(new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,new ComponentName(this,pack.component())),77);
     }catch(RuntimeException e){awaitingPicker=false;cancelApply();failure(e);}}
-    private void applied(){SceneProvider.changed(this);String message="壁纸已应用";
-        if(getPackageManager().resolveContentProvider("com.oplus.aod.AodMachineHelperProvider",0)!=null)try{message=RootBridge.prepareAod(this);}catch(Exception e){message="壁纸已应用，息屏配置未完成："+e.getMessage();}
+    private void applied(){SceneProvider.changed(this);String message=I18n.t("壁纸已应用");
+        if(getPackageManager().resolveContentProvider("com.oplus.aod.AodMachineHelperProvider",0)!=null)try{message=RootBridge.prepareAod(this);}catch(Exception e){message=I18n.t("壁纸已应用，息屏配置未完成：")+e.getMessage();}
         final String done=message;runOnUiThread(()->{Toast.makeText(this,done,Toast.LENGTH_LONG).show();finish();});
     }
     private void cancelApply(){XiaomiPacks.saveLand(this,pack,previousLand);busy=false;ui.find(detail,"apply_btn").setEnabled(ready);updateProgress();}
@@ -161,5 +161,5 @@ public class XiaomiPreviewActivity extends Activity implements SurfaceHolder.Cal
     @Override public void onConfigurationChanged(android.content.res.Configuration c){super.onConfigurationChanged(c);send((c.uiMode&android.content.res.Configuration.UI_MODE_NIGHT_MASK)==android.content.res.Configuration.UI_MODE_NIGHT_YES?"Night":"Day");}
     @Override protected void onSaveInstanceState(Bundle b){super.onSaveInstanceState(b);b.putInt("scene",scene);b.putInt("land",land);b.putBoolean("choosing",choosing);b.putBoolean("picker",awaitingPicker);b.putInt("previousLand",previousLand);b.putInt("previousId",previousWallpaperId);b.putInt("previousLockId",previousLockId);}
     @Override protected void onDestroy(){main.removeCallbacksAndMessages(null);try{if(clock!=null)clock.close();if(player!=null)player.close();}catch(Exception e){android.util.Log.w("OpenAliveXiaomi","Preview cleanup",e);}super.onDestroy();}
-    private void failure(Exception e){String reason=XiaomiFailure.describe(this,"Preview "+getClass().getSimpleName(),e);android.util.Log.e("OpenAliveXiaomi","Preview",e);if(!isDestroyed())new AlertDialog.Builder(this).setTitle("预览暂时无法打开").setMessage(reason).setPositiveButton("确定",(d,w)->finish()).show();}
+    private void failure(Exception e){String reason=XiaomiFailure.describe(this,"Preview "+getClass().getSimpleName(),e);android.util.Log.e("OpenAliveXiaomi","Preview",e);if(!isDestroyed())new AlertDialog.Builder(this).setTitle(I18n.t("预览暂时无法打开")).setMessage(reason).setPositiveButton(I18n.t("确定"),(d,w)->finish()).show();}
 }

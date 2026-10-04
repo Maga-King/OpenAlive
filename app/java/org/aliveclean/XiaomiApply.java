@@ -11,14 +11,14 @@ import java.util.concurrent.TimeUnit;
 /** System-UID adapter restricted to this app's six wallpaper components. */
 public final class XiaomiApply {
     static void apply(Context c,XiaomiPacks.Pack p)throws Exception {
-        if(android.os.Process.myUid()/100000!=0)throw new IOException("目前仅支持主用户");
+        if(android.os.Process.myUid()/100000!=0)throw new IOException(I18n.t("目前仅支持主用户"));
         String path=c.getApplicationInfo().sourceDir;
         String command="CLASSPATH='"+path.replace("'","'\"'\"'")+"' /system/bin/app_process /system/bin org.aliveclean.XiaomiApply "+p.id;
         java.lang.Process process=new ProcessBuilder("su","1000","-c",command).redirectErrorStream(true).start();StringBuilder result=new StringBuilder();
         Thread reader=new Thread(()->{try(BufferedReader in=new BufferedReader(new InputStreamReader(process.getInputStream(),"UTF-8"))){for(String s;(s=in.readLine())!=null;)synchronized(result){if(result.length()<8192)result.append(s).append('\n');}}catch(IOException ignored){}},"XiaomiApplyOutput");reader.start();
-        if(!process.waitFor(25,TimeUnit.SECONDS)){process.destroyForcibly();throw new IOException("壁纸应用超时，请检查 Root 授权");}reader.join(1000);
+        if(!process.waitFor(25,TimeUnit.SECONDS)){process.destroyForcibly();throw new IOException(I18n.t("壁纸应用超时，请检查 Root 授权"));}reader.join(1000);
         String output;synchronized(result){output=result.toString();}
-        if(process.exitValue()!=0||!output.contains("XIAOMI_APPLIED"))throw new IOException("系统未完成壁纸应用："+output.trim());
+        if(process.exitValue()!=0||!output.contains("XIAOMI_APPLIED"))throw new IOException(I18n.t("系统未完成壁纸应用：")+output.trim());
     }
     public static void main(String[] args){try{
         if(android.os.Process.myUid()!=1000)throw new SecurityException("System UID required");

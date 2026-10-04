@@ -1,0 +1,36 @@
+<resources>
+  <string name="current_device_not_support_superwallpaper_dialog_content">Это устройство не поддерживает суперобои</string>
+  <string name="de_super_wp_apply_wallpaper_button_text">Применить</string>
+  <string name="de_super_wp_dialog_tip_content">Суперобои применяются сразу к экрану блокировки, рабочему столу и связанным экранам.</string>
+  <string name="de_super_wp_dialog_tip_title">Суперобои</string>
+  <string name="de_super_wp_land_position_default_des">Точка посадки</string>
+  <string name="miuix_appcompat_action_mode_deselect_all">Снять выбор</string>
+  <string name="miuix_appcompat_action_mode_select_all">Выбрать всё</string>
+  <string name="miuix_appcompat_cancel_description">Отмена</string>
+  <string name="miuix_appcompat_confirm_description">ОК</string>
+  <string name="miuix_compat_dialog_button">Понятно</string>
+  <string name="miuix_compat_dialog_cancel">Отмена</string>
+  <string name="miuix_compat_dialog_checkbox">Больше не показывать</string>
+  <string name="miuix_compat_dialog_ok">ОК</string>
+  <string name="resource_apply">Применить</string>
+  <string name="resource_apply_trial">Применить</string>
+  <string name="resource_download">Скачать</string>
+  <string name="resource_download_trial">Попробовать</string>
+  <string name="resource_downloaded_title">Загруженное</string>
+  <string name="resource_downloading">Загрузка</string>
+  <string name="super_wallpaper">Суперобои</string>
+  <string name="super_wallpaper_dialog_content">Режим энергосбережения отключает анимацию обоев.</string>
+  <string name="super_wallpaper_list_footer_text">Скоро будет больше!</string>
+  <string name="super_wallpaper_list_label">Суперобои</string>
+  <string name="super_wallpaper_setting_apply_success_toast">Применено</string>
+  <string name="super_wallpaper_setting_apply_super_wallpaper_button_text">Применить</string>
+  <string name="super_wallpaper_setting_choose_position_btn_text">Выбрать место</string>
+  <string name="super_wallpaper_setting_coordinate_title">Координаты</string>
+  <string name="super_wallpaper_setting_view_height_title">Высота</string>
+  <string name="supersave_mode_toast_message">Недоступно в режиме сверхэкономии энергии. Выключите его и повторите.</string>
+  <string name="system_aod_dialog_message">Сначала включите Always-On Display в настройках.</string>
+  <string name="system_aod_dialog_positive_button">Настройки</string>
+  <string name="system_aod_dialog_title">Always-On Display выключен</string>
+  <string name="wallpaper_setting_super_wallpaper_banner_title">Суперобои</string>
+  <string name="wallpaper_setting_super_wallpaper_more_button_text">Ещё</string>
+</resources>

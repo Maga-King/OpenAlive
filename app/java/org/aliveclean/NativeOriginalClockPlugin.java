@@ -233,7 +233,7 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
                 try{
                     editor=NativeClockEditor.show(root.getContext(),root.getContext(),root,()->{});
                 }catch(Exception unavailable){
-                    android.widget.Toast.makeText(root.getContext(),"时钟编辑页暂时无法打开",android.widget.Toast.LENGTH_SHORT).show();
+                    android.widget.Toast.makeText(root.getContext(),I18n.t("时钟编辑页暂时无法打开"),android.widget.Toast.LENGTH_SHORT).show();
                 }
                 return null;
             case "requestHideEditPanel":if(editor!=null)editor.dismiss();editor=null;return null;

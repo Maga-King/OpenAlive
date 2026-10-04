@@ -1,6 +1,6 @@
 """Build the published source/assets on Linux or Windows without a local ROM tree."""
 from pathlib import Path
-import hashlib,json,os,shutil,subprocess,sys,urllib.request,zipfile
+import hashlib,json,os,re,shutil,subprocess,sys,urllib.request,zipfile
 import xml.etree.ElementTree as ET
 from apk_layout import RESOURCE_ALIGNMENT,write_entry,verify_apk
 
@@ -50,8 +50,39 @@ else:
 
 run(BT/('aapt2'+EXE),'compile','--dir',VENDOR/'res','-o',OUT/'vendor-res.zip')
 run(BT/('aapt2'+EXE),'compile','--dir',ROOT/'app/res','-o',OUT/'app-res.zip')
+# Extra translations for the original UI bundles: strings-only tables that reuse
+# each bundle's own resource IDs, layered over it at runtime by LocaleOverlay.
+# IDs are read from the bundle by name, so an updated bundle needs no manual step;
+# strings the bundle no longer has are skipped.
+BUNDLES={'com.meizu.wallpapersetting':'app/assets/ui/settings-ui.apk','com.flyme.systemuieditor':'app/assets/ui/editor-ui.apk',
+         'com.android.thememanager':'app/assets/xiaomi/ui.apk'}
+def string_ids(apk):
+    dump=subprocess.run([str(BT/('aapt2'+EXE)),'dump','resources',str(apk)],capture_output=True,text=True,encoding='utf8',errors='replace',check=True).stdout
+    return {m.group(2):m.group(1) for m in re.finditer(r'resource (0x[0-9a-f]{8}) string/(\S+)',dump)}
+I18N=OUT/'i18n-assets'
+if I18N.exists():shutil.rmtree(I18N)
+(I18N/'i18n').mkdir(parents=True)
+for pack in sorted(p for p in (ROOT/'app/locale-overlays').iterdir() if p.is_dir()):
+    ids=string_ids(ROOT/BUNDLES[pack.name])
+    work=OUT/('i18n-'+pack.name)
+    if work.exists():shutil.rmtree(work)
+    shutil.copytree(pack/'res',work/'res')
+    for table in (work/'res').rglob('*.xml'):
+        tree=ET.parse(table);root=tree.getroot()
+        for item in list(root):
+            if item.get('name') not in ids:print('Skipping translation missing from '+pack.name+': '+item.get('name'));root.remove(item)
+        tree.write(table,encoding='utf-8',xml_declaration=True)
+    names={item.get('name') for table in (work/'res').rglob('*.xml') for item in ET.parse(table).getroot()}
+    (work/'ids.txt').write_text(''.join(pack.name+':string/'+name+' = '+ids[name]+'\n' for name in sorted(names)),encoding='ascii')
+    (work/'AndroidManifest.xml').write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="'+pack.name+'"/>\n',encoding='utf8')
+    run(BT/('aapt2'+EXE),'compile','--dir',work/'res','-o',work/'res.zip')
+    table=I18N/'i18n'/(pack.name+'.apk')
+    run(BT/('aapt2'+EXE),'link','-o',table,'--manifest',work/'AndroidManifest.xml','-I',ANDROID,'--stable-ids',work/'ids.txt','--no-auto-version','--no-resource-removal',work/'res.zip')
+    if string_ids(table)!={name:ids[name] for name in names}:raise ValueError('Translation IDs differ from '+pack.name)
 run(BT/('aapt2'+EXE),'link','-o',OUT/'base.apk','--manifest',ROOT/'app/AndroidManifest.xml','-I',ANDROID,
-    '--auto-add-overlay','--java',OUT/'generated','-A',ROOT/'app/assets',OUT/'vendor-res.zip','-R',OUT/'app-res.zip')
+    '--auto-add-overlay','--java',OUT/'generated','-A',ROOT/'app/assets','-A',I18N,OUT/'vendor-res.zip','-R',OUT/'app-res.zip')
+# Reports untranslated text (never fatal) and refreshes I18nTable.java from app/i18n/strings.json.
+run(sys.executable,ROOT/'tools/i18n.py','build')
 javac_args('api',['-encoding','UTF-8','-source','8','-target','8','-bootclasspath',ANDROID,'-d',OUT/'ui-api',*sorted((ROOT/'tools/ui-api').rglob('*.java'))])
 # Compile the Java 8 decoder from the pinned upstream sources. No decoder APK
 # download, native executable or runtime network dependency is needed.

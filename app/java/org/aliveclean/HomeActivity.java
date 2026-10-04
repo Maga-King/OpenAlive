@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 /** Bind our destinations to the original personalization home layout. */
 public final class HomeActivity extends Activity {
+    @Override protected void attachBaseContext(android.content.Context base){super.attachBaseContext(I18n.wrap(base));}
     private SettingsUi ui;
     private final ArrayList<HomeScenePreview> previews=new ArrayList<>();
     private int previewLoad;
@@ -27,7 +28,7 @@ public final class HomeActivity extends Activity {
         }
         try{
             ui=new SettingsUi(this);
-            LinearLayout screen=SettingsScreen.create(this,ui,"桌面、壁纸和个性化");
+            LinearLayout screen=SettingsScreen.create(this,ui,I18n.t("桌面、壁纸和个性化"));
             View root=ui.inflate("activity_system_customize_center",screen);
             ui.pageBackground(root);
             screen.addView(root,new LinearLayout.LayoutParams(-1,0,1));
@@ -47,7 +48,7 @@ public final class HomeActivity extends Activity {
             View wallpaper=ui.find(root,"system_center_wallpaper");
             topGap(wallpaper,12);
             ui.cardBackground(wallpaper);
-            firstText(wallpaper).setText("动态壁纸");wallpaper.setOnClickListener(v->startActivity(new Intent(this,DynamicLibraryActivity.class)));
+            firstText(wallpaper).setText(I18n.t("动态壁纸"));wallpaper.setOnClickListener(v->startActivity(new Intent(this,DynamicLibraryActivity.class)));
             ViewGroup parent=(ViewGroup)wallpaper.getParent();
             View alive=ui.inflate("view_system_center_wallpaper",parent);alive.setId(View.generateViewId());
             ui.cardBackground(alive);
@@ -55,16 +56,16 @@ public final class HomeActivity extends Activity {
             for(java.lang.reflect.Field field:lp.getClass().getFields())if(!java.lang.reflect.Modifier.isStatic(field.getModifiers())&&field.getType().isPrimitive())field.set(lp,field.get(wallpaper.getLayoutParams()));
             replaceAnchor(lp,ui.id("id","system_layout_container"),wallpaper.getId());
             ((ViewGroup.MarginLayoutParams)lp).topMargin=Math.round(12*getResources().getDisplayMetrics().density);
-            parent.addView(alive,lp);firstText(alive).setText("Alive 壁纸");alive.setOnClickListener(v->openEditor(1,true));
+            parent.addView(alive,lp);firstText(alive).setText(I18n.t("Alive 壁纸"));alive.setOnClickListener(v->openEditor(1,true));
             View vivo=ui.inflate("view_system_center_wallpaper",parent);vivo.setId(View.generateViewId());ui.cardBackground(vivo);
             ViewGroup.LayoutParams vivoLp=lp.getClass().getConstructor(ViewGroup.LayoutParams.class).newInstance(lp);
             for(java.lang.reflect.Field field:lp.getClass().getFields())if(!java.lang.reflect.Modifier.isStatic(field.getModifiers())&&field.getType().isPrimitive())field.set(vivoLp,field.get(lp));
-            replaceAnchor(vivoLp,wallpaper.getId(),alive.getId());parent.addView(vivo,vivoLp);firstText(vivo).setText("Vivo Alive 壁纸");
+            replaceAnchor(vivoLp,wallpaper.getId(),alive.getId());parent.addView(vivo,vivoLp);firstText(vivo).setText(I18n.t("Vivo Alive 壁纸"));
             vivo.setOnClickListener(v->startActivity(new Intent(this,VivoLibraryActivity.class)));
             View xiaomi=ui.inflate("view_system_center_wallpaper",parent);xiaomi.setId(View.generateViewId());ui.cardBackground(xiaomi);
             ViewGroup.LayoutParams xiaomiLp=vivoLp.getClass().getConstructor(ViewGroup.LayoutParams.class).newInstance(vivoLp);
             for(java.lang.reflect.Field field:vivoLp.getClass().getFields())if(!java.lang.reflect.Modifier.isStatic(field.getModifiers())&&field.getType().isPrimitive())field.set(xiaomiLp,field.get(vivoLp));
-            replaceAnchor(xiaomiLp,alive.getId(),vivo.getId());parent.addView(xiaomi,xiaomiLp);firstText(xiaomi).setText("小米Alive壁纸");
+            replaceAnchor(xiaomiLp,alive.getId(),vivo.getId());parent.addView(xiaomi,xiaomiLp);firstText(xiaomi).setText(I18n.t("小米Alive壁纸"));
             xiaomi.setOnClickListener(v->startActivity(new Intent(this,XiaomiLibraryActivity.class)));
             // The original tiles are pinned to opposite screen edges, while the
             // wallpaper bars have a centered content width. Put the original
@@ -83,7 +84,7 @@ public final class HomeActivity extends Activity {
                 LinearLayout.LayoutParams tileLp=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1);
                 if(destination!=null&&shortcutCount>0)tileLp.setMarginStart(ui.getResources().getDimensionPixelSize(ui.id("dimen","common_15dp")));
                 shortcuts.addView(tile,tileLp);
-                ((TextView)ui.find(tile,"item_text")).setText(font?"字体":"主题");
+                ((TextView)ui.find(tile,"item_text")).setText(font?I18n.t("字体"):I18n.t("主题"));
                 ((ImageView)ui.find(tile,"item_image")).setImageResource(ui.id("drawable",font?"icon_system_setting_font":"icon_system_setting_theme"));
                 ui.cardBackground(tile);tile.setOnClickListener(v->ThemeLinks.open(this,destination));
                 if(destination!=null)shortcutCount++;
@@ -96,17 +97,17 @@ public final class HomeActivity extends Activity {
             topGap(light,12);
             ui.cardBackground(light);
             ((ImageView)ui.find(light,"item_image")).setImageResource(ui.id("drawable","ic_system_setting_more_light_effect"));
-            ((TextView)ui.find(light,"item_title")).setText("通知光效");
+            ((TextView)ui.find(light,"item_title")).setText(I18n.t("通知光效"));
             ((TextView)ui.find(light,"item_des")).setText(ui.getString(ui.id("string","system_setting_more_des_1")));
             light.setOnClickListener(v->startActivity(new Intent(this,NotificationSettingsActivity.class)));
             String[] cards={"system_layout_aod","system_layout_lock","system_layout_launcher"};
-            String[] labels={"息屏","锁屏","桌面"};
+            String[] labels={I18n.t("息屏"),I18n.t("锁屏"),I18n.t("桌面")};
             for(int i=0;i<3;i++){
                 final int mode=i;View card=ui.find(root,cards[i]);((TextView)ui.find(card,"item_text")).setText(labels[i]);
                 ImageView image=(ImageView)ui.find(card,"item_image");ViewGroup holder=(ViewGroup)image.getParent();
                 int index=holder.indexOfChild(image);ViewGroup.LayoutParams params=image.getLayoutParams();holder.removeView(image);
                 HomeScenePreview preview=new HomeScenePreview(this,i);preview.setId(image.getId());holder.addView(preview,index,params);previews.add(preview);
-                card.setOnClickListener(v->{if(!preview.openXiaomi())openEditor(mode,false);});card.setContentDescription(labels[i]+"预览");
+                card.setOnClickListener(v->{if(!preview.openXiaomi())openEditor(mode,false);});card.setContentDescription(labels[i]+I18n.t("预览"));
             }
         }catch(Exception error){SettingsScreen.fail(this,error);}
     }

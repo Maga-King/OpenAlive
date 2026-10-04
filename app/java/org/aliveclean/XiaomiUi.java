@@ -11,7 +11,7 @@ import java.lang.reflect.*;
 
 /** Unmodified Xiaomi layouts, styles, drawables and controls, isolated from Flyme. */
 final class XiaomiUi extends ContextWrapper {
-    final ClassLoader loader; final Resources resources; final Resources.Theme theme;
+    final ClassLoader loader; final Resources resources; final Resources.Theme theme; private final boolean module;
     private LayoutInflater inflater;
     static synchronized File bundle(Context c)throws Exception {
         String digest=AssetGl.text(c.getAssets(),"xiaomi/ui.sha256").trim();
@@ -37,7 +37,9 @@ final class XiaomiUi extends ContextWrapper {
         ApplicationInfo info=new ApplicationInfo();info.packageName="com.android.thememanager";info.uid=android.os.Process.myUid();info.sourceDir=info.publicSourceDir=apk.getPath();
         Resources original=host.getPackageManager().getResourcesForApplication(info);
         // Own Resources instance: never alter a cached PackageManager resource's loader.
-        resources=new Resources(original.getAssets(),original.getDisplayMetrics(),original.getConfiguration());
+        module="org.aliveclean".equals(host.getPackageName());
+        resources=new Resources(original.getAssets(),original.getDisplayMetrics(),module?I18n.config(original.getConfiguration()):original.getConfiguration());
+        if(module)LocaleOverlay.attach(host,resources,"com.android.thememanager");
         Field field=Resources.class.getDeclaredField("mClassLoader");field.setAccessible(true);field.set(resources,loader);
         theme=resources.newTheme();theme.setTo(host.getTheme());theme.applyStyle(id("style","AppTheme.NoTitle.Translucent.SuperWallpaperPreview"),true);
         Class<?> app=loader.loadClass("com.android.thememanager.ThemeApplication");Object instance=app.getConstructor().newInstance();
@@ -51,7 +53,7 @@ final class XiaomiUi extends ContextWrapper {
         try{return (target instanceof Class?(Class<?>)target:target.getClass()).getMethod(name,types).invoke(target instanceof Class?null:target,values);}
         catch(InvocationTargetException e){if(e.getCause() instanceof Exception)throw (Exception)e.getCause();throw e;}
     }
-    @Override public Resources getResources(){return resources;}
+    @Override public Resources getResources(){if(module)I18n.ensure(resources);return resources;}
     @Override public AssetManager getAssets(){return resources.getAssets();}
     @Override public Resources.Theme getTheme(){return theme;}
     @Override public ClassLoader getClassLoader(){return loader;}

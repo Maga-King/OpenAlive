@@ -12,6 +12,7 @@ import android.widget.*;
 
 /** Original Flyme notification layout, with OpenAlive settings and owned previews. */
 public final class NotificationSettingsActivity extends Activity {
+    @Override protected void attachBaseContext(android.content.Context base){super.attachBaseContext(I18n.wrap(base));}
     private OfficialUi ui;
     private OfficialDialogs dialogs;
     private SharedPreferences preferences;
@@ -25,7 +26,7 @@ public final class NotificationSettingsActivity extends Activity {
     private int generation;
     private boolean resumed;
     private static final int[] COLORS={NotificationOptions.RING_BLUE,0xffe42d22,0xffffc45c};
-    private static final String[] COLOR_NAMES={"Flyme 蓝","红色","金色","自定义"};
+    private static final String[] COLOR_NAMES={I18n.mark("Flyme 蓝"),I18n.mark("红色"),I18n.mark("金色"),I18n.mark("自定义")};
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
@@ -35,20 +36,20 @@ public final class NotificationSettingsActivity extends Activity {
             root=(FrameLayout)inflatePage();root.setBackgroundColor(Color.BLACK);setContentView(root);
             preview=(FrameLayout)ui.find(root,"aod_preview");panel=(LinearLayout)ui.find(root,"effect_panel");
             for(String id:new String[]{"breathing_ring","breathing_edge_left","breathing_edge_right"})ui.find(root,id).setVisibility(View.GONE);
-            ImageView back=(ImageView)ui.find(root,"back_icon");back.setColorFilter(Color.WHITE);back.setContentDescription("返回");back.setOnClickListener(v->finish());
-            bind(0,"item_effect_none","iv_none","跟随系统");
-            bind(1,"item_effect_screen_on","iv_screen_on","短暂显示息屏");
+            ImageView back=(ImageView)ui.find(root,"back_icon");back.setColorFilter(Color.WHITE);back.setContentDescription(I18n.t("返回"));back.setOnClickListener(v->finish());
+            bind(0,"item_effect_none","iv_none",I18n.t("跟随系统"));
+            bind(1,"item_effect_screen_on","iv_screen_on",I18n.t("短暂显示息屏"));
             bind(3,"item_effect_breathing_ring","iv_breathing_ring",null);
             bind(4,"item_effect_breathing_edge","iv_breathing_edge",null);
             View source=inflatePage();View extra=ui.find(source,"item_effect_breathing_edge");
             ((ViewGroup)extra.getParent()).removeView(extra);
             ((ViewGroup)cards[4].getParent()).addView(extra);cards[2]=extra;
-            firstText(extra).setText("系统光效");extra.setContentDescription("系统光效");corners((ImageView)ui.find(extra,"iv_breathing_edge"));
+            firstText(extra).setText(I18n.t("系统光效"));extra.setContentDescription(I18n.t("系统光效"));corners((ImageView)ui.find(extra,"iv_breathing_edge"));
             extra.setOnClickListener(v->select(2));
             option=new TextView(ui);option.setTextSize(14);option.setTextColor(0xffcccccc);
             option.setPadding(dp(18),dp(8),dp(18),dp(18));option.setMinHeight(dp(48));panel.addView(option);
             option.setOnClickListener(v->options());preview.setOnClickListener(v->replay());
-            previewAction=new TextView(ui);previewAction.setText("预览 Flyme 光效");previewAction.setTextSize(14);previewAction.setTextColor(NotificationOptions.RING_BLUE);
+            previewAction=new TextView(ui);previewAction.setText(I18n.t("预览 Flyme 光效"));previewAction.setTextSize(14);previewAction.setTextColor(NotificationOptions.RING_BLUE);
             previewAction.setPadding(dp(18),dp(8),dp(18),dp(16));previewAction.setMinHeight(dp(48));panel.addView(previewAction);previewAction.setOnClickListener(v->replay());
             root.setOnApplyWindowInsetsListener((v,insets)->{
                 android.graphics.Insets nav=insets.getInsets(WindowInsets.Type.navigationBars());panel.setPadding(0,0,0,nav.bottom);return insets;
@@ -81,30 +82,30 @@ public final class NotificationSettingsActivity extends Activity {
     private int mode(){return NotificationOptions.mode(preferences.getInt("mode",0));}
     private void refresh(){
         int mode=mode();for(int i=0;i<cards.length;i++)if(cards[i]!=null)selected(cards[i],i==mode);
-        if(mode==1)option.setText("显示时长："+NotificationPulseWindow.seconds(preferences.getInt("seconds",10))+" 秒  ›");
-        else if(mode==3)option.setText("光环颜色："+colorName(preferences.getInt("ring_color",NotificationOptions.RING_BLUE))+"  ›");
-        else if(mode==2)option.setText("系统光效颜色  ›");
-        else if(mode==4)option.setText("轻点预览区域重播");
-        else option.setText("沿用系统的通知提醒设置");
+        if(mode==1)option.setText(I18n.t("显示时长：")+NotificationPulseWindow.seconds(preferences.getInt("seconds",10))+I18n.t(" 秒  ›"));
+        else if(mode==3)option.setText(I18n.t("光环颜色：")+colorName(preferences.getInt("ring_color",NotificationOptions.RING_BLUE))+"  ›");
+        else if(mode==2)option.setText(I18n.t("系统光效颜色  ›"));
+        else if(mode==4)option.setText(I18n.t("轻点预览区域重播"));
+        else option.setText(I18n.t("沿用系统的通知提醒设置"));
         option.setEnabled(mode!=0);
         previewAction.setVisibility(mode==3||mode==4?View.VISIBLE:View.GONE);
     }
     private static void selected(View view,boolean selected){view.setSelected(selected);if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++)selected(((ViewGroup)view).getChildAt(i),selected);}
     private void options(){
         int mode=mode();
-        if(mode==1)dialogs.choices("息屏显示时长",new String[]{"5 秒","10 秒","15 秒"},(d,i)->saveInt("seconds",new int[]{5,10,15}[i])).show();
-        else if(mode==3)dialogs.choices("光环颜色",COLOR_NAMES,(d,i)->{if(i<COLORS.length)saveInt("ring_color",COLORS[i]);else customColor();}).show();
-        else if(mode==2)dialogs.choices("系统光效颜色",new String[]{"蓝色","红色","金色"},(d,i)->{preferences.edit().putString("color",new String[]{"blue","red","gold"}[i]).apply();SceneProvider.changed(this);refresh();}).show();
+        if(mode==1)dialogs.choices(I18n.t("息屏显示时长"),new String[]{I18n.t("5 秒"),I18n.t("10 秒"),I18n.t("15 秒")},(d,i)->saveInt("seconds",new int[]{5,10,15}[i])).show();
+        else if(mode==3)dialogs.choices(I18n.t("光环颜色"),I18n.t(COLOR_NAMES),(d,i)->{if(i<COLORS.length)saveInt("ring_color",COLORS[i]);else customColor();}).show();
+        else if(mode==2)dialogs.choices(I18n.t("系统光效颜色"),new String[]{I18n.t("蓝色"),I18n.t("红色"),I18n.t("金色")},(d,i)->{preferences.edit().putString("color",new String[]{"blue","red","gold"}[i]).apply();SceneProvider.changed(this);refresh();}).show();
         else replay();
     }
     private void customColor(){
         LinearLayout content=new LinearLayout(ui);content.setOrientation(1);content.setPadding(dp(20),dp(4),dp(20),dp(12));
         EditText input=new EditText(ui);input.setSingleLine();input.setTextColor(Color.WHITE);input.setHintTextColor(0xff999999);input.setHint("#RRGGBB");
         input.setText(String.format(java.util.Locale.ROOT,"#%06X",preferences.getInt("ring_color",NotificationOptions.RING_BLUE)&0xffffff));content.addView(input);
-        TextView apply=new TextView(ui);apply.setText("应用颜色");apply.setTextColor(NotificationOptions.RING_BLUE);apply.setTextSize(16);apply.setGravity(Gravity.CENTER);apply.setPadding(0,dp(16),0,dp(16));content.addView(apply);
-        Dialog dialog=dialogs.content("自定义光环颜色",content);
+        TextView apply=new TextView(ui);apply.setText(I18n.t("应用颜色"));apply.setTextColor(NotificationOptions.RING_BLUE);apply.setTextSize(16);apply.setGravity(Gravity.CENTER);apply.setPadding(0,dp(16),0,dp(16));content.addView(apply);
+        Dialog dialog=dialogs.content(I18n.t("自定义光环颜色"),content);
         apply.setOnClickListener(v->{String value=input.getText().toString().trim();if(!value.startsWith("#"))value="#"+value;
-            if(!value.matches("#[0-9a-fA-F]{6}")){input.setError("请输入六位颜色，例如 #1F7FFB");return;}
+            if(!value.matches("#[0-9a-fA-F]{6}")){input.setError(I18n.t("请输入六位颜色，例如 #1F7FFB"));return;}
             saveInt("ring_color",Color.parseColor(value));dialog.dismiss();});
         dialog.show();
     }
@@ -131,11 +132,11 @@ public final class NotificationSettingsActivity extends Activity {
                                 if(ticket!=generation||light==null||!resumed)return;
                                 try{Point size=new Point();getDisplay().getRealSize(size);int[] xy=new int[2];preview.getLocationOnScreen(xy);
                                     light.layoutForDisplay(size.x,size.y,getDisplay().getCutout(),xy[0],xy[1]);playAgain(ticket);
-                                }catch(Exception error){stopPreview();Toast.makeText(this,"光效预览暂不可用",Toast.LENGTH_SHORT).show();}
+                                }catch(Exception error){stopPreview();Toast.makeText(this,I18n.t("光效预览暂不可用"),Toast.LENGTH_SHORT).show();}
                             });
-                        }catch(Exception error){stopPreview();Toast.makeText(this,"光效预览暂不可用",Toast.LENGTH_SHORT).show();}
+                        }catch(Exception error){stopPreview();Toast.makeText(this,I18n.t("光效预览暂不可用"),Toast.LENGTH_SHORT).show();}
                     });
-                }catch(Exception error){runOnUiThread(()->{if(ticket==generation&&resumed)Toast.makeText(this,"光效资源无法读取",Toast.LENGTH_SHORT).show();});}
+                }catch(Exception error){runOnUiThread(()->{if(ticket==generation&&resumed)Toast.makeText(this,I18n.t("光效资源无法读取"),Toast.LENGTH_SHORT).show();});}
             },"NotificationPreview").start();
         }
     }
@@ -143,7 +144,7 @@ public final class NotificationSettingsActivity extends Activity {
     @Override protected void onResume(){super.onResume();resumed=true;if(root!=null)root.post(this::replay);}
     @Override protected void onPause(){resumed=false;stopPreview();super.onPause();}
     @Override protected void onDestroy(){stopPreview();if(dialogs!=null)dialogs.close();if(ui!=null)ui.close();super.onDestroy();}
-    private static String colorName(int color){for(int i=0;i<COLORS.length;i++)if(COLORS[i]==color)return COLOR_NAMES[i];return "自定义";}
+    private static String colorName(int color){for(int i=0;i<COLORS.length;i++)if(COLORS[i]==color)return I18n.t(COLOR_NAMES[i]);return I18n.t("自定义");}
     private static TextView firstText(View view){if(view instanceof TextView)return (TextView)view;if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++){TextView text=firstText(group.getChildAt(i));if(text!=null)return text;}}return null;}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
 }

@@ -13,6 +13,7 @@ import java.util.*;
 
 /** Original Xiaomi list shell and row widgets. Only the local data source is replaced. */
 public final class XiaomiLibraryActivity extends Activity {
+    @Override protected void attachBaseContext(android.content.Context base){super.attachBaseContext(I18n.wrap(base));}
     private XiaomiUi ui; private boolean busy;
     private int openRequest; private ProgressDialog preparing;
     private final Handler main=new Handler(Looper.getMainLooper());
@@ -37,7 +38,7 @@ public final class XiaomiLibraryActivity extends Activity {
             final Drawable banner=image;Class<?> fn=ui.loader.loadClass("kotlin.jvm.functions.Function1");Object unit=ui.loader.loadClass("kotlin.Unit").getField("INSTANCE").get(null);
             Object setImage=Proxy.newProxyInstance(ui.loader,new Class[]{fn},(o,m,a)->{if(m.getName().equals("invoke"))((ImageView)a[0]).setImageDrawable(banner);return unit;});
             Object click=Proxy.newProxyInstance(ui.loader,new Class[]{fn},(o,m,a)->{if(m.getName().equals("invoke"))open(pack);return unit;});
-            XiaomiUi.call(v,"k",new Class[]{boolean.class,boolean.class,boolean.class,fn,fn,String.class,String.class},false,false,true,setImage,click,pack.title,"");
+            XiaomiUi.call(v,"k",new Class[]{boolean.class,boolean.class,boolean.class,fn,fn,String.class,String.class},false,false,true,setImage,click,I18n.t(pack.title),"");
             Class<?> complete=ui.loader.loadClass("com.android.thememanager.settings.superwallpaper.widget.DownloadViewHolderInterface$Companion$DownloadState$Complete");Object singleton=null;
             for(Field f:complete.getDeclaredFields())if(Modifier.isStatic(f.getModifiers())&&f.getType()==complete){f.setAccessible(true);singleton=f.get(null);}
             XiaomiUi.call(v,"toq",new Class[]{complete.getSuperclass()},singleton);
@@ -48,7 +49,7 @@ public final class XiaomiLibraryActivity extends Activity {
     private void open(XiaomiPacks.Pack pack){if(busy)return;busy=true;
         int request=++openRequest;
         main.postDelayed(()->{if(request!=openRequest||!busy||isFinishing()||isDestroyed())return;
-            preparing=new ProgressDialog(this);preparing.setMessage("正在准备"+pack.title+"，首次使用请稍候…");preparing.setIndeterminate(true);
+            preparing=new ProgressDialog(this);preparing.setMessage(I18n.t("正在准备")+I18n.t(pack.title)+I18n.t("，首次使用请稍候…"));preparing.setIndeterminate(true);
             preparing.setOnCancelListener(dialog->{openRequest++;busy=false;preparing=null;});preparing.show();
         },300);
         new Thread(()->{try{XiaomiPacks.find(this,pack);runOnUiThread(()->completeOpen(request,pack,null));}catch(Exception e){runOnUiThread(()->completeOpen(request,pack,e));}},"XiaomiPackCheck").start();
@@ -60,5 +61,5 @@ public final class XiaomiLibraryActivity extends Activity {
     @Override public void onDestroy(){openRequest++;busy=false;main.removeCallbacksAndMessages(null);dismissPreparing();super.onDestroy();}
     private void launch(XiaomiPacks.Pack p){startActivity(new Intent().setClassName(this,"org.aliveclean.XiaomiPreviewActivity$"+Character.toUpperCase(p.id.charAt(0))+p.id.substring(1)));}
     @Override public boolean onMenuItemSelected(int feature,MenuItem item){if(item.getItemId()==android.R.id.home){finish();return true;}return super.onMenuItemSelected(feature,item);}
-    private void failure(Exception e){String reason=XiaomiFailure.describe(this,"Xiaomi catalog",e);android.util.Log.e("OpenAliveXiaomi","Xiaomi catalog",e);if(!isDestroyed())new AlertDialog.Builder(this).setTitle("小米壁纸暂时无法打开").setMessage(reason).setPositiveButton("确定",null).show();}
+    private void failure(Exception e){String reason=XiaomiFailure.describe(this,"Xiaomi catalog",e);android.util.Log.e("OpenAliveXiaomi","Xiaomi catalog",e);if(!isDestroyed())new AlertDialog.Builder(this).setTitle(I18n.t("小米壁纸暂时无法打开")).setMessage(reason).setPositiveButton(I18n.t("确定"),null).show();}
 }

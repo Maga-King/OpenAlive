@@ -85,19 +85,19 @@ final class OfficialEditor implements AutoCloseable {
         ViewGroup switchRow=(ViewGroup)switchView.getParent();
         switchRow.removeViewAt(1);switchRow.removeView(switchView);
         cosmicControls=new LinearLayout(activity);cosmicControls.setOrientation(LinearLayout.VERTICAL);
-        keepLockSwitch=toggle(cosmicControls,"桌面保持锁屏效果");
-        cosmicAodSwitch=toggle(cosmicControls,"息屏动画持续播放");
-        cosmicHomeSwitch=toggle(cosmicControls,"锁屏与桌面动画持续播放");
+        keepLockSwitch=toggle(cosmicControls,I18n.t("桌面保持锁屏效果"));
+        cosmicAodSwitch=toggle(cosmicControls,I18n.t("息屏动画持续播放"));
+        cosmicHomeSwitch=toggle(cosmicControls,I18n.t("锁屏与桌面动画持续播放"));
         View settingsBar=ui.inflate("editor_lockscreen_button_photo_wp_legacy_sysui",null);
         cosmicSettings=ui.find(settingsBar,"btn_alive_texture");
         ((ViewGroup)cosmicSettings.getParent()).removeView(cosmicSettings);
-        ((TextView)ui.find(cosmicSettings,"tv_alive_texture")).setText("动画设置");
+        ((TextView)ui.find(cosmicSettings,"tv_alive_texture")).setText(I18n.t("动画设置"));
         ((FrameLayout)find("fl_button_container")).addView(cosmicSettings,new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER));
         cosmicSettings.setVisibility(View.GONE);
         cosmicSettings.setOnClickListener(v->{
             if(busy)return;
             if(cosmicControls.getParent()!=null)((ViewGroup)cosmicControls.getParent()).removeView(cosmicControls);
-            dialogs.content("动画设置",cosmicControls).show();
+            dialogs.content(I18n.t("动画设置"),cosmicControls).show();
         });
         keepLockSwitch.setOnCheckedChangeListener((button,checked)->{if(!bindingKeepLock&&!busy&&options!=null&&options.cosmic!=0)actions.keepLock(checked);});
         cosmicAodSwitch.setOnCheckedChangeListener((button,checked)->{if(!bindingKeepLock&&!busy&&options!=null&&options.cosmic!=0)actions.continuous("cosmic_continuous_aod",checked);});
@@ -172,7 +172,7 @@ final class OfficialEditor implements AutoCloseable {
         ui.find(bars[2],"btn_alive_effect").setVisibility(chosen.cosmic==0?View.VISIBLE:View.GONE);
         ui.find(bars[2],"split_line").setVisibility(chosen.cosmic==0?View.VISIBLE:View.GONE);
         // Keep the official photo button but make the shared-photo destination explicit.
-        ((TextView)ui.find(bars[1],"tv_wallpaper_picker")).setText(chosen.pairedFrame()?"锁屏与桌面照片":"壁纸");
+        ((TextView)ui.find(bars[1],"tv_wallpaper_picker")).setText(chosen.pairedFrame()?I18n.t("锁屏与桌面照片"):I18n.t("壁纸"));
         if(visiblePanel!=null)visiblePanel.refresh();
         fit();
     }
@@ -221,7 +221,7 @@ final class OfficialEditor implements AutoCloseable {
             TextView title=(TextView)ui.find(container,"tv_title");title.setTextColor(-1);
             if(aod){
                 title.setCompoundDrawables(null,null,null,null);
-                TextView done=(TextView)ui.find(container,"btn_confirm");done.setText("完成");done.setOnClickListener(v->closePanel());
+                TextView done=(TextView)ui.find(container,"btn_confirm");done.setText(I18n.t("完成"));done.setOnClickListener(v->closePanel());
             }
             title.setOnClickListener(v->closePanel());
             FrameLayout body=(FrameLayout)ui.find(container,aod?"aod_panel_container":"custom_panel_container");
@@ -229,7 +229,7 @@ final class OfficialEditor implements AutoCloseable {
             if(aod){
                 LinearLayout column=new LinearLayout(activity);column.setOrientation(LinearLayout.VERTICAL);
                 sailControls=new LinearLayout(activity);sailControls.setOrientation(LinearLayout.VERTICAL);
-                sailSwitch=toggle(sailControls,"息屏动画持续播放");
+                sailSwitch=toggle(sailControls,I18n.t("息屏动画持续播放"));
                 sailSwitch.setOnCheckedChangeListener((button,checked)->{if(!bindingSail&&!busy&&options!=null&&options.cosmic==0&&options.aod==0)actions.continuous("sail_continuous_aod",checked);});
                 column.addView(sailControls,new LinearLayout.LayoutParams(-1,-2));column.addView(content,new LinearLayout.LayoutParams(-1,0,1));
                 body.addView(column,new FrameLayout.LayoutParams(-1,-1));
@@ -254,30 +254,30 @@ final class OfficialEditor implements AutoCloseable {
         void refresh(){
             choices.clear();
             if(aod){sailControls.setVisibility(options.cosmic==0&&options.aod==0?View.VISIBLE:View.GONE);bindingSail=true;sailSwitch.setChecked(options.sailContinuousAod);bindingSail=false;sailSwitch.setEnabled(!busy);}
-            ((TextView)ui.find(container,"tv_title")).setText(aod?"息屏":mode==1?"纹理":"特效");
+            ((TextView)ui.find(container,"tv_title")).setText(aod?I18n.t("息屏"):mode==1?I18n.t("纹理"):I18n.t("特效"));
             if(aod){
                 if(options.pairedFrame()){
-                    choices.add(new Choice(-10,"相框照片","ic_wallpaper_picker"));
-                    choices.add(new Choice(-11,"调整取景","ic_wallpaper_texture_btn_icon"));
-                    choices.add(new Choice(-12,"樱花示例","alive_photo_wallpaper_aod_leave_light.png"));
-                }else choices.add(new Choice(-10,"更换照片","ic_wallpaper_picker"));
-                choices.add(new Choice(0,"启航","alive_photo_wallpaper_aod_set_sail.png"));
-                choices.add(new Choice(1,"留光","alive_photo_wallpaper_aod_leave_light.png"));
-                choices.add(new Choice(2,"星月","alive_photo_wallpaper_aod_moon_and_star.png"));
-                choices.add(new Choice(3,"轻启","alive_photo_wallpaper_aod_light_start.png"));
-                choices.add(new Choice(4,"山脉","alive_photo_wallpaper_aod_mountain.png"));
-                choices.add(new Choice(5,"银河","alive_photo_wallpaper_aod_galaxy.png"));
-                choices.add(new Choice(101,"全屏 AOD","alive_photo_wallpaper_aod_fullscreen.png"));
+                    choices.add(new Choice(-10,I18n.t("相框照片"),"ic_wallpaper_picker"));
+                    choices.add(new Choice(-11,I18n.t("调整取景"),"ic_wallpaper_texture_btn_icon"));
+                    choices.add(new Choice(-12,I18n.t("樱花示例"),"alive_photo_wallpaper_aod_leave_light.png"));
+                }else choices.add(new Choice(-10,I18n.t("更换照片"),"ic_wallpaper_picker"));
+                choices.add(new Choice(0,I18n.t("启航"),"alive_photo_wallpaper_aod_set_sail.png"));
+                choices.add(new Choice(1,I18n.t("留光"),"alive_photo_wallpaper_aod_leave_light.png"));
+                choices.add(new Choice(2,I18n.t("星月"),"alive_photo_wallpaper_aod_moon_and_star.png"));
+                choices.add(new Choice(3,I18n.t("轻启"),"alive_photo_wallpaper_aod_light_start.png"));
+                choices.add(new Choice(4,I18n.t("山脉"),"alive_photo_wallpaper_aod_mountain.png"));
+                choices.add(new Choice(5,I18n.t("银河"),"alive_photo_wallpaper_aod_galaxy.png"));
+                choices.add(new Choice(101,I18n.t("全屏 AOD"),"alive_photo_wallpaper_aod_fullscreen.png"));
             }else if(mode==1){
-                choices.add(new Choice(0,"无","alive_photo_wallpaper_lockscreen_source.png"));
-                choices.add(new Choice(1,"长虹","alive_photo_wallpaper_lockscreen_straight_line.png"));
-                choices.add(new Choice(2,"波浪","alive_photo_wallpaper_lockscreen_curve.png"));
-                choices.add(new Choice(3,"雾花","alive_photo_wallpaper_lockscreen_frosted_glass.png"));
+                choices.add(new Choice(0,I18n.t("无"),"alive_photo_wallpaper_lockscreen_source.png"));
+                choices.add(new Choice(1,I18n.t("长虹"),"alive_photo_wallpaper_lockscreen_straight_line.png"));
+                choices.add(new Choice(2,I18n.t("波浪"),"alive_photo_wallpaper_lockscreen_curve.png"));
+                choices.add(new Choice(3,I18n.t("雾花"),"alive_photo_wallpaper_lockscreen_frosted_glass.png"));
             }else{
-                choices.add(new Choice(6,"无","alive_photo_wallpaper_lockscreen_source.png"));
-                choices.add(new Choice(7,"长虹","alive_photo_wallpaper_lockscreen_straight_line.png"));
-                choices.add(new Choice(8,"波浪","alive_photo_wallpaper_lockscreen_curve.png"));
-                choices.add(new Choice(9,"雾花","alive_photo_wallpaper_lockscreen_frosted_glass.png"));
+                choices.add(new Choice(6,I18n.t("无"),"alive_photo_wallpaper_lockscreen_source.png"));
+                choices.add(new Choice(7,I18n.t("长虹"),"alive_photo_wallpaper_lockscreen_straight_line.png"));
+                choices.add(new Choice(8,I18n.t("波浪"),"alive_photo_wallpaper_lockscreen_curve.png"));
+                choices.add(new Choice(9,I18n.t("雾花"),"alive_photo_wallpaper_lockscreen_frosted_glass.png"));
             }
             adapter.notifyDataSetChanged();
         }
@@ -304,7 +304,7 @@ final class OfficialEditor implements AutoCloseable {
             int selected=panel.aod?options.aod:mode==1?options.lock:options.home;
             view.setSelected(choice.value>=0&&choice.value==selected&&options.cosmic==0);
             view.setEnabled(!busy);view.setAlpha(busy?.5f:1);view.setFocusable(true);
-            view.setContentDescription(choice.title+(view.isSelected()?"，已选择":""));
+            view.setContentDescription(choice.title+(view.isSelected()?I18n.t("，已选择"):""));
             TextView label=(TextView)ui.find(view,"tv_label");label.setText(choice.title);label.setTextColor(-1);
             if(panel.aod)ui.find(view,"iv_arrow_right").setVisibility(choice.value<0?View.VISIBLE:View.GONE);
             ImageView image=(ImageView)ui.find(view,"iv_preview");

@@ -26,7 +26,7 @@
   <application android:label="OpenAlive" android:icon="@drawable/icon" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:extractNativeLibs="true" android:supportsRtl="true" android:forceQueryable="true">
     <meta-data android:name="xposedmodule" android:value="true"/>
     <meta-data android:name="xposedminversion" android:value="82"/>
-    <meta-data android:name="xposeddescription" android:value="OpenAlive · 当前壁纸的 ColorOS AOD 适配"/>
+    <meta-data android:name="xposeddescription" android:resource="@string/xposed_description"/>
     <meta-data android:name="xposedscope" android:resource="@array/xposed_scope"/>
     <activity android:name=".XiaomiLibraryActivity" android:exported="false"/>
     <provider android:name=".XiaomiState" android:authorities="org.aliveclean.xiaomi" android:exported="false"/>

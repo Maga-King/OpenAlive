@@ -1,0 +1,13 @@
+<resources>
+  <string name="editor_cancel">Cancel</string>
+  <string name="editor_apply">Apply</string>
+  <string name="editor_aod">AOD</string>
+  <string name="editor_lock">Lock screen</string>
+  <string name="editor_home">Home screen</string>
+  <string name="editor_photo">Photo</string>
+  <string name="editor_change_photo">Change photo</string>
+  <string name="editor_follow_lock">Same as lock screen</string>
+  <string name="editor_load_sample">Load cherry blossom sample</string>
+  <string name="description">Your photos · seamless transitions between AOD, lock screen and home screen</string>
+  <string name="xposed_description">OpenAlive · ColorOS AOD support for the current wallpaper</string>
+</resources>

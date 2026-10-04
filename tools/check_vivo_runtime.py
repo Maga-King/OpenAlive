@@ -59,7 +59,7 @@ if args.media:
 sources = [ROOT / 'tests/vivo/VivoSceneProbe.java'] + [
     ROOT / 'app/java/org/aliveclean' / (name + '.java') for name in [
         'VivoEngineRuntime', 'AssetGl', 'VivoCalls', 'VivoTextureLayer', 'PhotoViewport',
-        'VivoEngineScene', 'VivoSensorGain', 'VivoOptions', 'VivoImages', 'VivoMediaSelection', 'VivoWallpaperZoom', 'VivoWallpaperDim', 'VivoDimPass', 'VivoUi']]
+        'VivoEngineScene', 'VivoSensorGain', 'VivoOptions', 'VivoImages', 'VivoMediaSelection', 'VivoWallpaperZoom', 'VivoWallpaperDim', 'VivoDimPass', 'VivoUi', 'I18n', 'I18nTable']]
 run(JAVA / ('javac' + EXE), '-encoding', 'UTF-8', '-source', '8', '-target', '8',
     '-bootclasspath', ANDROID, '-classpath', BT / 'core-lambda-stubs.jar',
     '-d', OUT / 'classes', *sources)

@@ -30,14 +30,14 @@ public final class EditorInstrumentation extends Instrumentation {
     private View option(String name){
         Object panel=field(editor,"visiblePanel");Object list=field(panel,"list");
         List<?> choices=(List<?>)field(panel,"choices");int index=-1;
-        for(int i=0;i<choices.size();i++)if(name.equals(field(choices.get(i),"title")))index=i;
+        for(int i=0;i<choices.size();i++)if(I18n.t(name).equals(field(choices.get(i),"title")))index=i;
         check(index>=0,"Missing option "+name);final int position=index;
         runOnMainSync(()->{try{list.getClass().getMethod("scrollToPosition",int.class).invoke(list,position);}catch(Exception e){throw new RuntimeException(e);}});idle();
         return named(editor.root,name);
     }
     private void order(String... titles){
         List<?> choices=(List<?>)field(field(editor,"visiblePanel"),"choices");
-        for(int i=0;i<titles.length;i++)check(titles[i].equals(field(choices.get(i),"title")),"Wrong action order at "+i);
+        for(int i=0;i<titles.length;i++)check(I18n.t(titles[i]).equals(field(choices.get(i),"title")),"Wrong action order at "+i);
     }
     private void rendered(int style){
         Object loop=field(activity,"renderer");Handler owner=(Handler)field(loop,"handler");

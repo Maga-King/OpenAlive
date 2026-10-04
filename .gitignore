@@ -15,9 +15,12 @@ __pycache__/
 !/README.md
 !/THIRD_PARTY.md
 !/BUILD.md
+!/BUILD.en.md
+!/THIRD_PARTY.en.md
 /tools/*
 !/tools/apk_layout.py
 !/tools/build_release.py
+!/tools/i18n.py
 !/tools/check_clock_scope.py
 !/tools/check_layout.py
 !/tools/check_platform_provider.py

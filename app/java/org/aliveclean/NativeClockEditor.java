@@ -136,7 +136,7 @@ final class NativeClockEditor {
                 }
                 beforeSelect.run();session.select(id,config);afterSelect.run();return true;
             }catch(Exception failure){
-                android.widget.Toast.makeText(nativeContext,"时钟切换失败，已保留原样式",android.widget.Toast.LENGTH_SHORT).show();
+                android.widget.Toast.makeText(nativeContext,I18n.t("时钟切换失败，已保留原样式"),android.widget.Toast.LENGTH_SHORT).show();
                 return false;
             }
         });
@@ -158,7 +158,7 @@ final class NativeClockEditor {
                 thumb=Bitmap.createBitmap(540,900,Bitmap.Config.ARGB_8888);
                 Canvas canvas=new Canvas(thumb);canvas.scale(540f/width,540f/width);face.draw(canvas);
             }
-            panel.add(id,style==2?"魅族 · 纵向时钟":"魅族 · 横向时钟",config.toString(),thumb);
+            panel.add(id,style==2?I18n.t("魅族 · 纵向时钟"):I18n.t("魅族 · 横向时钟"),config.toString(),thumb);
         }
         {
             String id=NativeFlymeArtworkPlugin.PERSPECTIVE;
@@ -169,7 +169,7 @@ final class NativeClockEditor {
                 thumb=android.graphics.BitmapFactory.decodeStream(in);
             }
             if(thumb==null)throw new IllegalStateException("Original Flyme artwork preview unavailable");
-            panel.add(id,"魅族 · 透视数字",config.toString(),thumb);
+            panel.add(id,I18n.t("魅族 · 透视数字"),config.toString(),thumb);
         }
         for(NativeHyperOsStyles.Style style:NativeHyperOsStyles.ALL){
             String id=style.id;
@@ -180,7 +180,7 @@ final class NativeClockEditor {
                 thumb=android.graphics.BitmapFactory.decodeStream(in);
             }
             if(thumb==null)throw new IllegalStateException("Original HyperOS preview unavailable");
-            panel.add(id,style.title,config.toString(),thumb);
+            panel.add(id,I18n.t(style.title),config.toString(),thumb);
         }
         for(NativeVivoClockStyles.Style style:NativeVivoClockStyles.all(originalContext)){
             JSONObject config=styleConfig(style.id,inner);
@@ -191,12 +191,12 @@ final class NativeClockEditor {
                 thumb=android.graphics.BitmapFactory.decodeStream(in,null,options);
             }
             if(thumb==null)throw new IllegalStateException("Original Vivo preview unavailable: "+style.key);
-            panel.add(style.id,style.title,config.toString(),thumb);
+            panel.add(style.id,"Vivo · "+I18n.t(style.name)+" "+style.grid,config.toString(),thumb);
         }
         if(NativeClockProvider.contains(selected)&&!fallback.isEmpty()){
             JSONObject previous=new JSONObject(fallback);
             if(!NativeClockProvider.contains(previous.getString("pkg")))
-                panel.addText(previous.getString("pkg"),"原系统时钟",previous.getString("clockStyleConfig"));
+                panel.addText(previous.getString("pkg"),I18n.t("原系统时钟"),previous.getString("clockStyleConfig"));
         }
         return panel;
     }
@@ -232,7 +232,7 @@ final class NativeClockEditor {
         Object builder=type.getConstructor(Context.class,int.class,boolean.class).newInstance(hostContext,sheet,false);
         type.getMethod("setAgentContext",Context.class).invoke(builder,themed);
         type.getMethod("initPanelRoot").invoke(builder);
-        type.getMethod("setPanelTitleContent",String.class).invoke(builder,"时钟与颜色");
+        type.getMethod("setPanelTitleContent",String.class).invoke(builder,I18n.t("时钟与颜色"));
         type.getMethod("setPanelDefaultHeight",int.class).invoke(builder,(int)(hostContext.getResources().getDisplayMetrics().heightPixels*.55f));
         Dialog[] dialog={null};
         NativeClockStylePanel panel=cards(themed,moduleContext,host,()->dismissForSwitch(dialog[0]),committed);
@@ -256,7 +256,7 @@ final class NativeClockEditor {
         if(!NativeClockProvider.contains(current.getString("pkg")))return ()->{};
         JSONObject config=new JSONObject(current.getString("clockStyleConfig"));
         android.widget.TextView soft=new android.widget.TextView(themed);
-        soft.setText("特殊效果1");soft.setContentDescription("特殊效果1");soft.setTag("openalive_special_clock_color");
+        soft.setText(I18n.t("特殊效果1"));soft.setContentDescription(I18n.t("特殊效果1"));soft.setTag("openalive_special_clock_color");
         soft.setGravity(android.view.Gravity.CENTER);soft.setTextSize(16);soft.setTextColor(0xfff4e4eb);
         float density=root.getResources().getDisplayMetrics().density;
         int softPad=Math.round(16*density);soft.setPadding(softPad,softPad,softPad,softPad);
@@ -270,7 +270,7 @@ final class NativeClockEditor {
         }
         soft.setBackground(softBackground);soft.setSelected(NativeOriginalClockPlugin.colorMode(config)==5);
         android.widget.TextView wallpaperSoft=new android.widget.TextView(themed);
-        wallpaperSoft.setText("柔和渐变");wallpaperSoft.setContentDescription("柔和渐变，颜色跟随壁纸");
+        wallpaperSoft.setText(I18n.t("柔和渐变"));wallpaperSoft.setContentDescription(I18n.t("柔和渐变，颜色跟随壁纸"));
         wallpaperSoft.setTag("openalive_soft_clock_color");wallpaperSoft.setGravity(android.view.Gravity.CENTER);
         wallpaperSoft.setTextSize(16);wallpaperSoft.setTextColor(0xffeeeeee);wallpaperSoft.setPadding(softPad,softPad,softPad,softPad);
         android.graphics.drawable.StateListDrawable followBackground=new android.graphics.drawable.StateListDrawable();
@@ -282,13 +282,13 @@ final class NativeClockEditor {
         }
         wallpaperSoft.setBackground(followBackground);wallpaperSoft.setSelected(NativeOriginalClockPlugin.colorMode(config)==6);
         android.widget.TextView vivo=new android.widget.TextView(themed);
-        vivo.setText("Vivo 玻璃");vivo.setContentDescription("Vivo 玻璃，实时跟随壁纸");
+        vivo.setText(I18n.t("Vivo 玻璃"));vivo.setContentDescription(I18n.t("Vivo 玻璃，实时跟随壁纸"));
         vivo.setTag("openalive_vivo_clock_glass");vivo.setGravity(android.view.Gravity.CENTER);
         vivo.setTextSize(16);vivo.setTextColor(0xffeeeeee);vivo.setPadding(softPad,softPad,softPad,softPad);
         vivo.setBackground(followBackground.getConstantState().newDrawable().mutate());
         vivo.setSelected(NativeOriginalClockPlugin.colorMode(config)==7);
         android.widget.TextView vivoBlur=new android.widget.TextView(themed);
-        vivoBlur.setText("Vivo 普通模糊");vivoBlur.setContentDescription("Vivo 普通模糊，实时跟随壁纸");
+        vivoBlur.setText(I18n.t("Vivo 普通模糊"));vivoBlur.setContentDescription(I18n.t("Vivo 普通模糊，实时跟随壁纸"));
         vivoBlur.setTag("openalive_vivo_clock_blur");vivoBlur.setGravity(android.view.Gravity.CENTER);
         vivoBlur.setTextSize(16);vivoBlur.setTextColor(0xffeeeeee);vivoBlur.setPadding(softPad,softPad,softPad,softPad);
         vivoBlur.setBackground(followBackground.getConstantState().newDrawable().mutate());vivoBlur.setSelected(NativeOriginalClockPlugin.colorMode(config)==8);
@@ -339,7 +339,7 @@ final class NativeClockEditor {
             type.getMethod("addCustomContent",View.class).invoke(builder,button);
         }
         android.widget.TextView reset=new android.widget.TextView(themed);
-        reset.setText("恢复默认颜色");reset.setContentDescription("恢复默认颜色");reset.setTag("openalive_reset_clock_color");
+        reset.setText(I18n.t("恢复默认颜色"));reset.setContentDescription(I18n.t("恢复默认颜色"));reset.setTag("openalive_reset_clock_color");
         reset.setTextSize(14);reset.setGravity(android.view.Gravity.CENTER_VERTICAL);
         int pad=Math.round(16*density);reset.setPadding(pad,pad,pad,pad);
         reset.setTextColor(0xffb6bbc5);

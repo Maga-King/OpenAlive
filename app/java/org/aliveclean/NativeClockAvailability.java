@@ -35,8 +35,8 @@ final class NativeClockAvailability {
         RETRIES.setKeepAliveTime(30,java.util.concurrent.TimeUnit.SECONDS);
         RETRIES.allowCoreThreadTimeOut(true);
     }
-    private static volatile String unavailableMessage="尚未连接系统时钟模块，请检查模块作用域和加载状态";
-    static String unavailableMessage(){return unavailableMessage;}
+    private static volatile String unavailableMessage=I18n.mark("尚未连接系统时钟模块，请检查模块作用域和加载状态");
+    static String unavailableMessage(){return I18n.t(unavailableMessage);}
 
     private static void watchFirstUnlock(Context app){
         android.os.UserManager users=app.getSystemService(android.os.UserManager.class);
@@ -142,11 +142,11 @@ final class NativeClockAvailability {
         try{
             Bundle reply=caller.getContentResolver().call(URI,"status",null,null);
             int api=reply==null?0:reply.getInt("api");
-            unavailableMessage=api>0&&api!=API?"系统仍在使用旧版时钟模块，请正常重启手机后再选择":
-                    "系统时钟模块尚未完成初始化，请检查模块加载状态";
+            unavailableMessage=api>0&&api!=API?I18n.mark("系统仍在使用旧版时钟模块，请正常重启手机后再选择"):
+                    I18n.mark("系统时钟模块尚未完成初始化，请检查模块加载状态");
             return api==API;
         }catch(Exception unavailable){
-            unavailableMessage="无法连接 OpenAlive 时钟服务，请检查应用与模块的运行状态";
+            unavailableMessage=I18n.mark("无法连接 OpenAlive 时钟服务，请检查应用与模块的运行状态");
             return false;
         }
     }

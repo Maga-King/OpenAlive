@@ -18,6 +18,7 @@ final class VivoUi extends ContextWrapper {
         super(host);this.runtime=runtime;
         android.content.res.Configuration configuration=new android.content.res.Configuration(runtime.getResources().getConfiguration());
         configuration.uiMode=(configuration.uiMode&~android.content.res.Configuration.UI_MODE_NIGHT_MASK)|android.content.res.Configuration.UI_MODE_NIGHT_NO;
+        configuration.setLocale(I18n.locale());
         panelResources=new Resources(runtime.getAssets(),runtime.getResources().getDisplayMetrics(),configuration);
         theme=getResources().newTheme();theme.applyStyle(android.R.style.Theme_Material_Light_NoActionBar,false);
         inflater=LayoutInflater.from(host).cloneInContext(this);

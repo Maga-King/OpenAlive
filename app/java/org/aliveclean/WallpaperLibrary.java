@@ -27,10 +27,10 @@ final class WallpaperLibrary {
                 JSONObject item=catalog.getJSONObject(i);Entry entry=new Entry();
                 entry.image=item.getString("image");entry.thumbnail=item.getString("thumbnail");
                 if(!safe(entry.image)||!safe(entry.thumbnail))throw new IOException("Invalid catalog path");
-                entry.label="魅族壁纸 "+(i+1)+("night".equals(item.optString("variant"))?" · 深色":"");
+                entry.label=I18n.t("魅族壁纸 ")+(i+1)+("night".equals(item.optString("variant"))?I18n.t(" · 深色"):"");
                 entries.add(entry);
             }
-        }catch(IOException|JSONException e){Toast.makeText(activity,"无法读取内置壁纸",Toast.LENGTH_LONG).show();return;}
+        }catch(IOException|JSONException e){Toast.makeText(activity,I18n.t("无法读取内置壁纸"),Toast.LENGTH_LONG).show();return;}
         android.content.Context dialogContext=new ContextThemeWrapper(activity,R.style.Theme_Clean_Dialog);
         GridView grid=new GridView(dialogContext);grid.setNumColumns(3);grid.setHorizontalSpacing(12);grid.setVerticalSpacing(12);grid.setPadding(16,16,16,16);
         BaseAdapter adapter=new BaseAdapter(){
@@ -48,7 +48,7 @@ final class WallpaperLibrary {
         grid.setAdapter(adapter);
         LinearLayout content=new LinearLayout(dialogContext);content.setOrientation(LinearLayout.VERTICAL);
         content.addView(grid,new LinearLayout.LayoutParams(-1,Math.round(activity.getResources().getDisplayMetrics().heightPixels*.6f)));
-        Dialog dialog=dialogs.content("魅族壁纸",content);
+        Dialog dialog=dialogs.content(I18n.t("魅族壁纸"),content);
         ExecutorService decoder=Executors.newSingleThreadExecutor();
         dialog.setOnDismissListener(d->decoder.shutdownNow());
         grid.setOnItemClickListener((parent,view,position,id)->{String image=entries.get(position).image;dialog.dismiss();selection.choose("wallpapers/"+image);});

@@ -20,7 +20,7 @@ final class VivoMediaSelection {
         return result;
     }
     void importUris(VivoEngineRuntime runtime,int kind,List<Uri> uris)throws Exception{
-        if(uris.size()!=1)throw new IOException("请选择一个素材");
+        if(uris.size()!=1)throw new IOException(I18n.t("请选择一个素材"));
         if(kind==VIDEO){video(uris.get(0));return;}
         ArrayList<String> selected=new ArrayList<>();
         for(Uri uri:uris){
@@ -54,24 +54,24 @@ final class VivoMediaSelection {
     private String write(Bitmap bitmap)throws IOException{
         String name="vivo-"+UUID.randomUUID()+".png";created.add(name);
         try(FileOutputStream out=context.openFileOutput(name,0)){
-            if(!bitmap.compress(Bitmap.CompressFormat.PNG,100,out))throw new IOException("照片编码失败");
+            if(!bitmap.compress(Bitmap.CompressFormat.PNG,100,out))throw new IOException(I18n.t("照片编码失败"));
         }
         return name;
     }
     private void video(Uri uri)throws Exception{
         String name="vivo-"+UUID.randomUUID()+".mp4";created.add(name);
         try(InputStream in=context.getContentResolver().openInputStream(uri);OutputStream out=context.openFileOutput(name,0)){
-            if(in==null)throw new IOException("无法读取视频");
+            if(in==null)throw new IOException(I18n.t("无法读取视频"));
             byte[] buffer=new byte[65536];long total=0;
-            for(int n;(n=in.read(buffer))!=-1;){total+=n;if(total>512L*1024*1024)throw new IOException("请选择小于 512 MB 的视频");out.write(buffer,0,n);}
+            for(int n;(n=in.read(buffer))!=-1;){total+=n;if(total>512L*1024*1024)throw new IOException(I18n.t("请选择小于 512 MB 的视频"));out.write(buffer,0,n);}
         }
         MediaMetadataRetriever media=new MediaMetadataRetriever();
         try{
             media.setDataSource(new File(context.getFilesDir(),name).getPath());
             long duration=Long.parseLong(media.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
-            if(duration<=0)throw new IOException("视频时长无效");
+            if(duration<=0)throw new IOException(I18n.t("视频时长无效"));
             Bitmap first=media.getFrameAtTime(0,MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
-            if(first==null)throw new IOException("无法解码视频封面");
+            if(first==null)throw new IOException(I18n.t("无法解码视频封面"));
             try{
                 if(result.photos.isEmpty()){result.photos.add(write(first));}
                 result.videoFirstFrame=write(first);

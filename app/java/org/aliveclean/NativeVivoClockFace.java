@@ -127,7 +127,7 @@ final class NativeVivoClockFace extends FrameLayout {
         Calendar cal=Calendar.getInstance(zone);cal.setTimeInMillis(time);
         int hour=cal.get(format24?Calendar.HOUR_OF_DAY:Calendar.HOUR);if(!format24&&hour==0)hour=12;
         String hh=String.format(Locale.ROOT,"%02d",hour),mm=String.format(Locale.ROOT,"%02d",cal.get(Calendar.MINUTE));
-        java.text.SimpleDateFormat dateFormat=new java.text.SimpleDateFormat("M月d日 E",Locale.CHINA);dateFormat.setTimeZone(zone);
+        Locale locale=Locale.getDefault();java.text.SimpleDateFormat dateFormat="zh".equals(locale.getLanguage())?new java.text.SimpleDateFormat("M月d日 E",Locale.CHINA):new java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale,"MMMdEEE"),locale);dateFormat.setTimeZone(zone);
         for(TextView text:labels){
             String name=name(text),value=null;
             switch(name){

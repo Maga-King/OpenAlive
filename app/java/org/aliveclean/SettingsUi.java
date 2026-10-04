@@ -47,6 +47,7 @@ final class SettingsUi extends ContextWrapper {
         ApplicationInfo info=new ApplicationInfo();info.packageName=PACKAGE;info.uid=android.os.Process.myUid();
         info.sourceDir=info.publicSourceDir=file.getPath();info.targetSdkVersion=base.getApplicationInfo().targetSdkVersion;
         resources=base.getPackageManager().getResourcesForApplication(info);
+        I18n.localize(resources);LocaleOverlay.attach(base,resources,PACKAGE);
         theme=resources.newTheme();theme.applyStyle(id("style","Theme.WallpaperSetting"),true);
     }
     int id(String type,String name){int value=resources.getIdentifier(name,type,PACKAGE);if(value==0)throw new IllegalArgumentException(type+"/"+name);return value;}
@@ -67,7 +68,7 @@ final class SettingsUi extends ContextWrapper {
             ((android.graphics.drawable.GradientDrawable)background).setColor(color("colorSurface"));
         }else view.setBackgroundTintList(ColorStateList.valueOf(color("colorSurface")));
     }
-    @Override public Resources getResources(){return resources;}
+    @Override public Resources getResources(){I18n.ensure(resources);return resources;}
     @Override public AssetManager getAssets(){return resources.getAssets();}
     @Override public Resources.Theme getTheme(){return theme;}
     @Override public ClassLoader getClassLoader(){return loader;}

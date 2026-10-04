@@ -11,6 +11,7 @@ import java.io.*;
 
 /** Original editor UI with portable photo/apply transactions. */
 public final class MainActivity extends Activity implements TextureView.SurfaceTextureListener {
+    @Override protected void attachBaseContext(android.content.Context base){super.attachBaseContext(I18n.wrap(base));}
     private RenderLoop renderer;
     private SharedPreferences draft;
     private OfficialEditor editor;
@@ -50,8 +51,8 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
             showScene();
         }catch(Exception e){
             android.util.Log.e("AliveClean","Official editor initialization failed",e);
-            new android.app.AlertDialog.Builder(this).setTitle("编辑页面无法打开").setMessage(e.toString())
-                .setPositiveButton("关闭",(dialog,which)->finish()).setOnCancelListener(dialog->finish()).show();
+            new android.app.AlertDialog.Builder(this).setTitle(I18n.t("编辑页面无法打开")).setMessage(e.toString())
+                .setPositiveButton(I18n.t("关闭"),(dialog,which)->finish()).setOnCancelListener(dialog->finish()).show();
         }
     }
 
@@ -62,18 +63,18 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
     private void choosePhoto(){
         SceneOptions chosen=new SceneOptions(draft);
         importTarget=chosen.pairedFrame()?(mode==0?2:0):(mode==2?1:0);
-        String title=chosen.pairedFrame()?(mode==0?"相框照片":"锁屏与桌面照片"):mode==2?"桌面照片":"照片";
+        String title=chosen.pairedFrame()?(mode==0?I18n.t("相框照片"):I18n.t("锁屏与桌面照片")):mode==2?I18n.t("桌面照片"):I18n.t("照片");
         if(chosen.cosmic!=0){startActivity(new Intent(this,DynamicLibraryActivity.class));return;}
-        editor.dialogs.choices(title,new String[]{"魅族静态壁纸","自选照片"},(dialog,which)->{
+        editor.dialogs.choices(title,new String[]{I18n.t("魅族静态壁纸"),I18n.t("自选照片")},(dialog,which)->{
                 if(which==0)WallpaperLibrary.show(this,editor.dialogs,asset->importImage(()->getAssets().open(asset)));
-                else editor.dialogs.choices("选择照片来源",PhotoSources.LABELS,(sourceDialog,source)->openPhotoSource(source)).show();
+                else editor.dialogs.choices(I18n.t("选择照片来源"),I18n.t(PhotoSources.LABELS),(sourceDialog,source)->openPhotoSource(source)).show();
             }).show();
     }
     private void openPhotoSource(int source){
         Intent intent=PhotoSources.intent(this,source);
-        if(intent==null){toast(source==PhotoSources.OPPO?"未找到可用的 OPPO 相册，请选择其他来源":"此照片来源不可用，请选择其他来源");return;}
+        if(intent==null){toast(source==PhotoSources.OPPO?I18n.t("未找到可用的 OPPO 相册，请选择其他来源"):I18n.t("此照片来源不可用，请选择其他来源"));return;}
         try{startActivityForResult(intent,10);}
-        catch(ActivityNotFoundException|SecurityException e){android.util.Log.e("AliveClean","Photo source unavailable",e);toast("无法打开"+PhotoSources.LABELS[source]+"，请选择其他来源");}
+        catch(ActivityNotFoundException|SecurityException e){android.util.Log.e("AliveClean","Photo source unavailable",e);toast(I18n.t("无法打开")+I18n.t(PhotoSources.LABELS[source])+I18n.t("，请选择其他来源"));}
     }
 
     private void applyDraft() {
@@ -84,7 +85,7 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
         // permission query follows a different path and cannot diagnose that adapter.
         Intent intent=new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
         intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,new ComponentName(this,CleanWallpaper.class));
-        try{previousWallpaperId=WallpaperManager.getInstance(this).getWallpaperId(WallpaperManager.FLAG_SYSTEM);awaitingApply=true;startActivityForResult(intent,20);}catch(RuntimeException e){awaitingApply=false;android.util.Log.e("AliveClean","Wallpaper picker failed",e);toast("无法打开壁纸应用页面："+e.getMessage());}
+        try{previousWallpaperId=WallpaperManager.getInstance(this).getWallpaperId(WallpaperManager.FLAG_SYSTEM);awaitingApply=true;startActivityForResult(intent,20);}catch(RuntimeException e){awaitingApply=false;android.util.Log.e("AliveClean","Wallpaper picker failed",e);toast(I18n.t("无法打开壁纸应用页面：")+e.getMessage());}
     }
 
     private void toast(String text){Toast.makeText(this,text,Toast.LENGTH_LONG).show();}
@@ -99,9 +100,9 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
             if(chosen.aod>=0){
                 prepareAod();
                 if(chosen.aod==1&&!SceneChannel.hasClockHost())
-                    toast("壁纸已应用，息屏时钟正在连接");
-            }else toast("壁纸已应用");
-        }else toast("设置保存失败，请重试");
+                    toast(I18n.t("壁纸已应用，息屏时钟正在连接"));
+            }else toast(I18n.t("壁纸已应用"));
+        }else toast(I18n.t("设置保存失败，请重试"));
     }
 
     @Override protected void onActivityResult(int request,int result,Intent data) {
@@ -123,34 +124,34 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
             boolean bound=info!=null&&new ComponentName(this,CleanWallpaper.class).equals(info.getComponent());
             if(bound&&(result==RESULT_OK||manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM)!=previousWallpaperId)){
                 commitDraft();
-            }else if(result==RESULT_OK)toast("系统未切换到此壁纸，应用没有成功");
-            else toast("未应用，已保留编辑内容");
+            }else if(result==RESULT_OK)toast(I18n.t("系统未切换到此壁纸，应用没有成功"));
+            else toast(I18n.t("未应用，已保留编辑内容"));
             return;
         }
         if(request!=10||result!=RESULT_OK||data==null||importing)return;
         android.net.Uri returned=data.getData();
         if(returned==null&&data.getClipData()!=null&&data.getClipData().getItemCount()==1)returned=data.getClipData().getItemAt(0).getUri();
-        if(returned==null){toast("照片来源没有返回可读取的图片");return;}
+        if(returned==null){toast(I18n.t("照片来源没有返回可读取的图片"));return;}
         final android.net.Uri uri=returned;importImage(()->getContentResolver().openInputStream(uri),true);
     }
 
     interface ImageInput { InputStream open() throws IOException; }
     private void prepareAod(){
-        importBusy(true);toast("壁纸已应用，正在配置息屏模式");
+        importBusy(true);toast(I18n.t("壁纸已应用，正在配置息屏模式"));
         new Thread(()->{
             String result;boolean success;
             try{result=RootBridge.prepareAod(this);success=true;}
-            catch(Exception e){android.util.Log.e("AliveClean","AOD setup failed",e);result="壁纸已应用，息屏配置未完成。\n\n"+e.getMessage();success=false;}
+            catch(Exception e){android.util.Log.e("AliveClean","AOD setup failed",e);result=I18n.t("壁纸已应用，息屏配置未完成。\n\n")+e.getMessage();success=false;}
             final String message=result;
             final boolean ok=success;
             getSharedPreferences("integration_diagnostics",0).edit().putBoolean("success",ok).putString("message",message).apply();
             runOnUiThread(()->{if(!isDestroyed()){
                 importBusy(false);
                 if(ok){{if(Diagnostics.TRACE)android.util.Log.i("AliveClean","AOD setup verified");}toast(message);}
-                else new android.app.AlertDialog.Builder(this,R.style.Theme_Clean_Dialog).setTitle("息屏配置未完成").setMessage(message)
-                    .setPositiveButton("重试",(dialog,which)->prepareAod())
-                    .setNeutralButton("复制详情",(dialog,which)->{getSystemService(android.content.ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("OpenAlive",message));toast("已复制错误详情");})
-                    .setNegativeButton("关闭",null).show();
+                else new android.app.AlertDialog.Builder(this,R.style.Theme_Clean_Dialog).setTitle(I18n.t("息屏配置未完成")).setMessage(message)
+                    .setPositiveButton(I18n.t("重试"),(dialog,which)->prepareAod())
+                    .setNeutralButton(I18n.t("复制详情"),(dialog,which)->{getSystemService(android.content.ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("OpenAlive",message));toast(I18n.t("已复制错误详情"));})
+                    .setNegativeButton(I18n.t("关闭"),null).show();
             }});
         },"AliveApply").start();
     }
@@ -166,9 +167,9 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
             try{
                 image=File.createTempFile("photo-",".image",getFilesDir());
                 try(InputStream in=source.open();OutputStream out=new FileOutputStream(image)){
-                    if(in==null)throw new IOException("无法读取照片");
+                    if(in==null)throw new IOException(I18n.t("无法读取照片"));
                     byte[] buffer=new byte[65536];long total=0;
-                    for(int n;(n=in.read(buffer))!=-1;){total+=n;if(total>100L*1024*1024)throw new IOException("照片不能超过 100 MB");out.write(buffer,0,n);}
+                    for(int n;(n=in.read(buffer))!=-1;){total+=n;if(total>100L*1024*1024)throw new IOException(I18n.t("照片不能超过 100 MB"));out.write(buffer,0,n);}
                 }
                 Bitmap probe=ImageDecoder.decodeBitmap(ImageDecoder.createSource(image),(decoder,info,input)->{
                     int w=info.getSize().getWidth(),h=info.getSize().getHeight();
@@ -189,13 +190,13 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
                 });
             }catch(Exception e){
                 if(image!=null)image.delete();
-                runOnUiThread(()->{if(!isDestroyed()){importBusy(false);toast("导入失败："+e.getMessage());}});
+                runOnUiThread(()->{if(!isDestroyed()){importBusy(false);toast(I18n.t("导入失败：")+e.getMessage());}});
             }
         },"PhotoImport").start();
     }
 
     private void openFrameCrop(String name,boolean newPhoto){
-        if(!new File(getFilesDir(),name).isFile()){toast("请先选择相框照片");return;}
+        if(!new File(getFilesDir(),name).isFile()){toast(I18n.t("请先选择相框照片"));return;}
         startActivityForResult(new Intent(this,FrameCropActivity.class).putExtra("photo",name).putExtra("new_photo",newPhoto),30);
     }
     private void loadPhotoExample(){
@@ -210,9 +211,9 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
                     draft.edit().putInt("aod",1).putBoolean("frame_pair",true).putString("frame_photo",selectedFrame.getName())
                         .putInt("cosmic",0).putString("photo",selectedBackground.getName()).putFloat("frame_x",.5f).putFloat("frame_y",.5f)
                         .putFloat("frame_size",1).putFloat("frame_angle",0).apply();
-                    importBusy(false);showScene();toast("示例已载入，两处照片均可自行更换");
+                    importBusy(false);showScene();toast(I18n.t("示例已载入，两处照片均可自行更换"));
                 });
-            }catch(Exception e){if(frame!=null)frame.delete();if(background!=null)background.delete();runOnUiThread(()->{if(!isDestroyed()){importBusy(false);toast("示例载入失败："+e.getMessage());}});}
+            }catch(Exception e){if(frame!=null)frame.delete();if(background!=null)background.delete();runOnUiThread(()->{if(!isDestroyed()){importBusy(false);toast(I18n.t("示例载入失败：")+e.getMessage());}});}
         },"PhotoExample").start();
     }
     private File copyExample(String asset)throws IOException{

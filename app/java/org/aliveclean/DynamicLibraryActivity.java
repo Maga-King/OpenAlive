@@ -13,6 +13,7 @@ import java.util.concurrent.*;
 
 /** Official wallpaper grid cells, backed by the locally supported catalogue. */
 public final class DynamicLibraryActivity extends Activity {
+    @Override protected void attachBaseContext(android.content.Context base){super.attachBaseContext(I18n.wrap(base));}
     private final ExecutorService decoder=Executors.newSingleThreadExecutor();
     private final ArrayList<Entry> entries=new ArrayList<>();
     private SettingsUi ui;
@@ -20,10 +21,10 @@ public final class DynamicLibraryActivity extends Activity {
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
         try{
-            ui=new SettingsUi(this);LinearLayout screen=SettingsScreen.create(this,ui,"动态壁纸");
+            ui=new SettingsUi(this);LinearLayout screen=SettingsScreen.create(this,ui,I18n.t("动态壁纸"));
             JSONArray catalogue=new JSONArray(AssetGl.text(getAssets(),"cosmic/catalog.json"));
             for(int i=0;i<catalogue.length();i++){
-                JSONObject item=catalogue.getJSONObject(i);Entry entry=new Entry();entry.id=item.getInt("id");entry.name=item.getString("name");entry.thumbnail=item.getString("thumbnail");entries.add(entry);
+                JSONObject item=catalogue.getJSONObject(i);Entry entry=new Entry();entry.id=item.getInt("id");entry.name=I18n.t(item.getString("name"));entry.thumbnail=item.getString("thumbnail");entries.add(entry);
             }
             GridView grid=new GridView(this);grid.setNumColumns(3);grid.setClipToPadding(false);
             float density=getResources().getDisplayMetrics().density;

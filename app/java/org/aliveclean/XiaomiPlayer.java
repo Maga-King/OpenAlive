@@ -53,7 +53,7 @@ public final class XiaomiPlayer implements AutoCloseable {
             ApplicationInfo archive=new ApplicationInfo();archive.packageName="com.miui.miwallpaper."+family;
             archive.sourceDir=archive.publicSourceDir=path;archive.uid=android.os.Process.myUid();
             Resources source=host.getPackageManager().getResourcesForApplication(archive);
-            Resources resources=new Resources(source.getAssets(),source.getDisplayMetrics(),source.getConfiguration()){
+            Resources resources=new Resources(source.getAssets(),source.getDisplayMetrics(),"org.aliveclean".equals(host.getPackageName())?I18n.config(source.getConfiguration()):source.getConfiguration()){
                 @Override public int getIdentifier(String name,String type,String pkg){
                     // Unity looks up its SurfaceView label using the hosting package.
                     // Keep the real host identity for permissions and redirect only resources.
@@ -163,7 +163,7 @@ public final class XiaomiPlayer implements AutoCloseable {
     private final Runnable readReady=new Runnable(){public void run(){
         if(closed||ready||!attached||!running)return;
         initChecks++;
-        if(android.os.SystemClock.uptimeMillis()-initStarted>30000){initializing=false;mainHandler.removeCallbacks(retry);Exception e=new IOException("小米原版渲染器初始化超时，请重新打开壁纸");initError=e.toString();if(whenFailed!=null)whenFailed.accept(e);return;}
+        if(android.os.SystemClock.uptimeMillis()-initStarted>30000){initializing=false;mainHandler.removeCallbacks(retry);Exception e=new IOException(I18n.t("小米原版渲染器初始化超时，请重新打开壁纸"));initError=e.toString();if(whenFailed!=null)whenFailed.accept(e);return;}
         try{if(Boolean.TRUE.equals(field(callbackOwner,"mInited"))){ready=true;initializing=false;mainHandler.removeCallbacks(retry);if(whenReady!=null)whenReady.run();return;}}catch(Exception e){android.util.Log.e("OpenAliveXiaomi","Original initialization status",e);return;}
         mainHandler.postDelayed(this,100);
     }};

@@ -19,6 +19,6 @@ final class ThemeLinks {
         return null;
     }
     static void open(Activity activity,Intent intent){
-        try{activity.startActivity(intent);}catch(ActivityNotFoundException|SecurityException error){Toast.makeText(activity,"系统页面暂时无法打开",Toast.LENGTH_SHORT).show();}
+        try{activity.startActivity(intent);}catch(ActivityNotFoundException|SecurityException error){Toast.makeText(activity,I18n.t("系统页面暂时无法打开"),Toast.LENGTH_SHORT).show();}
     }
 }

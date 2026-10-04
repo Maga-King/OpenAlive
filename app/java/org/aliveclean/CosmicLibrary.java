@@ -19,9 +19,9 @@ final class CosmicLibrary {
             JSONArray data=new JSONArray(AssetGl.text(activity.getAssets(),"cosmic/catalog.json"));
             for(int i=0;i<data.length();i++){
                 JSONObject item=data.getJSONObject(i);Entry entry=new Entry();entry.id=item.getInt("id");
-                entry.name=item.getString("name");entry.thumbnail=item.getString("thumbnail");entries.add(entry);
+                entry.name=I18n.t(item.getString("name"));entry.thumbnail=item.getString("thumbnail");entries.add(entry);
             }
-        }catch(IOException|JSONException error){Toast.makeText(activity,"动态壁纸目录无法打开",Toast.LENGTH_LONG).show();return;}
+        }catch(IOException|JSONException error){Toast.makeText(activity,I18n.t("动态壁纸目录无法打开"),Toast.LENGTH_LONG).show();return;}
         float density=activity.getResources().getDisplayMetrics().density;
         GridView grid=new GridView(activity);grid.setNumColumns(3);grid.setHorizontalSpacing((int)(8*density));grid.setVerticalSpacing((int)(12*density));
         BaseAdapter adapter=new BaseAdapter(){
@@ -40,12 +40,12 @@ final class CosmicLibrary {
                 }
                 Entry entry=entries.get(p);((ImageView)cell.getChildAt(0)).setImageBitmap(entry.bitmap);
                 ((TextView)cell.getChildAt(1)).setText(entry.name);cell.setBackgroundColor(entry.id==selected?0xff167aca:0xff242424);
-                cell.setContentDescription(entry.name+(entry.id==selected?"，已选择":""));return cell;
+                cell.setContentDescription(entry.name+(entry.id==selected?I18n.t("，已选择"):""));return cell;
             }
         };
         grid.setAdapter(adapter);LinearLayout content=new LinearLayout(activity);content.setPadding(16,8,16,8);
         content.addView(grid,new LinearLayout.LayoutParams(-1,(int)(activity.getResources().getDisplayMetrics().heightPixels*.6f)));
-        Dialog dialog=dialogs.content("Alive 动态壁纸",content);ExecutorService decoder=Executors.newSingleThreadExecutor();
+        Dialog dialog=dialogs.content(I18n.t("Alive 动态壁纸"),content);ExecutorService decoder=Executors.newSingleThreadExecutor();
         dialog.setOnDismissListener(d->{decoder.shutdownNow();});
         grid.setOnItemClickListener((parent,view,p,id)->{dialog.dismiss();selection.choose(entries.get(p).id);});dialog.show();
         for(Entry entry:entries)decoder.execute(()->{

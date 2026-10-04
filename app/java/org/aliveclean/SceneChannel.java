@@ -19,10 +19,10 @@ final class SceneChannel {
     private static String clockError="";
     static synchronized boolean hasClockHost(){return owner!=null&&owner.isBinderAlive()&&clockApi==4;}
     static synchronized String clockStatus(){
-        if(owner==null||!owner.isBinderAlive())return "正在等待系统时钟模块连接";
-        if(hasClockHost())return "息屏使用独立时钟，锁屏保留系统时钟";
-        if(!clockError.isEmpty()||clockApi==0)return "息屏时钟模块初始化失败，请查看模块诊断日志";
-        return "系统仍在运行旧版时钟模块，需要重新加载";
+        if(owner==null||!owner.isBinderAlive())return I18n.t("正在等待系统时钟模块连接");
+        if(hasClockHost())return I18n.t("息屏使用独立时钟，锁屏保留系统时钟");
+        if(!clockError.isEmpty()||clockApi==0)return I18n.t("息屏时钟模块初始化失败，请查看模块诊断日志");
+        return I18n.t("系统仍在运行旧版时钟模块，需要重新加载");
     }
     static synchronized IBinder connect(Context context,IBinder source,int api,String error,IBinder feedback)throws Exception {
         if(messenger==null){

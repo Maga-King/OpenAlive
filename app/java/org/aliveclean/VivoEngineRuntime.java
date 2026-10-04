@@ -69,7 +69,9 @@ final class VivoEngineRuntime extends ContextWrapper {
                     || (Integer) add.invoke(assets, textures.getPath()) == 0)
                 throw new IOException("Vivo renderer resources unavailable");
             resources = new Resources(assets, host.getResources().getDisplayMetrics(),
-                    host.getResources().getConfiguration());
+                    "org.aliveclean".equals(host.getPackageName())
+                            ? I18n.config(host.getResources().getConfiguration())
+                            : host.getResources().getConfiguration());
         } catch (Exception error) {
             assets.close();
             throw error;

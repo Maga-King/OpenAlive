@@ -43,7 +43,7 @@ for name in ['classes', 'dex']:
     '<instrumentation android:name="org.aliveclean.PhotoCropInstrumentation" '
     f'android:targetPackage="{PACKAGE}"/></manifest>', encoding='utf8')
 sources = [ROOT / 'tests/crop/java/org/aliveclean/PhotoCropInstrumentation.java'] + [
-    ROOT / 'app/java/org/aliveclean' / (name + '.java') for name in ['PhotoCropActivity', 'PhotoViewport']]
+    ROOT / 'app/java/org/aliveclean' / (name + '.java') for name in ['PhotoCropActivity', 'PhotoViewport', 'I18n', 'I18nTable']]
 run(JAVA / ('javac' + EXE), '-encoding', 'UTF-8', '-source', '8', '-target', '8',
     '-bootclasspath', ANDROID, '-classpath', BT / 'core-lambda-stubs.jar', '-d', OUT / 'classes', *sources)
 run(JAVA / ('java' + EXE), '-cp', BT / 'lib/d8.jar', 'com.android.tools.r8.D8', '--min-api', '28', '--lib', ANDROID,

@@ -24,13 +24,13 @@ final class NativeVivoClockStyles {
     }
     static Style find(Context host,String id)throws Exception{for(Style s:all(host))if(s.id.equals(id))return s;throw new IllegalArgumentException(id);}
     static final class Style {
-        final String id,key,font,grid,title;final int group,weight;final boolean primary;
+        final String id,key,font,grid,title,name;final int group,weight;final boolean primary;
         Style(JSONObject json)throws Exception{
             key=json.getString("style_id");id=PREFIX+key;group=Integer.parseInt(json.getString("style_group").substring(1));grid=key.substring(key.indexOf('-')+1);
             JSONObject f=json.getJSONObject("default_font");font=f.getString("font_path").substring("/system/fonts/".length());weight=f.getInt("font_weight");
             primary=json.optBoolean("group_default_style");
-            String[] names={"","经典横排","左侧横排","经典纵排","镂刻横排","镂刻细横排","镂刻纵排","舒展数字","舒展纵排","分列数字","丝绸方阵","丝绸纵列","方形数字"};
-            title="Vivo · "+names[group]+" "+grid;
+            String[] names={"",I18n.mark("经典横排"),I18n.mark("左侧横排"),I18n.mark("经典纵排"),I18n.mark("镂刻横排"),I18n.mark("镂刻细横排"),I18n.mark("镂刻纵排"),I18n.mark("舒展数字"),I18n.mark("舒展纵排"),I18n.mark("分列数字"),I18n.mark("丝绸方阵"),I18n.mark("丝绸纵列"),I18n.mark("方形数字")};
+            name=names[group];title="Vivo · "+name+" "+grid;
         }
     }
 }
