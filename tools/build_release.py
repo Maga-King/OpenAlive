@@ -83,6 +83,12 @@ with zipfile.ZipFile(OUT/'base.apk') as base,zipfile.ZipFile(OUT/'unsigned.apk',
     z.write(native,'lib/arm64-v8a/libalive_clean.so')
 run(BT/('zipalign'+EXE),'-f','-p',RESOURCE_ALIGNMENT,OUT/'unsigned.apk',OUT/'aligned.apk')
 
+local_signing=Path.home()/'.openalive-signing/signing.json'
+if 'OPENALIVE_KEYSTORE' not in os.environ and local_signing.is_file():
+    signing=json.loads(local_signing.read_text(encoding='utf-8'))
+    os.environ['OPENALIVE_KEYSTORE']=signing['keystore']
+    os.environ['OPENALIVE_STORE_PASSWORD']=signing['password']
+    os.environ['OPENALIVE_KEY_ALIAS']=signing['alias']
 key=Path(os.environ.get('OPENALIVE_KEYSTORE',str(ROOT/'local/development.jks')))
 alias=os.environ.get('OPENALIVE_KEY_ALIAS','development')
 env={**os.environ,'OPENALIVE_STORE_PASSWORD':os.environ.get('OPENALIVE_STORE_PASSWORD','android')}

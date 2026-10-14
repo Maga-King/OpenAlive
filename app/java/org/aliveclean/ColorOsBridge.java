@@ -68,6 +68,7 @@ final class ColorOsBridge {
         installPanoramicMask(cl);
         installPanoramicHandoff(cl);
         installUnlockEvents(cl);
+        new ColorOsFingerprintAod(cl).install();
         installAnimationWindow(cl);
         try{
             XposedHelpers.findAndHookMethod(controller,"shouldWindowBeTransparent",new XC_MethodHook(){

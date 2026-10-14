@@ -38,6 +38,33 @@ public final class NativeHyperOsTransportInstrumentation extends Instrumentation
                 }catch(Throwable error){failure[0]=error;}});
                 if(failure[0]!=null)throw failure[0];
                 waitForIdleSync();
+                runOnMainSync(()->{try{
+                    // Actual black-screen fingerprint sequence: hidden UNLOCK
+                    // gets replayed at the next sleep before the AOD callback.
+                    for(int origin:new int[]{2,5})for(int size:new int[]{0,1,2}){
+                        Bundle scene=new Bundle();scene.putInt("uiState",origin);scene.putInt("clockSize",size);
+                        scene.putBoolean("isAnim",true);call(container[0],"onClockStateChanged",scene);
+                        View face=clock[0].apply(8);
+                        scene.putInt("uiState",1);scene.putInt("clockSize",11);
+                        for(int repeat=0;repeat<2;repeat++){
+                            call(container[0],"onClockStateChanged",scene);
+                            if(clock[0].clockContainer.getVisibility()!=View.INVISIBLE)
+                                throw new AssertionError("unlock replay exposes clock: "+id);
+                            if(clock[0].apply(8)!=face)
+                                throw new AssertionError("unlock replaced the last visible face: "+id);
+                        }
+                        scene.putInt("uiState",5);scene.putInt("clockSize",size);
+                        call(container[0],"onClockStateChanged",scene);
+                        if(clock[0].clockContainer.getVisibility()!=View.VISIBLE)
+                            throw new AssertionError("next sleep lost clock: "+id);
+                        View aodFace=clock[0].apply(8);
+                        call(container[0],"onClockStateChanged",scene);
+                        if(clock[0].apply(8)!=aodFace)
+                            throw new AssertionError("duplicate AOD replaced clock: "+id);
+                    }
+                    evidence.append(id).append(" fingerprint_replay=true\n");
+                }catch(Throwable error){failure[0]=error;}});
+                if(failure[0]!=null)throw failure[0];
                 for(int state:new int[]{2,3,5,2})for(int size:new int[]{1,2,1}){
                     runOnMainSync(()->{try{
                         Bundle scene=new Bundle();scene.putInt("uiState",state);scene.putInt("clockSize",size);

@@ -120,8 +120,12 @@ public final class NativeClockTransportInstrumentation extends Instrumentation {
         Object callback = Proxy.newProxyInstance(loader, new Class<?>[]{callbackType}, (p,m,a) -> {
             if (m.getName().equals("a")) {
                 Bundle data=(Bundle)a[1];
+                if("requestWallpaperBitmap".equals(a[0])){
+                    require(data.getInt("commandDestination")==1,"wrong wallpaper request destination");
+                    return null;
+                }
                 if(data.getInt("commandDestination")==4){
-                    require(java.util.Arrays.asList("onStyleWidgetsMorphologyChanged","getWidgetsContainerState","setWidgetsContainerTranslation","onClockColorConfigChanged","updateWidgetClockStyleAndPhaseState","startWidgetAnim","endWidgetAnim","setWidgetsVisibility","recruitWidgetPlugin").contains(a[0]),"unknown widget command: "+a[0]);
+                    require(java.util.Arrays.asList("onViewStateChanged","onStyleWidgetsMorphologyChanged","getWidgetsContainerState","setWidgetsContainerTranslation","onClockColorConfigChanged","updateWidgetClockStyleAndPhaseState","startWidgetAnim","endWidgetAnim","setWidgetsVisibility","recruitWidgetPlugin").contains(a[0]),"unknown widget command: "+a[0]);
                     widgetState.put((String)a[0],data.deepCopy());
                     if("onStyleWidgetsMorphologyChanged".equals(a[0])){widgetGeometry[0]=data.deepCopy();widgetCalls[0]++;}
                     return null;

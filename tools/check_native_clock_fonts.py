@@ -68,6 +68,7 @@ def instrument_foreground(component, timeout=90, hidden_api=False):
 <instrumentation android:name="org.aliveclean.NativeClockRetentionInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
 <instrumentation android:name="org.aliveclean.NativeClockWidgetsInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
 <instrumentation android:name="org.aliveclean.NativeHyperOsTransportInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
+<instrumentation android:name="org.aliveclean.NativeFingerprintClockInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
 <instrumentation android:name="org.aliveclean.HyperOsWrappedInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
 <instrumentation android:name="org.aliveclean.FlymeArtworkInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
 <instrumentation android:name="org.aliveclean.NativeClockBootInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
@@ -102,7 +103,10 @@ sources.append(ROOT/'app/java/org/aliveclean/NativeClockMaterialBootstrap.java')
 sources.append(ROOT/'app/java/miui/util/font/MultiLangHelper.java')
 sources.append(ROOT/'app/java/org/aliveclean/NativeFlymeArtworkPlugin.java')
 sources += [ROOT/'app/java/org/aliveclean'/name for name in ('AodClockHost.java','AodClockView.java','AodCalendar.java','AodWidgetSpace.java','AodNotificationBounds.java')]
-run(JAVA/'javac.exe','-encoding','UTF-8','-source','8','-target','8','-bootclasspath',str(ANDROID)+os.pathsep+str(BT/'core-lambda-stubs.jar'),'-d',OUT/'classes',*sources,*sorted((ROOT/'tests/nativeclock').rglob('*.java')))
+sources += [ROOT/'app/java/org/aliveclean'/name for name in ('AodClockFace.java','XiaomiAodClockView.java','XiaomiAodDensity.java')]
+sources += [ROOT/'app/java/org/aliveclean'/name for name in ('XiaomiAodPreview.java','XiaomiUi.java')]
+sources += [ROOT/'app/java/org/aliveclean'/name for name in ('AssetGl.java','XiaomiPacks.java','XiaomiBuiltinPacks.java')]
+run(JAVA/'javac.exe','-encoding','UTF-8','-source','8','-target','8','-sourcepath',str(ROOT/'app/java')+os.pathsep+str(ROOT/'vendor/xz/xz-1.12-sources.jar'),'-bootclasspath',str(ANDROID)+os.pathsep+str(BT/'core-lambda-stubs.jar'),'-d',OUT/'classes',*sources,*sorted((ROOT/'tests/nativeclock').rglob('*.java')))
 run(JAVA/'java.exe','-cp',BT/'lib/d8.jar','com.android.tools.r8.D8','--min-api','28','--lib',ANDROID,'--output',OUT/'dex',*sorted((OUT/'classes').rglob('*.class')))
 with zipfile.ZipFile(OUT/'base.apk') as base, zipfile.ZipFile(OUT/'unsigned.apk','w',zipfile.ZIP_DEFLATED) as dst:
     for entry in base.infolist(): write_entry(dst,entry.filename,base.read(entry))
@@ -231,6 +235,11 @@ try:
         (OUT/(sys.argv[1]+'-widgets.txt')).write_text(widgets.stdout+widgets.stderr,encoding='utf-8')
         print(widgets.stdout)
         assert 'NATIVE_WIDGETS_OK' in widgets.stdout, widgets.stdout
+    if '--fingerprint' in sys.argv:
+        fingerprint=instrument_foreground('org.aliveclean.nativeclocktest/org.aliveclean.NativeFingerprintClockInstrumentation', timeout=240)
+        (OUT/(sys.argv[1]+'-fingerprint.txt')).write_text(fingerprint.stdout+fingerprint.stderr,encoding='utf-8')
+        print(fingerprint.stdout)
+        assert 'NATIVE_FINGERPRINT_CLOCK_OK' in fingerprint.stdout, fingerprint.stdout
     if '--hyperos-native' in sys.argv:
         native = instrument_foreground('org.aliveclean.nativeclocktest/org.aliveclean.NativeHyperOsTransportInstrumentation')
         (OUT/(sys.argv[1]+'-hyperos-native.txt')).write_text(native.stdout+native.stderr,encoding='utf-8')

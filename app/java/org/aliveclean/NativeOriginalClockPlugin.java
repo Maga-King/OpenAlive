@@ -166,6 +166,19 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
                 boolean nextCompact=nextSize==0;
                 if(nextState!=1&&nextState!=2&&nextState!=3&&nextState!=5)nextState=uiState;
                 if(nextState==uiState&&nextSize==nativeClockSize)return null;
+                // UNLOCK is a hidden clock, not a large lockscreen face. ColorOS
+                // can replay it (clockSize=11) when the next sleep starts, before
+                // PANORAMIC_AOD arrives. Keep the last face/size until a visible
+                // scene supplies its geometry; otherwise that replay flashes big.
+                if(nextState==1){
+                    transition.cancel();
+                    uiState=1;aod=false;
+                    root.animate().cancel();root.setTranslationX(0);root.setTranslationY(0);
+                    widgets.translation(0,0);burnX=-1;burnY=-1;
+                    clockContainer.setVisibility(View.INVISIBLE);
+                    widgets.beginScene(1,nativeClockSize,false);widgets.settledScene();
+                    return null;
+                }
                 RectF start=transition.capture();
                 if(args != null && args.containsKey("clockSize")) {
                     // ColorOS SceneKt: 0=small, 1=big, 2=immersed, 10=unlocked.
@@ -182,6 +195,7 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
                 }
                 updateInset();
                 faces.scene(uiState,compact);
+                clockContainer.setVisibility(View.VISIBLE);
                 boolean animateScene=animate&&previousState!=1&&uiState!=1;
                 widgets.beginScene(uiState,nativeClockSize,animateScene);
                 material.scene(activeFace(),coloringType);
