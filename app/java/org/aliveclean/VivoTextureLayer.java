@@ -20,6 +20,7 @@ final class VivoTextureLayer implements InvocationHandler,AutoCloseable {
     private final Size subjectSize,doodleSize;
     private VivoCalls videoApi;
     private Object videoParams;
+    private final ArrayList<VivoVideoTexture> clips=new ArrayList<>();
     VivoTextureLayer(VivoCalls api,Object render,int width,int height,List<Bitmap> photos,
             Bitmap mask,Bitmap painted,PhotoViewport viewport,boolean background,boolean flipY,boolean displayP3)throws Exception{
         screen=new Size(width,height);this.flipY=flipY;
@@ -64,6 +65,14 @@ final class VivoTextureLayer implements InvocationHandler,AutoCloseable {
             p.restore(viewport.centerX(),viewport.centerY(),viewport.zoom());
             crops.add(new Rect(Math.round(p.left()*size.getWidth()),Math.round(p.top()*size.getHeight()),Math.round((p.left()+p.width())*size.getWidth()),Math.round((p.top()+p.height())*size.getHeight())));}
     }
+    void slotCrops(VivoOptions options){
+        crops.clear();for(int i=0;i<sizes.size();i++){
+            Size size=sizes.get(i);PhotoViewport p=options.slots[i].viewport();
+            p.dimensions(size.getWidth(),size.getHeight(),screen.getWidth(),screen.getHeight());
+            crops.add(new Rect(Math.round(p.left()*size.getWidth()),Math.round(p.top()*size.getHeight()),
+                Math.round((p.left()+p.width())*size.getWidth()),Math.round((p.top()+p.height())*size.getHeight())));
+        }
+    }
     void video(VivoCalls api,java.io.File directory,VivoOptions options)throws Exception{
         videoApi=api;
         videoParams=api.make(VivoEngineScene.BASE+"plugin.raster.RasterVideoPreRenderParamBean",new Class<?>[0]);
@@ -72,6 +81,15 @@ final class VivoTextureLayer implements InvocationHandler,AutoCloseable {
         api.set(videoParams,"videoFrameNum",options.videoFrames);api.set(videoParams,"videoFrameRate",options.videoRate);
         api.set(videoParams,"videoTime",options.videoDuration);api.set(videoParams,"videoResFrom","gallery");
     }
+    void clips(java.io.File directory,VivoOptions options,boolean displayP3,Runnable invalidate)throws Exception{
+        for(int i=0;i<Math.min(options.video.isEmpty()?images.size():1,options.rasterVideos.size());i++){
+            String name=options.rasterVideos.get(i);if(name.isEmpty())continue;
+            Size size=sizes.get(i);
+            clips.add(new VivoVideoTexture(new java.io.File(directory,name),images.get(i),size.getWidth(),size.getHeight(),flipY,displayP3,options.slots[i].rotation,invalidate));
+        }
+    }
+    void visible(boolean value){for(VivoVideoTexture clip:clips)clip.visible(value);}
+    void updateClips(){for(VivoVideoTexture clip:clips)clip.update();}
     private String renderParams()throws Exception{
         if(videoParams==null)return "{}";
         videoApi.set(videoParams,"texIds",images.get(0));videoApi.set(videoParams,"texImageSize",sizes.get(0));
@@ -125,5 +143,5 @@ final class VivoTextureLayer implements InvocationHandler,AutoCloseable {
             default:throw new UnsupportedOperationException("Unsupported Vivo host operation: "+method.getName());
         }
     }
-    @Override public void close(){int[] ids=new int[owned.size()];for(int i=0;i<ids.length;i++)ids[i]=owned.get(i);GLES20.glDeleteTextures(ids.length,ids,0);owned.clear();}
+    @Override public void close(){for(VivoVideoTexture clip:clips)clip.close();clips.clear();int[] ids=new int[owned.size()];for(int i=0;i<ids.length;i++)ids[i]=owned.get(i);GLES20.glDeleteTextures(ids.length,ids,0);owned.clear();}
 }

@@ -5,6 +5,8 @@
 *.toml text eol=lf
 *.yml text eol=lf
 *.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
 *.glsl text eol=lf
 *.png binary
 *.jpg binary
@@ -17,3 +19,4 @@
 *.svga binary
 app/assets/** -text
 vendor/flyme/res/** -text
+vendor/onnxruntime/** -text

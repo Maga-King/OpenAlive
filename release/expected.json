@@ -1,0 +1,8 @@
+{
+  "version": "0.4.28-preview",
+  "files": {
+    "OpenAlive-0.4.28-preview-arm64-v8a.apk": "37a02458f5eabe6cc51592f86fffb967b09c412b33c9d9ecb7443d43776dd58d",
+    "SHA256SUMS": "98c9f0177dec280436ed3c3537b2a26885bd6c54d77d89a44d6881cddb2f6c62",
+    "build-report.json": "673be4d82007dc761ab2821789da610a98ce4485b6afc12daa344ca734c541af"
+  }
+}

@@ -15,4 +15,4 @@ python tools/check_native_clock_fonts.py 3B1F4UE5MS13HQRR --fingerprint
 python tools/check_native_clock_fonts.py 3B1F4UE5MS13HQRR --transport
 ```
 
-代码和构建仅在本地；未推送、未触发云端签名。原安装签名私钥尚未在本地找到，本地测试签名包不能直接覆盖手机上的正式签名包。
+上述代码已随 `5bbb02c` 推送到修复分支，未发布 Release。原签名私钥未找回；用户授权后，本地和 GitHub Actions 已统一轮换为新签名（证书 SHA-256：`34266f7a129ba55dbb1d013308857fe6139159408b2eebfa89517389309e3632`）。本地构建自动读取用户目录 `.openalive-signing/signing.json`，配置和密钥不进入仓库。用户表示测试机启用了跨签名覆盖安装支持；先前主测试机上的覆盖安装结果未确认，真实指纹验证状态仍如上所述。

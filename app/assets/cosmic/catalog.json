@@ -136,5 +136,43 @@
     "name": "蓝莓苏打",
     "thumbnail": "v205.png",
     "family": "bubble"
+  },
+  {
+    "id": 16,
+    "name": "园蓝",
+    "thumbnail": "v16.png"
+  },
+  {
+    "id": 17,
+    "name": "梅洛",
+    "thumbnail": "v17.png"
+  },
+  {
+    "id": 18,
+    "name": "金杏",
+    "thumbnail": "v18.png"
+  },
+  {
+    "id": 19,
+    "name": "青提",
+    "thumbnail": "v19.png"
+  },
+  {
+    "id": 301,
+    "name": "大漠",
+    "thumbnail": "gradient_damos.png",
+    "family": "gradient"
+  },
+  {
+    "id": 302,
+    "name": "极光",
+    "thumbnail": "gradient_jiguang.png",
+    "family": "gradient"
+  },
+  {
+    "id": 303,
+    "name": "远海",
+    "thumbnail": "gradient_yuanhai.png",
+    "family": "gradient"
   }
 ]

@@ -57,7 +57,9 @@ final class VivoEngineScene implements AutoCloseable {
             boolean displayP3=VivoColorSpace.isDisplayP3(android.opengl.EGL14.eglGetCurrentDisplay(),android.opengl.EGL14.eglGetCurrentSurface(android.opengl.EGL14.EGL_DRAW));
             api.call(render,"setWideColorGamutEnable",new Class<?>[]{boolean.class},displayP3);
             layer=new VivoTextureLayer(api,render,width,height,photos,subject,paint,options.viewport(),family!=VivoOptions.RASTER&&options.area==3,family!=VivoOptions.FLASH&&!uprightLiquid(),displayP3);
+            if(family==VivoOptions.RASTER)layer.slotCrops(options);
             if(videoRaster())layer.video(api,runtime.getFilesDir(),options);
+            if(family==VivoOptions.RASTER)layer.clips(runtime.getFilesDir(),options,displayP3,invalidate);
             layerContract=layer.proxy;Class<?> layerType=api.type("com.android.systemui.plugins.IVAGLayer");
             if(family==VivoOptions.LIQUID){
                 Object config=api.make("D3.a",new Class<?>[0]);
@@ -131,6 +133,7 @@ final class VivoEngineScene implements AutoCloseable {
     }
     private void updateAnimation(){
         boolean value=visible&&(mode!=0||animateInAod());
+        if(layer!=null)layer.visible(value);
         if(!value)flashReady=false;
         main.post(()->{if(closed||controller==null)return;try{
             if(running==value){
@@ -176,7 +179,7 @@ final class VivoEngineScene implements AutoCloseable {
         return true;
     }
     void draw()throws Exception{
-        drain();api.call(render,"glSurfaceDraw");
+        drain();layer.updateClips();api.call(render,"glSurfaceDraw");
         Object matrix=api.call(render,"getMatrixManager");
         float scale=zoom.sample(System.nanoTime());
         drawnScale=scale;
@@ -213,13 +216,18 @@ final class VivoEngineScene implements AutoCloseable {
         finally{api.call(render,"pop");}
     }
     void crop(PhotoViewport viewport)throws Exception{
+        crop(viewport,true);
+    }
+    void crop(PhotoViewport viewport,boolean finish)throws Exception{
         layer.crop(viewport);
-        if(family==VivoOptions.LIQUID&&liquidMask!=null){
+        if(finish&&family==VivoOptions.LIQUID&&liquidMask!=null){
             liquidWeights(api.call(controller,"getConfig"),viewport);
             api.call(controller,"onGLSurfaceChanged",new Class<?>[]{int.class,int.class},width,height);
         }
         api.call(controller,family==VivoOptions.FLASH?"e":"reLoadSource",new Class<?>[]{api.type("com.android.systemui.plugins.IVAGLayer")},layerContract);
         if(family==VivoOptions.FLASH)layer.bindLiveFlashMask(api,render,controller,options.area);
+        options.x=viewport.centerX();options.y=viewport.centerY();options.zoom=viewport.zoom();
+        if(family==VivoOptions.RASTER)for(VivoOptions.Slot slot:options.slots){slot.x=options.x;slot.y=options.y;slot.zoom=options.zoom;}
         invalidate.run();
     }
     private void liquidWeights(Object config,PhotoViewport viewport)throws Exception{

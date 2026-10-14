@@ -10,6 +10,7 @@ import java.util.ArrayList;
 /** Bind our destinations to the original personalization home layout. */
 public final class HomeActivity extends Activity {
     private SettingsUi ui;
+    private HomeActivationStatus activation;
     private final ArrayList<HomeScenePreview> previews=new ArrayList<>();
     private int previewLoad;
     @Override public void onCreate(Bundle state){
@@ -28,6 +29,7 @@ public final class HomeActivity extends Activity {
         try{
             ui=new SettingsUi(this);
             LinearLayout screen=SettingsScreen.create(this,ui,"桌面、壁纸和个性化");
+            activation=new HomeActivationStatus(this,ui,screen);
             View root=ui.inflate("activity_system_customize_center",screen);
             ui.pageBackground(root);
             screen.addView(root,new LinearLayout.LayoutParams(-1,0,1));
@@ -131,11 +133,13 @@ public final class HomeActivity extends Activity {
         if(photo)intent.putExtra("photo_editor",true);startActivity(intent);
     }
     @Override protected void onResume(){super.onResume();int request=++previewLoad;
+        if(activation!=null)activation.start();
         new Thread(()->{
             XiaomiHomePreview.Card[] cards;
             try{cards=XiaomiHomePreview.load(this);}catch(Exception error){android.util.Log.w("OpenAliveXiaomi","Home wallpaper selection",error);cards=new XiaomiHomePreview.Card[3];}
             XiaomiHomePreview.Card[] selected=cards;runOnUiThread(()->{if(isDestroyed()||request!=previewLoad)return;for(int i=0;i<previews.size();i++)previews.get(i).start(selected[i]);});
         },"HomeWallpaperPreviews").start();
     }
-    @Override protected void onPause(){previewLoad++;for(HomeScenePreview preview:previews)preview.stop();super.onPause();}
+    @Override protected void onPause(){previewLoad++;if(activation!=null)activation.stop();for(HomeScenePreview preview:previews)preview.stop();super.onPause();}
+    @Override protected void onDestroy(){if(activation!=null)activation.close();super.onDestroy();}
 }

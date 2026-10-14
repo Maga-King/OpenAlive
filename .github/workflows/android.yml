@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '17.0.12+7'
       - name: Set up Android SDK
         uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
         with:
@@ -60,6 +60,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          python3 tools/verify_release.py
           version=$(python3 -c 'import json; print(json.load(open("dist/build-report.json"))["version"])')
           tag="v$version"
           if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "$tag" ]]; then

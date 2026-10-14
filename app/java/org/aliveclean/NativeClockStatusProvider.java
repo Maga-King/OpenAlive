@@ -12,18 +12,27 @@ import android.os.IBinder;
 /** Process-lifetime capability receipt; never persists readiness across a reboot. */
 public final class NativeClockStatusProvider extends ContentProvider {
     private IBinder renderer;
+    private IBinder module;
     private int api;
     private final Binder lifetime=new Binder();
     @Override public boolean onCreate(){return true;}
-    @Override public synchronized void dump(java.io.FileDescriptor fd,java.io.PrintWriter out,String[] args){
+    @Override public void dump(java.io.FileDescriptor fd,java.io.PrintWriter out,String[] args){
         // Explicit dumpsys only; readiness stays in memory and cannot survive
         // a dead SystemUI process or a reboot as a stale persisted flag.
-        out.println("OpenAliveClock api="+(renderer!=null&&renderer.isBinderAlive()?api:0));
-        if(renderer==null||!renderer.isBinderAlive())return;
+        final IBinder target;final int version;final boolean moduleActive;
+        synchronized(this){
+            target=renderer;version=api;
+            moduleActive=(module!=null&&module.isBinderAlive())||(target!=null&&target.isBinderAlive());
+        }
+        out.println("OpenAliveClock api="+(target!=null&&target.isBinderAlive()?version:0));
+        out.println("OpenAlive moduleActive="+moduleActive);
+        if(target==null||!target.isBinderAlive())return;
         android.os.Parcel data=android.os.Parcel.obtain(),reply=android.os.Parcel.obtain();
         try{
             data.writeInterfaceToken(NativeClockLoadState.DESCRIPTOR);
-            if(!renderer.transact(NativeClockLoadState.TRANSACTION_SNAPSHOT,data,reply,0))return;
+            // SystemUI can stall during diagnostics. Never hold the status
+            // monitor while waiting for a remote Binder or writing the dump.
+            if(!target.transact(NativeClockLoadState.TRANSACTION_SNAPSHOT,data,reply,0))return;
             reply.readException();Bundle state=reply.readBundle();
             if(state!=null){
                 out.println("providers="+state.getInt("providers")+" requests="+state.getInt("requests")
@@ -43,6 +52,19 @@ public final class NativeClockStatusProvider extends ContentProvider {
         return false;
     }
     @Override public synchronized Bundle call(String method,String argument,Bundle extras){
+        if("hookAnnounce".equals(method)){
+            if(!caller("com.android.systemui"))throw new SecurityException("SystemUI module required");
+            IBinder owner=extras==null?null:extras.getBinder("owner");
+            if(owner==null||!owner.isBinderAlive())throw new IllegalArgumentException("Invalid module runtime");
+            try{
+                if(owner!=module)owner.linkToDeath(()->{synchronized(NativeClockStatusProvider.this){if(module==owner)module=null;}},0);
+            }catch(android.os.RemoteException dead){throw new IllegalStateException("Module runtime exited",dead);}
+            module=owner;return new Bundle();
+        }
+        if("hookStatus".equals(method)){
+            if(Binder.getCallingUid()!=android.os.Process.myUid())throw new SecurityException("Module home required");
+            Bundle reply=new Bundle();reply.putBoolean("active",(module!=null&&module.isBinderAlive())||(renderer!=null&&renderer.isBinderAlive()));return reply;
+        }
         if("announce".equals(method)){
             if(!caller("com.android.systemui"))throw new SecurityException("SystemUI renderer required");
             IBinder owner=extras==null?null:extras.getBinder("owner");

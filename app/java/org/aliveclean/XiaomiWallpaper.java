@@ -20,11 +20,13 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     private XiaomiPacks.Pack pack; private XiaomiPlayer.Runtime runtime; private XiaomiPlayer player;
     private SceneEngine owner; private DisplayManager displays; private boolean destroyed,ambient,ready; private int land,mode=-1;
     private Runnable pendingLock;
+    private int desktopAmplitude,desktopResponsiveness,offsetGeneration;
     private final Messenger client=new Messenger(new Handler(Looper.getMainLooper(),m->{
         if(m.sendingUid!=android.os.Process.myUid())return true;Bundle b=m.getData();
         if(m.what==1){int next=b.getInt("mode",-1);boolean changed=scenes.accept(next,b.getLong("time"),b.getInt("phase"));if(changed){ambient=next==0;setMode(next,!b.getBoolean("animate",true));}refresh();}
         else if(m.what==2&&pack!=null&&pack.id.equals(b.getString("family"))){land=b.getInt("land");send("Land_"+land);}
-        else if(m.what==3){scenes.disconnect();updateMode(false);refresh();}return true;
+        else if(m.what==3){scenes.disconnect();updateMode(false);refresh();}
+        else if(m.what==4){desktopAmplitude=b.getInt("amplitude");desktopResponsiveness=b.getInt("responsiveness");offsetGeneration++;sendOffset();}return true;
     }));
     private final BroadcastReceiver screen=new BroadcastReceiver(){public void onReceive(Context c,Intent i){
         if(Intent.ACTION_SCREEN_OFF.equals(i.getAction()))ambient=true;
@@ -46,7 +48,7 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     @Override public Engine onCreateEngine(){return new SceneEngine();}
     private void select(){
         SceneEngine next=null;for(SceneEngine e:engines)if(e.surface&&(next==null||e.visible&&!next.visible||e.visible&&e.isPreview()))next=e;
-        if(next==null){owner=null;refresh();return;}boolean changed=next!=owner;owner=next;
+        if(next==null){owner=null;offsetGeneration++;refresh();return;}boolean changed=next!=owner;if(changed)offsetGeneration++;owner=next;
         if(runtime==null)return;
         try{
             if(player==null){player=new XiaomiPlayer(runtime,next.getSurfaceHolder(),next.getDisplayContext());player.whenFailed(this::failure);changed=true;}
@@ -84,12 +86,13 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     }
     private boolean canRun(){if(owner==null||!owner.surface||!owner.visible)return false;Display d=owner.display();if(d==null)return false;return d.getState()!=Display.STATE_OFF&&d.getState()!=Display.STATE_UNKNOWN;}
     private void refresh(){if(player==null)return;try{player.running(canRun());}catch(Exception e){failure(e);}}
-    private void sendOffset(){if(owner!=null&&owner.offset>=0)send("Offset_"+owner.offset);}
+    private void sendOffset(){if(owner!=null&&owner.offset>=0)send("Offset_"+XiaomiDesktopMotion.offset(owner.offset,desktopAmplitude));}
     private void queueOffset(SceneEngine engine,float value){
-        // Xiaomi resumes first and dispatches each changed offset 100 ms later.
         // Keep intermediate samples; debouncing to the final page loses motion.
+        // Invalidate queued samples when controls or the surface owner change.
         refresh();
-        main.postDelayed(()->{if(!destroyed&&owner==engine&&engine.surface&&engine.visible&&canRun())send("Offset_"+value);},100);
+        int generation=offsetGeneration;float adjusted=XiaomiDesktopMotion.offset(value,desktopAmplitude);
+        main.postDelayed(()->{if(generation==offsetGeneration&&!destroyed&&owner==engine&&engine.surface&&engine.visible&&canRun())send("Offset_"+adjusted);},XiaomiDesktopMotion.delay(desktopResponsiveness));
     }
     private void failure(Throwable e){android.util.Log.e("OpenAliveXiaomi","Wallpaper runtime",e);}
     @Override protected void dump(java.io.FileDescriptor fd,java.io.PrintWriter out,String[] args){

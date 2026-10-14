@@ -26,6 +26,10 @@ final class VivoImages implements AutoCloseable {
                     }finally{canvas.recycle();}
                 }
             }else for(String name:options.photos)images.photos.add(file(host,name));
+            if(options.family==VivoOptions.RASTER)for(int i=0;i<images.photos.size();i++){
+                Bitmap source=images.photos.get(i),rotated=rotate(source,options.slots[i].rotation);
+                if(rotated!=source){images.photos.set(i,rotated);source.recycle();}
+            }
             if(!options.subject.isEmpty()){if(images.subject!=null)images.subject.recycle();images.subject=file(host,options.subject);}
             if(!options.paint.isEmpty())images.paint=file(host,options.paint);
             return images;
@@ -33,6 +37,14 @@ final class VivoImages implements AutoCloseable {
     }
     static Bitmap asset(VivoEngineRuntime runtime,String name)throws IOException{
         try(InputStream in=runtime.getAssets().open(name)){Bitmap b=BitmapFactory.decodeStream(in);if(b==null)throw new IOException("Invalid Vivo image: "+name);return b;}
+    }
+    static Bitmap rotate(Bitmap source,int turns){
+        if(Math.floorMod(turns,4)==0)return source;
+        Matrix matrix=new Matrix();matrix.postRotate(90*Math.floorMod(turns,4));
+        return Bitmap.createBitmap(source,0,0,source.getWidth(),source.getHeight(),matrix,true);
+    }
+    static Bitmap slot(Context host,VivoEngineRuntime runtime,VivoOptions options,int index)throws IOException{
+        return index<options.photos.size()?file(host,options.photos.get(index)):asset(runtime,"vivo/default/raster-"+index+".jpg");
     }
     private static Bitmap file(Context host,String name)throws IOException{
         File f=new File(host.getFilesDir(),name);

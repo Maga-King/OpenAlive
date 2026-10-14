@@ -1,0 +1,9 @@
+{
+  "xiaomi": {
+    "source": "https://www.mi.com/us/",
+    "retrieved": "2026-10-14",
+    "asset": "xiaomi-logo.svg",
+    "original": "xiaomi-official-source.svg",
+    "note": "Official website header SVG. Static MI state extracted from the home/MI hover sprite; original path geometry and colors preserved. Xiaomi trademark belongs to Xiaomi."
+  }
+}

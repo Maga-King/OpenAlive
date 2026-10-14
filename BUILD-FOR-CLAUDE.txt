@@ -1,0 +1,71 @@
+历史编译交接：本机路径仍可参考，版本、测试设备和上传限制以最新用户指令及 BUILD.md 为准。
+
+OpenAlive 本机编译说明（给接手 AI，2026-10-14）
+
+这是自定义 Python + Rust + Android SDK 构建，不是 Gradle 工程。
+实际入口：E:\openalive\tools\build_release.py
+此前完整构建成功日志：E:\openalive\build\black-wake\local-build-new.txt
+任务交接：E:\openalive\HANDOFF-20261014.txt
+
+直接在 PowerShell 执行以下命令：
+
+Set-Location 'E:\openalive'
+$env:ANDROID_HOME = 'C:\Users\a1510\AppData\Local\Android\Sdk'
+$env:JAVA_HOME = 'C:\Program Files\Java\jdk-17'
+$env:PYTHONIOENCODING = 'utf-8'
+& 'C:\Users\a1510\AppData\Local\Programs\Python\Python312\python.exe' .\tools\build_release.py
+if ($LASTEXITCODE -ne 0) { throw 'OpenAlive build failed; inspect the preceding error' }
+
+本机工具已存在，刚核对成功，不需要重新安装：
+- Windows Python 3.12：C:\Users\a1510\AppData\Local\Programs\Python\Python312\python.exe
+- JDK 17：C:\Program Files\Java\jdk-17
+- Android SDK：C:\Users\a1510\AppData\Local\Android\Sdk
+- SDK Platform：platforms\android-35\android.jar
+- Build Tools：build-tools\35.0.0
+- WSL 默认用户：wsdmc；Rust cargo：/home/wsdmc/.cargo/bin/cargo
+- WSL NDK：/home/wsdmc/android-ndk-r29
+- NDK linker：/home/wsdmc/android-ndk-r29/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android28-clang
+- Rust Android目标：aarch64-linux-android
+
+不要在 Windows PATH 找不到 cargo 时改构建流程。
+build_release.py 的 Windows 分支会自动调用 wsl.exe，在 /mnt/e/openalive 中运行 cargo test --locked 和 cargo build --locked --release --target aarch64-linux-android。
+Windows 负责 aapt2 编译资源、javac、D8、打包、zipalign、apksigner；WSL只负责Rust测试与arm64原生库。
+无需在PowerShell单独执行cargo，也无需切换整个构建到WSL。
+
+脚本会做：
+1. 校验布局、壁纸选择器、时钟范围、小米素材；按固定SHA下载/校验compile-only Xposed API82。
+2. Rust测试与release构建，生成target/aarch64-linux-android/release/libalive_clean.so。
+3. 编译vendor/flyme/res和app/res，再编译app/java、生成R类、固定XZ解码源码。
+4. D8生成宿主DEX；保留vendor/flyme/editor-ui.dex作为classes2.dex。
+5. 打包资源和arm64库、4096字节对齐、签名、检查签名和APK资源表布局。
+6. 写dist/build-report.json、dist/SHA256SUMS，最后输出完整JSON报告。
+
+输出APK名称读取app/AndroidManifest.xml的versionName：
+dist\OpenAlive-<versionName>-arm64-v8a.apk
+当前交接版本的输出：dist\OpenAlive-0.4.24-preview-arm64-v8a.apk
+build/release为中间目录；脚本会清理其中自己的classes/dex/generated/ui-api/xz-source。
+不要把dist旧APK存在当作本次编译成功；看退出码、报告和文件时间。
+
+签名已经配好，不要生成另一把密钥：
+脚本在未显式设置OPENALIVE_KEYSTORE时，自动读
+C:\Users\a1510\.openalive-signing\signing.json
+配置引用同目录openalive-20261014.p12，alias为development。
+不需要人工复制密码、不需要cat配置、不要输出秘密或将此目录加入仓库。
+若终端残留旧OPENALIVE_KEYSTORE/OPENALIVE_STORE_PASSWORD/OPENALIVE_KEY_ALIAS，应先确认并清理旧覆盖值，让脚本读取已配置的本地签名。
+GitHub Actions的两个签名Secrets已同步这把新密钥，不需要再轮换。
+预期签名证书SHA256：34266f7a129ba55dbb1d013308857fe6139159408b2eebfa89517389309e3632
+
+编译警告说明：
+javac的deprecated/unchecked提示和Rust warning不等于构建失败。
+PowerShell的某些重定向包装会把stderr警告显示为NativeCommandError；判断应使用Python真实退出码和最终签名验证/JSON报告，而不是仅看红色文字。
+真正的Python traceback、javac error、子进程非零退出不能忽略。
+如果构建失败，先修实际报错；不要跳过检查、替换空DEX、拿旧so伪造成功。
+
+安装与发布限制：
+用户暂停了开发，仅要求交接说明；此说明的编写没有重新构建或安装。
+后续用户要求继续后，设备只能用序列号3B1F4UE5MS13HQRR。
+覆盖安装示例：
+adb -s 3B1F4UE5MS13HQRR install -r 'E:\openalive\dist\OpenAlive-0.4.24-preview-arm64-v8a.apk'
+用户说已启用核心破解，可跨签名覆盖；不得卸载清数据。
+此前新签名APK覆盖安装被打断，结果未知。先核对安装状态。
+用户再次明确要求之前，不要git push、触发Actions或发布Release。

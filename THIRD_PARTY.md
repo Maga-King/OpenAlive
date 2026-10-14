@@ -10,6 +10,7 @@
 - `app/assets/masks/`、`app/assets/editor/`、`app/assets/wallpapers/`：效果遮罩、预览图和壁纸。
 - `app/assets/examples/`：示例图片，版权归原作者所有。
 - `app/assets/cosmic/`：官方 Cosmic、Phoenix 系列配色、预览图及模型数据；来源文件校验值保存在同目录 `source.json`、`phoenix-source.json`。
+- `app/assets/gradient/`、`app/assets/shader/gradient/` 和 `app/assets/cosmic/gradient_*.png`：Flyme 9 系统公共组件 1.8.15 的大漠、极光、远海配色、原始着色器及缩略图；原 APK 与文件校验值见 `gradient/source.json`。园蓝、梅洛、金杏、青提原始配色和预览图见 `cosmic/flyme9-source.json`。这些资产保留原权利人的权利。
 - `app/assets/bubble/`、`app/assets/soundviz/`：官方 Bubble 系列的数值配置和流动背景着色器；来源校验值见 `bubble/source.json`。
 - `docs/donate.png`：项目维护者提供的赞赏码，不属于代码许可范围。
 - `app/assets/notification/`：魅族 22 SystemUI 的原始通知光环和双侧光带动画，来源及文件校验值见同目录 `source.json`；使用已包含的官方 SVGA 运行库解码和绘制。
@@ -28,3 +29,6 @@ Xposed API 82 仅用于编译，不打进 APK；运行时由 LSPosed 提供。
 - `app/res/drawable/vivo_*`：Vivo BBKTheme 原始编辑器图标，来源及校验值见 `app/assets/vivo/ui-source.json`。光栅选项的原始 PAG 动画及配套 `libpag`、`libffavc` 保存在上述 Vivo 运行库中，保留其各自版权与许可。
 - `app/assets/xiaomi/ui.apk`：小米 ThemeManager 的原始列表、预览、进度条和落地点控件。DEX、资源和素材内容不变，只去掉未调用的视频编辑原生库及原 APK 签名元数据并重新压缩；原包与逐文件校验值见 `vendor/xiaomi/ui-manifest.json`。六款横幅来自各自原版场景 APK。`app/assets/xiaomi/packs/` 保存六个原包的无损共享块，按 `packs.json` 还原后与 `catalog.json` 记录的原始 APK SHA-256 完全相同。小米程序、素材及其依赖库保留原有权利，不属于本项目 MIT 授权范围。
 - `vendor/xz/xz-1.12-sources.jar`：XZ for Java 1.12 原始 Java 源码，来源与 SHA-256 见同目录 `source.json`，采用 0BSD（见 `COPYING` 与 `LICENSE`）。构建仅编译 Java 8 源码，用于内置场景的流式解压；原版权与贡献者注释保留。
+- `app/assets/branding/`、`app/res/drawable/ic_xiaomi_official.xml`：小米官网的 MI 标识，保留官方路径与颜色；原始 SVG、网址及 SHA-256 见 `branding/`。商标与图形权利归原权利人。
+- `vendor/onnxruntime/`：Microsoft ONNX Runtime Android 1.23.2 的 Java 类和 arm64 原生库，采用 MIT；原始发行来源和 SHA-256 见 `source.json`，许可证与第三方声明随 APK 一同打包至 `assets/licenses/onnxruntime/`。
+- `app/assets/vivo/models/u2netp.onnx`：rembg 发布的 U2NetP ONNX 模型，原项目为 U-2-Net，其项目采用 Apache-2.0 并提供预训练权重链接。模型未修改；来源、固定版本的上游校验依据和 SHA-256 见同目录 `source.json`，原项目许可证一并保留。

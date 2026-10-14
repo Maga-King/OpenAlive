@@ -31,7 +31,7 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
             mode=Math.max(0,Math.min(2,getIntent().getIntExtra("scene",1)));
             draft.edit().remove("vivo").apply();
             int variant=getIntent().getIntExtra("cosmic_variant",0);
-            if(variant==1||variant==3||variant==4||(variant>=6&&variant<=15)||(variant>=101&&variant<=105)||(variant>=201&&variant<=205))draft.edit().putInt("cosmic",variant).apply();
+            if(variant==1||variant==3||variant==4||(variant>=6&&variant<=19)||(variant>=101&&variant<=105)||(variant>=201&&variant<=205)||(variant>=301&&variant<=303))draft.edit().putInt("cosmic",variant).apply();
             else if(getIntent().getBooleanExtra("photo_editor",false))draft.edit().putInt("cosmic",0).apply();
         }
         if(state!=null){mode=state.getInt("mode",1);awaitingApply=state.getBoolean("awaitingApply",false);previousWallpaperId=state.getInt("previousWallpaperId",0);previousLockId=state.getInt("previousLockId",0);pickerResultReliable=state.getBoolean("pickerResultReliable",false);importTarget=state.getInt("importTarget",0);}

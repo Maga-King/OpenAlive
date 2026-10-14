@@ -9,6 +9,7 @@ interface WallpaperRenderer extends AutoCloseable {
     void close();
     static WallpaperRenderer create(AssetManager assets,int variant,boolean dark,int width,int height,int scene,boolean keepLock)throws IOException {
         if(variant>=201&&variant<=205)return new BubbleRenderer(assets,variant,dark,width,height,scene,keepLock);
+        if(variant>=301&&variant<=303)return new GradientRenderer(assets,variant,dark,width,height,scene);
         return new CosmicRenderer(assets,variant,dark,width,height,scene,keepLock);
     }
 }

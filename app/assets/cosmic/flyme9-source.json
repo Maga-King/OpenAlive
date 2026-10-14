@@ -1,0 +1,19 @@
+{
+  "source": "Flyme 9 系统公共组件 1.8.15 / com.meizu.flyme.sdkstage",
+  "note": "Cosmic variants 园蓝/梅洛/金杏/青提, registered as fresh catalogue IDs",
+  "assets": {
+    "assets/shader/cosmic/cosmic_v1.json": "db0c29a2b6c9de3c9aca7bde08f47d9000a6df52b5f1ae5ebb87c9f8d55e3aac",
+    "assets/shader/cosmic/cosmic_v1_dark.json": "1a50c8e8a3c55ed53fbfeee58bcdb0679aa1428c7b5f4d2b8745b1e8917cc5d8",
+    "res/drawable-nodpi/mz_wallpaper_cosmic.webp": "54fdb6c1f38e83edaa749c25c39ba3073b4a98664258f3a07911522b52feabbc",
+    "assets/shader/cosmic/cosmic_v2.json": "6d28bfa568866f61417234c81852d4f90ee2bce11da1c480a2d3b0cdf72791b7",
+    "assets/shader/cosmic/cosmic_v2_dark.json": "843f06a7fb999c73f48764daa7f8edcf5808ffc7b67fcacb3e8f0527a59c0031",
+    "res/drawable-nodpi/mz_wallpaper_cosmic_v2.webp": "62fa42c0777035e19e9784ad53ce6e66d2fc3931dde32ab3e7d90ac4e2a78645",
+    "assets/shader/cosmic/cosmic_v3.json": "0cc33bec8e6cbf7448ff78ca39a02e17fc8fd4f728d017f10716cddd248d1137",
+    "assets/shader/cosmic/cosmic_v3_dark.json": "63e3b77331b53a3cb4fd486ea39663191783e079ebcc34b4ff642a78c95fbfc8",
+    "res/drawable-nodpi/mz_wallpaper_cosmic_v3.webp": "8958c4b91483602c03a93dc5d4d312669c6e6c3c1e4168878044ff03bb8fe076",
+    "assets/shader/cosmic/cosmic_v4.json": "2b2f408afe9d98db51f31079c4e7007960d9ab58ec5bddc95f9afa789a2e8bb7",
+    "assets/shader/cosmic/cosmic_v4_dark.json": "74a75a4a157e77725a2d1a6aa5dd1fce28ea415848807b2127089658515a9c2a",
+    "res/drawable-nodpi/mz_wallpaper_cosmic_v4.webp": "eff2631c496d77369ef3aec103cb4b487d81a6ba9d8645fe22a9ab085223c32b"
+  },
+  "apk_sha256": "8f37e745a7ad216725bf4692aee2a7088e24da1db953eb8c98fe826b0097ede6"
+}

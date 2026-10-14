@@ -52,13 +52,36 @@ final class RenderLoop {
     // Queue GL work after all animation callbacks for this vsync have run.
     private final Choreographer.FrameCallback frame=this::onVsync;
     private final Runnable reloadTask=()->reloadScene();
+    private final Runnable cropTask=()->applyPendingCrop();
+    private final Object cropLock=new Object();
+    private float pendingCropX=.5f,pendingCropY=.5f,pendingCropZoom=1;
+    private boolean cropQueued,cropFinal;
     private final android.content.SharedPreferences.OnSharedPreferenceChangeListener changes=(p,key)->reload();
     RenderLoop(Context context){this(context,SceneOptions.APPLIED);}
     RenderLoop(Context context,String name){this.context=context.getApplicationContext();preview=SceneOptions.DRAFT.equals(name);preferences=context.getSharedPreferences(name,0);thread.start();handler=new Handler(thread.getLooper());preferences.registerOnSharedPreferenceChangeListener(changes);}
     void attach(Surface surface,int w,int h){handler.post(()->{release();if(!surface.isValid()||w<1||h<1)return;try{init(surface,w,h);schedule();}catch(Exception e){Log.e("AliveClean","Renderer initialization failed",e);release();}});}
     void touch(int action,float x,float y){handler.post(()->{if(vivo!=null)vivo.touch(action,x,y);});}
     void vivoDarkWallpaper(boolean dark){handler.post(()->{vivoDarkWallpaper=dark;if(vivo!=null){vivo.darkWallpaper(dark,visible);schedule();}});}
-    void vivoCrop(float x,float y,float zoom){handler.post(()->{if(vivo!=null)try{PhotoViewport p=new PhotoViewport();p.restore(x,y,zoom);vivo.crop(p);schedule();}catch(Exception e){Log.w("AliveClean","Vivo crop failed",e);}});}
+    void vivoCrop(float x,float y,float zoom){
+        queueCrop(x,y,zoom,false);
+    }
+    void vivoCropNow(float x,float y,float zoom){
+        queueCrop(x,y,zoom,true);
+    }
+    private void queueCrop(float x,float y,float zoom,boolean finish){
+        synchronized(cropLock){
+            if(closed)return;pendingCropX=x;pendingCropY=y;pendingCropZoom=zoom;cropFinal=finish;
+            if(finish){handler.removeCallbacks(cropTask);cropQueued=true;handler.post(cropTask);}
+            else if(!cropQueued){cropQueued=true;handler.postDelayed(cropTask,16);}
+        }
+    }
+    private void applyPendingCrop(){
+        PhotoViewport p=new PhotoViewport();boolean finish;
+        synchronized(cropLock){cropQueued=false;p.restore(pendingCropX,pendingCropY,pendingCropZoom);finish=cropFinal;}
+        if(vivo==null)return;
+        try{vivo.crop(p,finish);schedule();}
+        catch(Exception e){Log.w("AliveClean","Vivo crop failed",e);}
+    }
     void detach(){handler.post(()->{release();attachedSurface=null;});}
     void mode(int next){mode(next,true);}
     void clockTransition(long token){handler.post(()->{if(preview||token==seenClockToken)return;seenClockToken=token;clockToken=token;if(token!=0)schedule();});}

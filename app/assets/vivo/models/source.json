@@ -1,0 +1,11 @@
+{
+  "model": "U2NetP",
+  "source": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx",
+  "upstream": "https://github.com/xuebinqin/U-2-Net",
+  "license": "Apache-2.0 (upstream project)",
+  "md5": "8e83ca70e441ab06c318d82300c84806",
+  "checksumReference": "https://github.com/danielgatis/rembg/blob/v2.0.67/rembg/sessions/u2netp.py",
+  "files": {
+    "u2netp.onnx": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8"
+  }
+}

@@ -20,7 +20,7 @@ public final class VivoSceneProbe extends Instrumentation {
     }
     static final int W=360,H=800;
     final StringBuilder report=new StringBuilder();
-    boolean coordinateOnly,mediaOnly;
+    boolean coordinateOnly,mediaOnly,editorOnly;
     interface Work {void run()throws Exception;}
     void main(Work work)throws Exception{
         Throwable[] error={null};runOnMainSync(()->{try{work.run();}catch(Throwable t){error[0]=t;}});
@@ -156,6 +156,159 @@ public final class VivoSceneProbe extends Instrumentation {
         }
         main(()->check(listeners(runtime)==baseline[0],"Closed video retained sensor"));
         report.append("Original video render, crop, visible AOD, suspend and release OK\n");
+        mixedMedia(runtime,api,photo,clip);
+        orderedSlots(runtime,api,photo,clip);
+        subjectMask(runtime,api);
+    }
+    void orderedSlots(VivoEngineRuntime runtime,VivoCalls api,File photo,File clip)throws Exception{
+        videoRotations(api);
+        android.net.Uri imageUri=android.net.Uri.fromFile(photo),videoUri=android.net.Uri.fromFile(clip);
+        VivoMediaSelection initial=new VivoMediaSelection(getContext(),new VivoOptions(2));initial.importUris(runtime,VivoMediaSelection.BATCH_IMAGES,Arrays.asList(imageUri,imageUri,imageUri));
+        for(int bits=0;bits<8;bits++){
+            android.util.Log.i("AliveClean","Ordered media test combination "+bits);
+            VivoOptions current=VivoOptions.parse(initial.result.json());current.wallpaperZoom=false;
+            for(int i=0;i<3;i++){
+                VivoMediaSelection selected=new VivoMediaSelection(getContext(),current);
+                selected.importUris(runtime,((bits&(1<<i))==0?VivoMediaSelection.SLOT_IMAGE:VivoMediaSelection.SLOT_VIDEO)+i,
+                    Collections.singletonList((bits&(1<<i))==0?imageUri:videoUri));
+                for(int j=0;j<i;j++)check(selected.result.photos.get(j).equals(current.photos.get(j))&&selected.result.rasterVideos.get(j).equals(current.rasterVideos.get(j)),"Selecting slot overwrote earlier slot");
+                current=selected.result;
+            }
+            current.slots[0].rotation=1;current.slots[0].zoom=1.5f;
+            current.slots[1].rotation=2;current.slots[1].x=.65f;current.slots[1].zoom=2;
+            current.slots[2].rotation=3;current.slots[2].y=.6f;current.slots[2].zoom=2.5f;
+            VivoOptions restored=VivoOptions.parse(current.json());
+            check(restored.json().equals(current.json()),"Per-slot transforms did not persist");
+            try(VivoImages images=VivoImages.load(getContext(),runtime,restored);VivoEngineScene scene=new VivoEngineScene(runtime,restored,W,H,images.photos,null,null,true,()->{})){
+                check(images.photos.get(0).getWidth()==800&&images.photos.get(0).getHeight()==360,"Still/video poster rotation did not swap dimensions");
+                Object layer=api.get(scene,"layer");List<?> crops=(List<?>)api.get(layer,"crops");
+                for(int i=0;i<3;i++){
+                    Bitmap b=images.photos.get(i);PhotoViewport v=restored.slots[i].viewport();v.dimensions(b.getWidth(),b.getHeight(),W,H);
+                    Rect expected=new Rect(Math.round(v.left()*b.getWidth()),Math.round(v.top()*b.getHeight()),Math.round((v.left()+v.width())*b.getWidth()),Math.round((v.top()+v.height())*b.getHeight()));
+                    check(expected.equals(crops.get(i)),"Native crop changed another slot or used a shared crop");
+                }
+                check(((List<?>)api.get(layer,"clips")).size()==Integer.bitCount(bits),"Mixed slot types opened wrong video decoders");
+                scene.visible(true);main(()->{});for(int i=0;i<12;i++){SystemClock.sleep(20);scene.draw();}
+                check(GLES30.glGetError()==0,"Rotated mixed slots leaked GL state");
+                int lit=0;for(int color:pixels())if((color&0xffffff)!=0)lit++;check(lit>W*H/2,"Rotated mixed media rendered black");
+            }
+            VivoMediaSelection swapped=new VivoMediaSelection(getContext(),restored);swapped.swapSlots(runtime,0,2);
+            check(swapped.result.photos.get(0).equals(restored.photos.get(2))&&swapped.result.rasterVideos.get(0).equals(restored.rasterVideos.get(2))&&swapped.result.slots[0].rotation==3&&swapped.result.slots[0].zoom==2.5f,"Reorder detached transform or video from its material");
+            check(swapped.result.photos.get(1).equals(restored.photos.get(1)),"Reorder changed unrelated slot");
+        }
+        VivoMediaSelection batch=new VivoMediaSelection(getContext(),new VivoOptions(2));batch.importUris(runtime,VivoMediaSelection.BATCH_IMAGES,Arrays.asList(imageUri,imageUri,imageUri));
+        check(batch.result.photos.size()==3&&batch.result.video.isEmpty(),"Batch selection did not fill three slots");
+        VivoMediaSelection rejected=new VivoMediaSelection(getContext(),batch.result);
+        try{rejected.importUris(runtime,VivoMediaSelection.BATCH_IMAGES,Arrays.asList(imageUri,imageUri,imageUri,imageUri));throw new AssertionError("Four-image batch accepted");}
+        catch(IOException expected){check(rejected.result.json().equals(batch.result.json()),"Rejected batch mutated draft");}
+        VivoMediaSelection nativeVideo=new VivoMediaSelection(getContext(),batch.result);nativeVideo.importUris(runtime,VivoMediaSelection.VIDEO,Collections.singletonList(videoUri));
+        String path=nativeVideo.result.video;
+        VivoMediaSelection cover=new VivoMediaSelection(getContext(),nativeVideo.result);cover.importUris(runtime,VivoMediaSelection.SLOT_VIDEO,Collections.singletonList(videoUri));
+        check(cover.result.video.equals(path),"New cover button discarded native tilt video");
+        report.append("All eight ordered image/video combinations, independent crops/rotation, reordering, three-image batch and native-video cover preservation OK\n");
+    }
+    void videoRotations(VivoCalls api)throws Exception{
+        File clip=new File(getContext().getFilesDir(),"rotation.mp4");
+        try(InputStream in=getContext().getAssets().open("rotation.mp4");OutputStream out=new FileOutputStream(clip)){byte[] b=new byte[8192];for(int n;(n=in.read(b))!=-1;)out.write(b,0,n);}
+        // Top-left, top-right, bottom-left, bottom-right: an asymmetric static
+        // video distinguishes real rotation from mirrored or merely resized frames.
+        int[][] corners={{Color.RED,Color.GREEN,Color.BLUE,Color.YELLOW},{Color.BLUE,Color.RED,Color.YELLOW,Color.GREEN},
+            {Color.YELLOW,Color.BLUE,Color.GREEN,Color.RED},{Color.GREEN,Color.YELLOW,Color.RED,Color.BLUE}};
+        for(boolean flip:new boolean[]{false,true})for(int rotation=0;rotation<4;rotation++){
+            int w=rotation%2==0?160:96,h=rotation%2==0?96:160;
+            int[] texture=new int[1];GLES30.glGenTextures(1,texture,0);GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,texture[0]);
+            GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D,0,GLES30.GL_RGBA,w,h,0,GLES30.GL_RGBA,GLES30.GL_UNSIGNED_BYTE,null);
+            try(VivoVideoTexture player=new VivoVideoTexture(clip,texture[0],w,h,flip,false,rotation,()->{})){
+                player.visible(true);for(int i=0;i<15;i++){SystemClock.sleep(20);player.update();}
+                GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,(Integer)api.get(player,"fbo"));
+                ByteBuffer bytes=ByteBuffer.allocateDirect(w*h*4);GLES30.glReadPixels(0,0,w,h,GLES30.GL_RGBA,GLES30.GL_UNSIGNED_BYTE,bytes);
+                for(int corner=0;corner<4;corner++){
+                    int x=(corner%2==0?w/4:3*w/4),y=(corner<2?h/4:3*h/4);if(flip)y=h-1-y;int at=4*(y*w+x),expected=corners[rotation][corner];
+                    check(Math.abs((bytes.get(at)&255)-Color.red(expected))<35&&Math.abs((bytes.get(at+1)&255)-Color.green(expected))<35&&Math.abs((bytes.get(at+2)&255)-Color.blue(expected))<35,"Video rotation/mirror mismatch rotation="+rotation+" flip="+flip+" corner="+corner+" actual="+(bytes.get(at)&255)+","+(bytes.get(at+1)&255)+","+(bytes.get(at+2)&255));
+                }
+            }finally{GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,0);GLES30.glDeleteTextures(1,texture,0);GLES30.glViewport(0,0,W,H);}
+        }
+        report.append("Video quadrant pixels match all four rotations in both texture orientations OK\n");
+    }
+    void mixedMedia(VivoEngineRuntime runtime,VivoCalls api,File photo,File clip)throws Exception{
+        VivoMediaSelection cover=new VivoMediaSelection(getContext(),new VivoOptions(2));
+        cover.importUris(runtime,VivoMediaSelection.COVER_VIDEO,Collections.singletonList(android.net.Uri.fromFile(clip)));
+        check(cover.result.photos.size()==3&&!cover.result.rasterVideos.get(0).isEmpty(),"Cover video discarded the album");
+        String coverClip=cover.result.rasterVideos.get(0);
+        VivoMediaSelection album=new VivoMediaSelection(getContext(),cover.result);
+        album.importUris(runtime,VivoMediaSelection.ALBUM_VIDEO,Arrays.asList(android.net.Uri.fromFile(clip),android.net.Uri.fromFile(clip)));
+        VivoOptions options=VivoOptions.parse(album.result.json());options.wallpaperZoom=false;
+        check(options.video.isEmpty()&&options.rasterVideos.size()==3&&options.rasterVideos.get(0).equals(coverClip),"Independent video slots lost in serialization");
+        try(VivoImages images=VivoImages.load(getContext(),runtime,options);VivoEngineScene scene=new VivoEngineScene(runtime,options,W,H,images.photos,null,null,true,()->{})){
+            check(api.get(scene,"controller").getClass().getName().equals("M5.b"),"Mixed media bypassed original raster effect controller");
+            scene.visible(true);main(()->{});for(int i=0;i<20;i++){SystemClock.sleep(20);scene.draw();}
+            int[] before=pixels();for(int i=0;i<30;i++){SystemClock.sleep(20);scene.draw();}
+            int[] after=pixels();int changed=0;for(int i=0;i<before.length;i++)if(before[i]!=after[i])changed++;
+            check(changed>2000,"Mixed cover/content videos did not decode into native image textures");
+            frame("raster-mixed-video.png");check(GLES30.glGetError()==0,"Mixed video GL state leaked");
+            scene.visible(false);main(()->{});SystemClock.sleep(120);scene.draw();int[] paused=pixels();
+            SystemClock.sleep(200);scene.draw();check(Arrays.equals(paused,pixels()),"Hidden video continues advancing");
+            scene.visible(true);main(()->{});for(int i=0;i<15;i++){SystemClock.sleep(20);scene.draw();}
+            check(!Arrays.equals(paused,pixels()),"Video did not resume");
+        }
+        VivoMediaSelection still=new VivoMediaSelection(getContext(),options);
+        still.importUris(runtime,VivoMediaSelection.COVER,Collections.singletonList(android.net.Uri.fromFile(photo)));
+        check(still.result.rasterVideos.get(0).isEmpty()&&!still.result.rasterVideos.get(1).isEmpty(),"Cover image replacement removed content videos");
+        still=new VivoMediaSelection(getContext(),options);still.importUris(runtime,VivoMediaSelection.ALBUM,Collections.singletonList(android.net.Uri.fromFile(photo)));
+        check(still.result.rasterVideos.get(0).equals(coverClip)&&still.result.rasterVideos.get(1).isEmpty(),"Content image replacement removed video cover");
+        VivoMediaSelection legacy=new VivoMediaSelection(getContext(),new VivoOptions(2));legacy.importUris(runtime,VivoMediaSelection.VIDEO,Collections.singletonList(android.net.Uri.fromFile(clip)));
+        String oldClip=legacy.result.video;
+        VivoMediaSelection migration=new VivoMediaSelection(getContext(),legacy.result);migration.importUris(runtime,VivoMediaSelection.COVER_VIDEO,Collections.singletonList(android.net.Uri.fromFile(clip)));
+        check(migration.result.video.equals(oldClip)&&!migration.result.rasterVideos.get(0).isEmpty(),"Selecting video cover changed native tilt-video content");
+        try(VivoImages images=VivoImages.load(getContext(),runtime,migration.result);VivoEngineScene scene=new VivoEngineScene(runtime,migration.result,W,H,images.photos,null,null,true,()->{})){
+            Object controller=api.get(scene,"controller"),layer=api.get(scene,"layer");
+            check(controller.getClass().getName().equals("Y3.c"),"Video cover changed native seek into looping raster");
+            List<?> players=(List<?>)api.get(layer,"clips");check(players.size()==1,"Native tilt-video content must bind only independent cover clip");
+            check(api.get(api.get(controller,"h"),"textureId").equals(((List<?>)api.get(layer,"images")).get(0)),"Original video controller disconnected the changing cover texture");
+            scene.visible(true);main(()->{});for(int i=0;i<15;i++){SystemClock.sleep(20);scene.draw();}
+            int fbo=(Integer)api.get(players.get(0),"fbo");GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,fbo);int[] before=pixels();GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,0);
+            for(int i=0;i<25;i++){SystemClock.sleep(20);scene.draw();}
+            GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,fbo);int[] after=pixels();GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER,0);
+            check(!Arrays.equals(before,after),"Native tilt video cover stayed on a still poster");
+        }
+        VivoMediaSelection nativeImageCover=new VivoMediaSelection(getContext(),migration.result);nativeImageCover.importUris(runtime,VivoMediaSelection.COVER,Collections.singletonList(android.net.Uri.fromFile(photo)));
+        check(nativeImageCover.result.video.equals(oldClip)&&nativeImageCover.result.rasterVideos.get(0).isEmpty(),"Changing cover to image changed tilt-video content");
+        report.append("Three independent video textures, pause/resume, cover/content replacement OK\n");
+    }
+    void subjectMask(VivoEngineRuntime runtime,VivoCalls api)throws Exception{
+        VivoSubjectMask.Job cancelled=new VivoSubjectMask.Job();cancelled.cancel();
+        try{cancelled.check();throw new AssertionError("Cancellation ignored");}catch(java.util.concurrent.CancellationException expected){}
+        try(VivoImages images=VivoImages.load(getContext(),runtime,new VivoOptions(1))){
+            Bitmap source=Bitmap.createScaledBitmap(images.photos.get(0),360,800,true);
+            long start=SystemClock.uptimeMillis();Bitmap mask=new VivoSubjectMask.Job().generate(getContext(),source,new RectF(0,0,1,1));
+            check(mask.getWidth()==source.getWidth()&&mask.getHeight()==source.getHeight(),"Model mask coordinates changed");
+            int[] values=new int[360*800];mask.getPixels(values,0,360,0,0,360,800);int foreground=0,background=0;
+            for(int value:values){if(Color.red(value)>200)foreground++;if(Color.red(value)<30)background++;check(Color.red(value)==Color.green(value)&&Color.red(value)==Color.blue(value)&&Color.alpha(value)==255,"Invalid native mask channel");}
+            check(foreground>1000&&background>1000,"Semantic mask failed to separate foreground/background");
+            try(OutputStream out=getContext().openFileOutput("subject-model.png",0)){mask.compress(Bitmap.CompressFormat.PNG,100,out);}
+            report.append("Offline semantic mask foreground=").append(foreground).append(" background=").append(background).append(" ms=").append(SystemClock.uptimeMillis()-start).append('\n');
+            float[][] weights=new float[2][];
+            for(int area=2;area<=3;area++){
+                VivoOptions options=new VivoOptions(1);options.area=area;options.wallpaperZoom=false;
+                try(VivoEngineScene scene=new VivoEngineScene(runtime,options,W,H,Collections.singletonList(source),mask,null,true,()->{})){
+                    Bitmap actual=(Bitmap)api.get(scene,"liquidMask");int[] actualPixels=new int[values.length];actual.getPixels(actualPixels,0,360,0,0,360,800);
+                    for(int i=0;i<values.length;i++)check(Color.red(actualPixels[i])==(area==2?Color.red(values[i]):255-Color.red(values[i])),"Wrong subject/background pixel polarity");
+                    Object config=api.call(api.get(scene,"controller"),"getConfig");weights[area-2]=((float[])api.get(config,"b")).clone();scene.draw();
+                }
+            }
+            check(weights[0].length==weights[1].length,"Subject/background lattice shapes differ");int selected=0;
+            int backgroundSelected=0,different=0;
+            for(int i=0;i<weights[0].length;i++){if(weights[0][i]>.5)selected++;if(weights[1][i]>.5)backgroundSelected++;if(Math.abs(weights[0][i]-weights[1][i])>.1)different++;}
+            check(selected>0&&selected<weights[0].length,"Semantic mask never reached the native effect lattice");
+            check(backgroundSelected>0&&different>20,"Background failed to change native lattice weights");
+            VivoSubjectMask.Job running=new VivoSubjectMask.Job();final Throwable[] outcome={null};
+            Thread worker=new Thread(()->{try{Bitmap unexpected=running.generate(getContext(),source,new RectF(0,0,1,1));unexpected.recycle();}catch(Throwable error){outcome[0]=error;}});worker.start();
+            boolean entered=false;long deadline=SystemClock.uptimeMillis()+4000;
+            while(worker.isAlive()&&SystemClock.uptimeMillis()<deadline){synchronized(running){entered=api.get(running,"running")!=null;}if(entered)break;SystemClock.sleep(2);}
+            running.cancel();worker.join(5000);check(entered&&!worker.isAlive()&&outcome[0]!=null,"Running semantic inference did not cancel");
+            report.append("Native subject/background lattice complement and in-flight inference cancellation OK\n");
+            mask.recycle();if(source!=images.photos.get(0))source.recycle();
+        }
     }
     void colors(VivoEngineRuntime runtime,EGLDisplay display,EGLConfig config,EGLContext gl,EGLSurface original)throws Exception{
         for(String name:new String[]{"raster-0.jpg","raster-1.jpg","raster-2.jpg","liquid.jpg","flash.jpg"}){
@@ -194,12 +347,68 @@ public final class VivoSceneProbe extends Instrumentation {
             }finally{image.recycle();}
         }
     }
-    @Override public void onCreate(Bundle b){super.onCreate(b);coordinateOnly=b!=null&&"true".equals(b.getString("coordinates"));mediaOnly=b!=null&&"true".equals(b.getString("media"));start();}
+    void editor(android.app.Activity activity,VivoCalls api)throws Exception{
+        final VivoMaskEditor[] holder=new VivoMaskEditor[1];final String[] saved={null};java.util.concurrent.CountDownLatch complete=new java.util.concurrent.CountDownLatch(1);
+        main(()->{Bitmap photo=Bitmap.createBitmap(360,800,Bitmap.Config.ARGB_8888);photo.eraseColor(0xff245b8b);holder[0]=new VivoMaskEditor(activity,photo,null,false,name->{saved[0]=name;complete.countDown();});});
+        SystemClock.sleep(250);
+        main(()->{
+            android.view.View view=(android.view.View)api.get(holder[0],"canvas");Bitmap mask=(Bitmap)api.get(view,"mask");
+            check(view.getWidth()>0&&view.getHeight()>0,"Mask editor was not laid out");
+            float x=view.getWidth()/2f,y=view.getHeight()/2f;
+            for(int action:new int[]{0,1}){android.view.MotionEvent event=android.view.MotionEvent.obtain(0,0,action,x,y,0);view.dispatchTouchEvent(event);event.recycle();}
+            check(Color.red(mask.getPixel(180,400))==255,"Brush did not paint in source-photo coordinates");
+            api.set(view,"erase",true);
+            for(int action:new int[]{0,1}){android.view.MotionEvent event=android.view.MotionEvent.obtain(0,0,action,x,y,0);view.dispatchTouchEvent(event);event.recycle();}
+            check(Color.red(mask.getPixel(180,400))==0,"Eraser did not remove mask");
+            api.call(view,"undo");check(Color.red(mask.getPixel(180,400))==255,"Undo did not restore brush stroke");
+            android.widget.TextView done=(android.widget.TextView)api.get(holder[0],"done");int[] location=new int[2];done.getLocationOnScreen(location);
+            check(location[1]>=done.getRootWindowInsets().getInsets(android.view.WindowInsets.Type.statusBars()).top,"Done overlaps status bar");
+        });
+        Bitmap shot=getUiAutomation().takeScreenshot();try(OutputStream out=getContext().openFileOutput("mask-editor.png",0)){shot.compress(Bitmap.CompressFormat.PNG,100,out);}shot.recycle();
+        main(()->((android.view.View)api.get(holder[0],"done")).performClick());
+        check(complete.await(5,java.util.concurrent.TimeUnit.SECONDS),"Mask editor failed to save");
+        Bitmap persisted=BitmapFactory.decodeFile(new File(getContext().getFilesDir(),saved[0]).getPath());
+        check(persisted!=null&&Color.red(persisted.getPixel(180,400))==255&&Color.red(persisted.getPixel(0,0))==0,"Saved PNG is not the edited mask");persisted.recycle();
+        report.append("Actual mask dialog: photo-space brush, eraser, undo, insets and persisted PNG OK\n");
+        slotEditor(activity,api);
+    }
+    android.view.View button(android.view.View view,String text){
+        if(view instanceof android.widget.TextView&&text.contentEquals(((android.widget.TextView)view).getText()))return view;
+        if(view instanceof android.view.ViewGroup){android.view.ViewGroup group=(android.view.ViewGroup)view;for(int i=0;i<group.getChildCount();i++){android.view.View found=button(group.getChildAt(i),text);if(found!=null)return found;}}
+        return null;
+    }
+    void slotEditor(android.app.Activity activity,VivoCalls api)throws Exception{
+        VivoSlotCropEditor[] holder=new VivoSlotCropEditor[1];VivoOptions.Slot[] saved=new VivoOptions.Slot[1];
+        VivoOptions.Slot initial=new VivoOptions.Slot();initial.zoom=1.4f;initial.x=.55f;
+        main(()->{Bitmap photo=Bitmap.createBitmap(640,480,Bitmap.Config.ARGB_8888);Canvas canvas=new Canvas(photo);Paint p=new Paint();p.setColor(Color.RED);canvas.drawRect(0,0,320,240,p);p.setColor(Color.GREEN);canvas.drawRect(320,0,640,240,p);p.setColor(Color.BLUE);canvas.drawRect(0,240,320,480,p);p.setColor(Color.YELLOW);canvas.drawRect(320,240,640,480,p);
+            holder[0]=new VivoSlotCropEditor(activity,"光栅图片/视频1",photo,initial,true,slot->saved[0]=slot);
+        });SystemClock.sleep(250);
+        main(()->{
+            android.app.Dialog dialog=(android.app.Dialog)api.get(holder[0],"dialog");android.view.View root=dialog.getWindow().getDecorView();
+            button(root,"旋转 90°").performClick();Bitmap rotated=(Bitmap)api.get(holder[0],"rotated");
+            check(rotated.getWidth()==480&&rotated.getHeight()==640&&rotated.getPixel(120,160)==Color.BLUE,"Crop UI rotates incorrectly");
+            android.view.View view=(android.view.View)api.get(holder[0],"view");PhotoViewport viewport=(PhotoViewport)api.get(holder[0],"viewport");viewport.scale(2,.5f,.5f);
+            float before=viewport.centerX(),x=view.getWidth()/2f,y=view.getHeight()/2f;
+            for(int action:new int[]{0,2,1}){android.view.MotionEvent event=android.view.MotionEvent.obtain(0,10,action,action==0?x:x+60,y,0);view.dispatchTouchEvent(event);event.recycle();}
+            check(viewport.centerX()<before,"Crop drag did not move current material");
+            android.view.View done=button(root,"保存");int[] location=new int[2];done.getLocationOnScreen(location);int nav=done.getRootWindowInsets().getInsets(android.view.WindowInsets.Type.navigationBars()).bottom;
+            check(location[1]+done.getHeight()<=activity.getResources().getDisplayMetrics().heightPixels-nav,"Crop toolbar overlaps navigation bar");
+        });
+        Bitmap shot=getUiAutomation().takeScreenshot();try(OutputStream out=getContext().openFileOutput("slot-editor.png",0)){shot.compress(Bitmap.CompressFormat.PNG,100,out);}shot.recycle();
+        main(()->button(((android.app.Dialog)api.get(holder[0],"dialog")).getWindow().getDecorView(),"保存").performClick());
+        check(saved[0]!=null&&saved[0].rotation==1&&saved[0].zoom==2&&initial.rotation==0&&initial.zoom==1.4f,"Crop save mutated initial values or lost rotation/zoom");
+        main(()->{Bitmap photo=Bitmap.createBitmap(64,64,Bitmap.Config.ARGB_8888);holder[0]=new VivoSlotCropEditor(activity,"封面图片/视频",photo,initial,false,slot->{throw new AssertionError("Cancel unexpectedly saved crop");});
+            android.view.View root=((android.app.Dialog)api.get(holder[0],"dialog")).getWindow().getDecorView();button(root,"旋转 90°").performClick();button(root,"取消").performClick();
+        });
+        report.append("Actual slot editor: rotation, drag, zoom, save/cancel isolation and toolbar insets OK\n");
+    }
+    @Override public void onCreate(Bundle b){super.onCreate(b);editorOnly=b!=null&&"true".equals(b.getString("editor"));coordinateOnly=b!=null&&"true".equals(b.getString("coordinates"));mediaOnly=b!=null&&"true".equals(b.getString("media"));start();}
     @Override public void onStart(){
         EGLDisplay display=EGL14.eglGetDisplay(0);EGLContext gl=EGL14.EGL_NO_CONTEXT;EGLSurface surface=EGL14.EGL_NO_SURFACE;
         try{
-            startActivitySync(new android.content.Intent(getContext(),ProbeActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+            android.app.Activity activity=startActivitySync(new android.content.Intent(getContext(),ProbeActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
             VivoEngineRuntime runtime=VivoEngineRuntime.prepare(getContext()).get();VivoCalls api=new VivoCalls(runtime);
+            if(editorOnly){editor(activity,api);Bundle result=new Bundle();result.putString("stream",report+"VIVO_SCENE_OK\n");finish(-1,result);return;}
             check(new VivoOptions(1).area==2&&new VivoOptions(3).area==1,"Downloaded native defaults lost");
             check(VivoOptions.parse("{\"family\":3,\"area\":4}").area==4,"Explicit user area overwritten");
             check(VivoSensorGain.multiplier(0)==1&&VivoSensorGain.multiplier(-50)==.1f,"Native gain/range changed");

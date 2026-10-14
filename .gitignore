@@ -18,12 +18,15 @@ __pycache__/
 /tools/*
 !/tools/apk_layout.py
 !/tools/build_release.py
+!/tools/verify_release.py
 !/tools/check_clock_scope.py
 !/tools/check_layout.py
 !/tools/check_platform_provider.py
 !/tools/check_hans_lease.py
 !/tools/check_render_lifecycle.py
 !/tools/check_wallpaper_motion.py
+!/tools/check_gradient_render.py
+!/tools/import_flyme9_gradient.py
 !/tools/check_wallpaper_picker.py
 !/tools/import_cosmic.py
 !/tools/import_phoenix.py
@@ -32,6 +35,7 @@ __pycache__/
 !/tools/import_notification_effects.py
 !/tools/import_vivo_runtime.py
 !/tools/check_vivo_runtime.py
+!/tools/check_vivo_editor_flow.py
 !/tools/check_photo_crop.py
 !/tools/import_vivo_editor_ui.py
 !/tools/extract_vivo_clocks.py
@@ -45,5 +49,7 @@ __pycache__/
 !/tools/import_native_clock_previews.py
 !/tools/import_xiaomi_ui.py
 !/tools/check_xiaomi_assets.py
+!/tools/check_xiaomi_desktop.py
+!/tools/check_xiaomi_startup.py
 !/tools/import_xiaomi_packs.py
 !/tools/ui-api/

@@ -108,7 +108,7 @@ public final class XiaomiPlayer implements AutoCloseable {
         main();this.runtime=runtime;threadWaitStarted=android.os.SystemClock.uptimeMillis();
         unity=Arrays.asList("mars","saturn","geometry").contains(runtime.family);snow="snowmountain".equals(runtime.family);
         holder=new DeferredHolder(surface);
-        if(unity){
+        try{if(unity){
             Class<?> callbackClass=runtime.loader.loadClass("com.miui.miwallpaper.basesuperwallpaper.SuperWallpaper");
             String service="com.miui.miwallpaper."+runtime.family+".superwallpaper."+Character.toUpperCase(runtime.family.charAt(0))+runtime.family.substring(1)+"SuperWallpaper";
             callbackOwner=runtime.loader.loadClass(service).getConstructor().newInstance();callbackClass.getField("mCurrentWallpaper").set(null,callbackOwner);
@@ -121,6 +121,7 @@ public final class XiaomiPlayer implements AutoCloseable {
         // holder already valid on a restored/async preview must be deferred.
         holder.activate();
         if(!unity)ready=true;else mainHandler.post(startUnity);
+        }catch(Exception|LinkageError e){holder.close();throw e;}
     }
     // Unity starts its render thread asynchronously. resume() marks its state
     // resumed even if that thread has no Handler yet, silently dropping the
@@ -201,7 +202,14 @@ public final class XiaomiPlayer implements AutoCloseable {
     }
     public boolean isRunning(){return running;}
     public String status(){String callback="n/a";if(callbackOwner!=null)try{callback=String.valueOf(field(callbackOwner,"mInited"));}catch(Exception e){callback=e.toString();}
-        return "threadReady="+unityThreadReady+" attached="+attached+" running="+running+" ready="+ready+" initializing="+initializing+" checks="+initChecks+" attempts="+initAttempts+" callback="+callback+" error="+initError;}
+        String nativeState="";
+        if("earth".equals(runtime.family)&&player!=null)try{
+            Object helper=field(player,"uiHelper");Object frame=field(player,"frameScheduler");
+            nativeState=" surfaceValid="+holder.getSurface().isValid()+" nativeReady="+call(helper,"isReadyToRender",new Class[0])+" swapChain="+(field(player,"swapChain")!=null)
+                +" frames="+field(frame,"doFrameCount")+" state="+field(player,"curState")+" previous="+field(player,"preState")+" fraction="+field(player,"homeFraction")
+                +" aspect="+field(player,"curAspect")+" camera="+field(player,"realTimeCameraPos")+" rotation="+field(player,"realTimeCameraRot");
+        }catch(Exception e){nativeState=" diagnostic="+e;}
+        return "threadReady="+unityThreadReady+" attached="+attached+" running="+running+" ready="+ready+" initializing="+initializing+" checks="+initChecks+" attempts="+initAttempts+" callback="+callback+" error="+initError+nativeState;}
     public void surface(SurfaceHolder source)throws Exception{main();if(holder.source==source)return;surfaceDestroyed();holder.rebind(source);}
     public void surfaceDestroyed()throws Exception {
         main();running(false);attached=false;mainHandler.removeCallbacks(retry);mainHandler.removeCallbacks(readReady);
@@ -236,7 +244,15 @@ public final class XiaomiPlayer implements AutoCloseable {
         @Override public Rect getSurfaceFrame(){return active?source.getSurfaceFrame():new Rect();}
         @Override public boolean isCreating(){return source.isCreating();}
         @Override public void setType(int type){source.setType(type);}
-        @Override public void setFixedSize(int w,int h){source.setFixedSize(w,h);}
+        @Override public void setFixedSize(int w,int h){
+            try{source.setFixedSize(w,h);}catch(UnsupportedOperationException layoutOnly){
+                // Earth asks for a fixed buffer above 2400 px. WallpaperService
+                // rejects it unless its private fixed-size flag was enabled by
+                // the OEM host. Keep the system-owned buffer; its real dimensions
+                // are delivered through surfaceChanged, including on cold boot.
+                source.setSizeFromLayout();
+            }
+        }
         @Override public void setSizeFromLayout(){source.setSizeFromLayout();}
         @Override public void setFormat(int f){source.setFormat(f);}
         @Override public void setKeepScreenOn(boolean on){source.setKeepScreenOn(on);}

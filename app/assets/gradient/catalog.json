@@ -1,0 +1,20 @@
+[
+  {
+    "id": 301,
+    "slug": "damos",
+    "name": "大漠",
+    "palette": "damos.json"
+  },
+  {
+    "id": 302,
+    "slug": "jiguang",
+    "name": "极光",
+    "palette": "jiguang.json"
+  },
+  {
+    "id": 303,
+    "slug": "yuanhai",
+    "name": "远海",
+    "palette": "yuanhai.json"
+  }
+]

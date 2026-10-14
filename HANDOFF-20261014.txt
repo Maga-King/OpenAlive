@@ -1,0 +1,111 @@
+历史交接存档：下文为当时状态，设备与上传限制已被后续用户指令更新；当前行为与验证以 BUILD.md、docs/release-notes.md 及专项文档为准。
+
+OpenAlive 任务交接（2026-10-14）
+
+一、当前状态与用户要求
+用户要求暂停，换 AI 接手。本文件是交接，不代表五项任务已完成。
+仓库：E:\openalive；PowerShell；可联网。
+唯一允许操作的设备：3B1F4UE5MS13HQRR。所有 adb 命令必须显式 -s 此序列号，绝不能干扰另一个设备。
+用户已授权上传此前代码，上传已成功；后续改动先留本地，用户再次要求才上传。
+当前分支：fix/wallpaper-transitions-vivo-20261014
+远端：https://github.com/Maga-King/OpenAlive.git
+已推送提交：5bbb02c Fix black-screen fingerprint AOD handoff and clock replay
+main 未改动，本轮没有发布 release 或触发 Actions。
+用户允许任务多时用子代理，之前偏好少用，可用 sol6.1。已停止 xiaomi_settings、vivo_editors、flyme9_assets 三个代理。
+
+二、待完成的五项（用户原意）
+1. 小米桌面设置：主页“桌面、壁纸和个性化”标题右侧加小米图标，进入我们的桌面设置。
+   两个滑条控制小米超级壁纸桌面滑动跟手度和幅度，范围 -100..+100，按比例，小米原默认增益对应 0。
+2. Vivo 光栅：封面和光栅内容各自都能选择视频/图片，需实际渲染和保存，不能只有按钮。
+3. Vivo ALIVE 液态：补涂抹编辑器，以及主体、背景蒙版生成。
+4. 补 Flyme 9 缺失动态壁纸。来源是设备 /storage/emulated/0/Download/系统公共组件_1.8.15.apk。
+   用户记得四款，其中园蓝；如发现其他缺失，也需告知。
+5. 主页三个预览器上方增加 Flyme 风格 Root / LSPosed 激活检测行。
+   左边圆点，留少量间距，右边状态文字；两者都激活时绿点、“Lsposed Root 已授权”；任一未激活时红点并准确描述。
+   必须真实检测，不能用是否安装管理器或持久化旧标记代替当前激活状态。
+
+三、本轮实际落地情况（暂停时 git status 已核对）
+只有第1项小米相关代码有改动，未提交、未推送：
+ M app/AndroidManifest.xml
+ M app/java/org/aliveclean/SettingsScreen.java
+ M app/java/org/aliveclean/XiaomiState.java
+ M app/java/org/aliveclean/XiaomiWallpaper.java
+?? app/java/org/aliveclean/XiaomiDesktopMotion.java
+?? app/java/org/aliveclean/XiaomiDesktopSettingsActivity.java
+?? tests/desktop/
+代理报告：主页原 Flyme Toolbar 右侧 MI 图标；两个 -100..100 滑条；幅度围绕50%中心按0..2倍缩放并限制原生范围；跟手度以小米原100ms延迟为0，对应200..0ms。
+XiaomiState 同 UID 跨进程实时同步；更改参数或更换 owner 后丢弃旧排队偏移。
+代理报告通过增量 Android javac 和20,301组运动数值测试；主代理尚未独立复核，也未整机实测。
+注意评估“跟手度以延迟映射”是否确实符合用户所说原生增益，不要把代理选择当作已确认产品语义。
+测试脚本整理在暂停时未确认完成，先检查 tests/desktop/，不要重复覆盖现有成果。
+
+第2、3项：仅完成分析，没有代码改动。
+Vivo 代理确认现状为静态封面+单视频；液态涂抹是占位，主体蒙版未接入。
+其未实施方案为独立视频纹理接入原生光栅图集控制器、Activity内蒙版绘制对话框。
+没有确认现成语义分割模型；不要把普通前景算法包装成已实现的主体语义分割，应继续研究现有资源和旧解包目录。
+
+第4项：只拉取并解包，未注册或实现壁纸。
+APK：E:\openalive\build\flyme9-common-1.8.15.apk
+解包：E:\openalive\build\flyme9-decoded
+四款真实名称已确认：园蓝、梅洛、金杏、青提。
+原包还含渐变三款（大漠、极光、远海）、视频三款（浪流、深潜、涟漪）、3D V4/V5/V6、Alive照片。
+这些额外条目尚未与现有库逐一核对，不能宣称都缺失。
+代理准备补四款 Cosmic，保留原参数和缩略图，注意不要覆盖新版同编号配色。
+
+第5项：只读了 HomeActivity、RootBridge、CleanHooks、NativeClockStatusProvider、ColorOsBridge，没有编辑。
+HomeActivity.java 创建原厂预览容器并替换三个预览卡；SettingsScreen 正被小米入口改动。
+NativeClockStatusProvider 有 SystemUI Binder 生命周期回执：announce 校验调用者为SystemUI；status 返回活着的renderer API，不能简单等同所有系统的LSPosed通用激活。
+CleanHooks.handleLoadPackage 针对 android、SystemUI、com.oplus.wallpapers，不要假定已有模块自进程激活方法。
+RootBridge 已有 su 调用；检测应避免主线程阻塞，考虑超时、生命周期、真实授权与进程死亡。
+
+四、前一轮已完成并上传的修复背景
+较早提交5397dc87e4c9b4a1504b9b211e2fde42c36fc36c：
+- 每次应用壁纸都走选择器，显式组件 -> 动态壁纸选择器 -> SET_WALLPAPER -> 常规壁纸/主题App兜底；取消不误判成功。
+- Flyme公共转场、Vivo光栅封面+1至2图片、P3颜色输出/ICC处理等。
+- 文档 docs/fixes-20261014.md、docs/release-notes.md。
+版本仍为0.4.24-preview / versionCode40。
+
+用户核心未验证问题：应用内息屏至全黑，指纹直返应用时丢动画；桌面息屏后指纹通常不丢动画；两种情况下再次按电源息屏都会时钟先大后小闪一下。所有壁纸家族都有。
+用户建议触摸指纹时先像系统单击那样唤出AOD，再亮屏接动画；必须覆盖所有时钟，不能只顾18款澎湃。
+5bbb02c实现：
+- NativeOriginalClockPlugin 的UNLOCK(uiState1)取消spring、清除burn-in/root translation、隐藏clockContainer并保留上一时钟尺寸，避免错当大锁屏时钟；后续可见状态恢复。
+- 新 ColorOsFingerprintAod 公共hook：黑屏新指纹触摸时调用已有系统单击AOD回调，保留系统启用/距离/倒置条件；仅对应AOD appear animator用160ms LinearInterpolator。
+- 此指纹AOD方案仍属实验！没有延迟认证，快认证可能抢在AOD渲染前；未确认已在SystemUI加载，不能宣称问题完全解决。
+- 设备测试报告63种时钟、567轮通过；18款澎湃host测试及native transport测试通过。真实指纹视觉效果仍需复测。
+- docs/black-screen-fingerprint-20261014.md 记录行为，但其中签名/无法覆盖安装段落已经过时，应更新。
+
+五、签名、构建、安装重要事项
+用户明确允许原密钥找不到时本地和Actions一起换签名，并说已启用核心破解，可跨签名覆盖安装；不要卸载清数据。
+原密钥未找回。新签名已生成，GitHub两个Secrets已更新：OPENALIVE_KEYSTORE_B64、OPENALIVE_STORE_PASSWORD。
+alias仍为development，workflow无需改；tools/build_release.py已支持本地自动读取下述配置，CI显式env优先。
+私密目录：C:\Users\a1510\.openalive-signing\
+文件：openalive-20261014.p12、signing.json（含 keystore/alias/password）。ACL仅当前用户和SYSTEM，仓库外。
+不要输出密码、私钥、完整配置，不要加入git或交接文档。
+新证书SHA256：34266f7a129ba55dbb1d013308857fe6139159408b2eebfa89517389309e3632
+旧证书SHA256：68eef89c061dc23cb95b361db0a44d0b06f4407ee7e89bd29fe47adc959c5fd1
+新签名构建已成功：dist\OpenAlive-0.4.24-preview-arm64-v8a.apk（当时598095814字节）
+日志：build\black-wake\local-build-new.txt
+此前执行了 adb -s 3B1F4UE5MS13HQRR install -r 该APK，但被打断，安装结果未知。后续必须核对，不要假定成功。
+没有重启SystemUI或手机；新hook要加载还需相应重启，安排实际测试时再处理。
+build/rotate_signing.py是忽略的辅助工具，会更新Secrets；不要无故重跑。
+GitHub网络当时通过 http://127.0.0.1:7890 代理工作，Git凭据可用，避免打印token。
+
+六、旧session和解包研究线索
+旧session约1.3GB，用户明确要求细分关键词筛选，不要全读。
+线程ID：01a0be1d-6045-7e01-b51d-4b92f37776a0
+JSONL：C:\Users\a1510\.codex\sessions\2026\09\20\rollout-2026-09-20T17-19-51-01a0be1d-6045-7e01-b51d-4b92f37776a0.jsonl
+可只读SQLite：C:\Users\a1510\.codex\thread_history_1.sqlite
+表thread_items，列thread_id、rollout_ordinal、item_json等；JSON内常见command/aggregatedOutput/text。
+PowerShell读取中文用UTF8；Python输出设PYTHONIOENCODING=utf-8，避免中文stdin编码损坏。
+build/wake-reference/3278：Flyme提交前准备场景；51280：HyperOS AOD alpha与睡眠唤醒flag；不证明其真实指纹策略。
+build/vivo-history/T3_e.java：Vivo原screen-off unlock分支。
+build/black-wake/SystemUI.apk 和该目录目标反编译Java、fingerprint-cycle.txt可供核对。
+更多研究路径见 build/black-wake/source-paths.txt；E:\MIO\sensor_audit_20261002\decompiled\coloros_systemui。
+JADX：C:\Users\a1510\AppData\Local\Microsoft\WinGet\Packages\Skylot.jadx_Microsoft.Winget.Source_8wekyb3d8bbwe\lib\jadx-gui-1.5.5-all.jar
+Java17：C:\Program Files\Java\jdk-17\bin\java.exe
+
+七、建议接手顺序
+先看git diff和本文件，不要重新clone或重做已上传部分。
+核对小米实现与测试，继续剩余四项；分工时避免改同一文件。
+补齐构建、测试和指定设备验证；实测与推测分开报告。
+保留本地成果和用户数据，不擅自push、发布、卸载或操作其他设备。

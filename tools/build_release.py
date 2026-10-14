@@ -1,6 +1,6 @@
 """Build the published source/assets on Linux or Windows without a local ROM tree."""
 from pathlib import Path
-import hashlib,json,os,shutil,subprocess,sys,urllib.request,zipfile
+import hashlib,json,os,shutil,struct,subprocess,sys,urllib.request,zipfile
 import xml.etree.ElementTree as ET
 from apk_layout import RESOURCE_ALIGNMENT,write_entry,verify_apk
 
@@ -36,7 +36,25 @@ if not xposed.exists() or sha(xposed)!=expected:
     with urllib.request.urlopen('https://api.xposed.info/de/robv/android/xposed/api/82/api-82.jar',timeout=60) as r:xposed.write_bytes(r.read())
 if sha(xposed)!=expected:raise ValueError('Xposed API checksum mismatch')
 
-for script in ['check_layout.py','check_wallpaper_picker.py','check_clock_scope.py','check_xiaomi_assets.py']:run(sys.executable,ROOT/'tools'/script)
+# Offline subject segmentation uses the pinned upstream Android CPU runtime.
+# Verify the extracted inputs too: a valid AAR alone does not verify what we package.
+ort=ROOT/'vendor/onnxruntime';ort_jar=ort/'classes.jar'
+ort_native=[ort/'jni/arm64-v8a'/name for name in ['libonnxruntime.so','libonnxruntime4j_jni.so']]
+for directory,required in [(ort,['classes.jar',*[p.relative_to(ort).as_posix() for p in ort_native]]),
+                           (ROOT/'app/assets/vivo/models',['u2netp.onnx'])]:
+    metadata=json.loads((directory/'source.json').read_text(encoding='utf8'))
+    for name in required:
+        if sha(directory/name)!=metadata['files'][name]:raise ValueError('Segmentation input checksum mismatch: '+name)
+for library in ort_native:
+    data=library.read_bytes()
+    if data[:6]!=b'\x7fELF\x02\x01':raise ValueError('Expected little-endian ELF64: '+library.name)
+    phoff=struct.unpack_from('<Q',data,32)[0];entry_size,count=struct.unpack_from('<HH',data,54)
+    for i in range(count):
+        offset=phoff+i*entry_size
+        if struct.unpack_from('<I',data,offset)[0]==1 and struct.unpack_from('<Q',data,offset+48)[0]<16384:
+            raise ValueError('Native runtime must support 16 KB pages: '+library.name)
+
+for script in ['check_layout.py','check_wallpaper_picker.py','check_clock_scope.py','check_xiaomi_assets.py','check_xiaomi_desktop.py']:run(sys.executable,ROOT/'tools'/script)
 if WIN:
     linux='/mnt/'+ROOT.drive[0].lower()+ROOT.as_posix()[2:]
     # Local Windows builds use the existing WSL NDK; CI builds directly on Linux.
@@ -65,22 +83,24 @@ with zipfile.ZipFile(xz_source) as upstream:
         target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(upstream.read(entry))
 sources=sorted((ROOT/'app/java').rglob('*.java'))+sorted((OUT/'generated').rglob('*.java'))+sorted((OUT/'xz-source').rglob('*.java'))
 javac_args('app',['-encoding','UTF-8','-source','8','-target','8','-bootclasspath',str(ANDROID)+os.pathsep+str(BT/'core-lambda-stubs.jar'),
-    '-classpath',str(xposed)+os.pathsep+str(OUT/'ui-api'),'-d',OUT/'classes',*sources])
+    '-classpath',os.pathsep.join(map(str,[xposed,OUT/'ui-api',ort_jar])),'-d',OUT/'classes',*sources])
 # Use the Java launcher's argument file as well: a fresh checkout in a longer
 # Windows path can exceed CreateProcess's command-line limit with all class files.
 d8_args=OUT/'d8.args'
 d8_args.write_text('\n'.join(json.dumps(str(a).replace('\\','/')) for a in [
     '-cp',BT/'lib/d8.jar','com.android.tools.r8.D8','--min-api','28','--lib',ANDROID,
     '--classpath',xposed,'--classpath',OUT/'ui-api','--output',OUT/'dex',
-    *sorted((OUT/'classes').rglob('*.class'))]),encoding='utf8')
+    ort_jar,*sorted((OUT/'classes').rglob('*.class'))]),encoding='utf8')
 run(JAVA/('java'+EXE),'@'+str(d8_args))
 native=ROOT/'target/aarch64-linux-android/release/libalive_clean.so'
 with zipfile.ZipFile(OUT/'base.apk') as base,zipfile.ZipFile(OUT/'unsigned.apk','w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
-    for entry in base.infolist():
+    for entry in sorted(base.infolist(),key=lambda e:e.filename):
         if not entry.filename.startswith('assets/video/'):write_entry(z,entry.filename,base.read(entry))
-    z.write(OUT/'dex/classes.dex','classes.dex')
-    z.write(VENDOR/'editor-ui.dex','classes2.dex')
-    z.write(native,'lib/arm64-v8a/libalive_clean.so')
+    write_entry(z,'classes.dex',(OUT/'dex/classes.dex').read_bytes())
+    write_entry(z,'classes2.dex',(VENDOR/'editor-ui.dex').read_bytes())
+    write_entry(z,'lib/arm64-v8a/libalive_clean.so',native.read_bytes())
+    for library in ort_native:write_entry(z,'lib/arm64-v8a/'+library.name,library.read_bytes())
+    for name in ['LICENSE.txt','ThirdPartyNotices.txt']:write_entry(z,'assets/licenses/onnxruntime/'+name,(ort/name).read_bytes())
 run(BT/('zipalign'+EXE),'-f','-p',RESOURCE_ALIGNMENT,OUT/'unsigned.apk',OUT/'aligned.apk')
 
 local_signing=Path.home()/'.openalive-signing/signing.json'
@@ -103,10 +123,12 @@ run(JAVA/('java'+EXE),'-jar',BT/'lib/apksigner.jar','verify','--verbose','--prin
 run(BT/('zipalign'+EXE),'-c','-p',RESOURCE_ALIGNMENT,apk)
 report={'version':version,'apk':apk.name,'sha256':sha(apk),'bytes':apk.stat().st_size,'resource_tables':verify_apk(apk),
         'executables':{'classes.dex':sha(OUT/'dex/classes.dex'),'classes2.dex':sha(VENDOR/'editor-ui.dex'),'libalive_clean.so':sha(native)}}
+report['executables'].update({p.name:sha(p) for p in ort_native})
 with zipfile.ZipFile(apk) as z:
     assert z.read('lib/arm64-v8a/libalive_clean.so')==native.read_bytes()
     assert z.read('classes2.dex')==(VENDOR/'editor-ui.dex').read_bytes()
+    for library in ort_native:assert z.read('lib/arm64-v8a/'+library.name)==library.read_bytes()
     assert not any(n.startswith('assets/video/') for n in z.namelist())
-(DIST/'build-report.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')
-(DIST/'SHA256SUMS').write_text(report['sha256']+'  '+apk.name+'\n',encoding='ascii')
+(DIST/'build-report.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf8',newline='\n')
+(DIST/'SHA256SUMS').write_text(report['sha256']+'  '+apk.name+'\n',encoding='ascii',newline='\n')
 print(json.dumps(report,indent=2))

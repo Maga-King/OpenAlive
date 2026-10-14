@@ -1,0 +1,43 @@
+{
+  "source": "Flyme 9 sdkstage 1.8.15",
+  "apk_sha256": "8f37e745a7ad216725bf4692aee2a7088e24da1db953eb8c98fe826b0097ede6",
+  "files": {
+    "app/assets/shader/gradient/gradient.vert": {
+      "original": "assets/shader/gradient/gradient.vert",
+      "sha256": "32bc6f224586b2d0a8ea6342abd358628cd8f4ef84dddd6b98cf28ed07b5cca3"
+    },
+    "app/assets/shader/gradient/gradient.frag": {
+      "original": "assets/shader/gradient/gradient.frag",
+      "sha256": "73730ef3593c8d5d85d3257d2909badea08c31d415bac13a4cfee105058ec109"
+    },
+    "app/assets/cosmic/gradient_damos.png": {
+      "original": "res/drawable-nodpi-v4/mz_wallpaper_gradient_v1.png",
+      "sha256": "83e8bdb2c210fcc74bcb3c37082f73b14ac18bafb829cd50d9e1ac1d0a8a2174"
+    },
+    "app/assets/cosmic/gradient_jiguang.png": {
+      "original": "res/drawable-nodpi-v4/mz_wallpaper_gradient_v2.png",
+      "sha256": "0e63bc737de75b566d768feb75080f9004d073fd6f6b0ebad87db3c02a855440"
+    },
+    "app/assets/cosmic/gradient_yuanhai.png": {
+      "original": "res/drawable-nodpi-v4/mz_wallpaper_gradient_v3.png",
+      "sha256": "a8a649d7d528b83c032ecf2670161a59bf0671fa6d641472271548942b9fd4cc"
+    }
+  },
+  "palette_sources": {
+    "damos": {
+      "class": "com.meizu.flyme.sdkstage.wallpaper.gradient.i",
+      "decompiled_sha256": "df211156bcbdfe13f01f58d29c1d26194a91cd5448fb06591c35f132adfacd2f",
+      "palette_sha256": "448c1446613b2932421c0b0602ba51b778c898b18abaa40933f69802c030a789"
+    },
+    "jiguang": {
+      "class": "com.meizu.flyme.sdkstage.wallpaper.gradient.j",
+      "decompiled_sha256": "7bf9ed34e04c470f1769cecbb03f3b8d93d33a9bcd9f46614452b07c5508f3f5",
+      "palette_sha256": "eda3d9fcfe18a4e49bc1cde04b8c48c915f83568fe7d4e69b3d6d7e2393efca7"
+    },
+    "yuanhai": {
+      "class": "com.meizu.flyme.sdkstage.wallpaper.gradient.k",
+      "decompiled_sha256": "96be6b8c873b0b5beae7f905b00ba2a6dc6e394c45c7ef862f3606b3d43a1d6c",
+      "palette_sha256": "cd5ce505a2f2dae5f2f8c9c39c5522c22af0052b460e1bfa3d98843b8971a244"
+    }
+  }
+}

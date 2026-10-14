@@ -2,6 +2,8 @@
 
 GitHub Actions 会在推送 `v*` 标签时编译、验证 APK，再发布 Release。手动运行默认只生成构建产物；勾选 `release` 时同时发布。
 
+发布前必须通过 `python tools/verify_release.py`：APK、SHA256SUMS 和 build-report.json 均与 `release/expected.json` 记录的本地审定文件逐字节一致。任一不同则停止发布，Actions 构建产物仍可下载分析。更新版本时应先完整本地构建，再更新该哈希清单。ZIP 时间戳、权限、条目顺序和压缩级别固定，报告统一 LF 换行；Rust 编译路径重映射为固定前缀。
+
 ## 环境
 
 - Ubuntu 24.04、JDK 17、Python 3.12。
@@ -19,6 +21,10 @@ python3 tools/build_release.py
 结果在 `dist/`。脚本从 Java 和 Rust 源码编译宿主与渲染库，重新编译 UI 资源；魅族官方 UI 的预编译 DEX 位于 `vendor/flyme/`，不是本项目从源码编译的部分。
 
 未配置签名时会创建本地开发密钥。正式构建使用 `OPENALIVE_KEYSTORE`、`OPENALIVE_STORE_PASSWORD`、`OPENALIVE_KEY_ALIAS`（默认 `development`）；密钥不会进入仓库。GitHub 工作流通过仓库 Secrets 注入同一把密钥，方便覆盖安装。
+
+本机未显式设置 `OPENALIVE_KEYSTORE` 时，脚本优先读取用户目录 `.openalive-signing/signing.json` 的 `keystore`、`alias`、`password`。该目录位于仓库外，仅当前用户和 SYSTEM 可读；无需把密码写入构建命令。Windows 构建使用 JDK/Android SDK 处理资源与 Java，自动调用默认 WSL 的 `~/.cargo/bin/cargo` 和 `~/android-ndk-r29` 编译 Rust。
+
+Vivo 主体分割离线运行：固定的 U2NetP 模型位于 `app/assets/vivo/models/`，ONNX Runtime Android 的 Java 与 arm64 原生库位于 `vendor/onnxruntime/`。构建校验来源清单中的 SHA-256、原生库 16 KB 页对齐，并打包许可证；用户图片不上传到服务端。
 
 资源表以未压缩形式存储并按 4096 字节对齐，签名后再次检查。安装包暂不包含视频壁纸。
 

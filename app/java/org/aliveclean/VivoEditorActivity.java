@@ -27,6 +27,9 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
     private boolean busy,awaitingApply,resumed,pickerResultReliable;
     private final Handler main=new Handler(Looper.getMainLooper());
     private Dialog panel;
+    private VivoMaskEditor maskEditor;
+    private VivoSlotCropEditor slotEditor;
+    private final TextView[] slotDetails=new TextView[3];
     private Intent pendingMedia;
     private int pendingMediaRequest;
     private final Runnable saveCrop=()->saveDraft();
@@ -58,11 +61,14 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
         previewSlot.addView(frame,new FrameLayout.LayoutParams(-1,-1,Gravity.CENTER));
         preview=new TextureView(this);frame.addView(preview,new FrameLayout.LayoutParams(-1,-1));preview.setSurfaceTextureListener(this);installGestures();
         TextView reset=ui.text("复位",13);reset.setBackground(ui.capsule());FrameLayout.LayoutParams rp=new FrameLayout.LayoutParams(ui.dp(56),ui.dp(30),Gravity.BOTTOM|Gravity.END);rp.setMargins(0,0,ui.dp(12),ui.dp(12));frame.addView(reset,rp);
-        reset.setOnClickListener(v->{crop.reset();updateCrop();saveDraft();});
+        reset.setOnClickListener(v->{crop.reset();updateCrop();if(renderer!=null)renderer.vivoCropNow(options.x,options.y,options.zoom);saveDraft();});
+        if(options.family==VivoOptions.RASTER)reset.setVisibility(View.GONE);
         TextView hint=ui.text("双指可缩放或移动壁纸",12);hint.setTextColor(0xffbdbdbd);column.addView(hint,new LinearLayout.LayoutParams(-1,ui.dp(28)));
-        LinearLayout footer=new LinearLayout(this);footer.setGravity(Gravity.CENTER);column.addView(footer,new LinearLayout.LayoutParams(-1,ui.dp(98)));
-        if(options.family==VivoOptions.RASTER){footer(footer,"图集光栅","ic_aod_edit",()->showMediaChoices(false));footer(footer,"视频光栅","ic_aod_add",()->showMediaChoices(true));footer(footer,"效果","ic_unlock_decorate",()->showPanel(0));}
-        else {footer(footer,"壁纸","ic_decorate_refresh",()->showMediaChoices(false));footer(footer,"装饰","ic_unlock_decorate",()->showPanel(0));}
+        if(options.family==VivoOptions.RASTER)rasterMediaButtons(column);
+        else {
+            LinearLayout footer=new LinearLayout(this);footer.setGravity(Gravity.CENTER);column.addView(footer,new LinearLayout.LayoutParams(-1,ui.dp(98)));
+            footer(footer,"壁纸","ic_decorate_refresh",()->showWallpaperChoices());footer(footer,"装饰","ic_unlock_decorate",()->showPanel(0));
+        }
         renderer=new RenderLoop(this,SceneOptions.DRAFT);renderer.visible(resumed);renderer.mode(1,false);
         if(pendingMedia!=null){Intent ready=pendingMedia;int request=pendingMediaRequest;pendingMedia=null;onActivityResult(request,RESULT_OK,ready);}
     }
@@ -77,17 +83,18 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
             @Override public boolean onScale(ScaleGestureDetector d){crop.scale(d.getScaleFactor(),d.getFocusX()/preview.getWidth(),d.getFocusY()/preview.getHeight());updateCrop();return true;}
         });
         preview.setOnTouchListener(new View.OnTouchListener(){float x,y;boolean dragging;
-            public boolean onTouch(View v,MotionEvent e){scale.onTouchEvent(e);if(e.getPointerCount()>=2){if(!dragging&&renderer!=null)renderer.touch(MotionEvent.ACTION_CANCEL,0,0);float nx=(e.getX(0)+e.getX(1))/2,ny=(e.getY(0)+e.getY(1))/2;if(dragging&&e.getActionMasked()==MotionEvent.ACTION_MOVE){crop.drag((nx-x)/preview.getWidth(),(ny-y)/preview.getHeight());updateCrop();}x=nx;y=ny;dragging=true;}else if(!dragging&&renderer!=null)renderer.touch(e.getActionMasked(),e.getX()/preview.getWidth(),e.getY()/preview.getHeight());
-                if(e.getActionMasked()==MotionEvent.ACTION_UP||e.getActionMasked()==MotionEvent.ACTION_CANCEL){dragging=false;main.removeCallbacks(saveCrop);main.postDelayed(saveCrop,80);}return true;}
+            public boolean onTouch(View v,MotionEvent e){if(options.family==VivoOptions.RASTER&&options.video.isEmpty()){if(renderer!=null)renderer.touch(e.getActionMasked(),e.getX()/preview.getWidth(),e.getY()/preview.getHeight());return true;}scale.onTouchEvent(e);if(e.getPointerCount()>=2){if(!dragging&&renderer!=null)renderer.touch(MotionEvent.ACTION_CANCEL,0,0);float nx=(e.getX(0)+e.getX(1))/2,ny=(e.getY(0)+e.getY(1))/2;if(dragging&&e.getActionMasked()==MotionEvent.ACTION_MOVE){crop.drag((nx-x)/preview.getWidth(),(ny-y)/preview.getHeight());updateCrop();}x=nx;y=ny;dragging=true;}else if(!dragging&&renderer!=null)renderer.touch(e.getActionMasked(),e.getX()/preview.getWidth(),e.getY()/preview.getHeight());
+                if(e.getActionMasked()==MotionEvent.ACTION_UP||e.getActionMasked()==MotionEvent.ACTION_CANCEL){if(dragging){if(renderer!=null)renderer.vivoCropNow(crop.centerX(),crop.centerY(),crop.zoom());main.removeCallbacks(saveCrop);saveDraft();}dragging=false;}return true;}
         });
     }
-    private void updateCrop(){options.x=crop.centerX();options.y=crop.centerY();options.zoom=crop.zoom();if(renderer!=null)renderer.vivoCrop(options.x,options.y,options.zoom);}
+    private void updateCrop(){options.x=crop.centerX();options.y=crop.centerY();options.zoom=crop.zoom();if(options.family==VivoOptions.RASTER&&!options.video.isEmpty()){for(VivoOptions.Slot slot:options.slots){slot.x=options.x;slot.y=options.y;slot.zoom=options.zoom;}}if(renderer!=null)renderer.vivoCrop(options.x,options.y,options.zoom);}
     private void loadImageSize(){final VivoOptions selected=VivoOptions.parse(options.json());new Thread(()->{try(VivoImages images=VivoImages.load(this,runtime,selected)){
         int w=images.photos.get(0).getWidth(),h=images.photos.get(0).getHeight();runOnUiThread(()->{if(isDestroyed()||!selected.json().equals(options.json()))return;imageWidth=w;imageHeight=h;configureCrop();});
     }catch(Exception e){runOnUiThread(()->toast("照片加载失败："+e.getMessage()));}},"VivoPhotoSize").start();}
     private void configureCrop(){if(preview==null||preview.getWidth()==0)return;crop.dimensions(imageWidth,imageHeight,preview.getWidth(),preview.getHeight());crop.restore(options.x,options.y,options.zoom);}
     private void saveDraft(){
         if(options==null)return;
+        updateSlotDetails();
         getSharedPreferences("vivo.editor",0).edit().putString("family."+options.family,options.json()).apply();
         getSharedPreferences(SceneOptions.DRAFT,0).edit().putString("vivo",options.json()).putInt("cosmic",0).putInt("aod",101).putInt("lock",0).putInt("home",6).apply();
     }
@@ -128,10 +135,11 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
         for(int i=0;i<4;i++){final int area=i+1;View tile=ui.inflate("item_flashcard_interact_option",row);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(tileWidth,ui.dp(130));lp.setMargins(ui.dp(4),ui.dp(6),ui.dp(4),ui.dp(12));row.addView(tile,lp);
             ((ImageView)tile.findViewById(ui.id("id","iv_icon"))).setImageBitmap(VivoImages.asset(runtime,"vivo/ui/"+category()+"/effect_area/light_"+icons[i]+".webp"));
             ((TextView)tile.findViewById(ui.id("id","tv_label"))).setText(names[i]);tile.findViewById(ui.id("id","iv_selected")).setVisibility(options.area==area?View.VISIBLE:View.GONE);
-            tile.findViewById(ui.id("id","iv_edit_btn")).setVisibility(area==1&&options.area==1?View.VISIBLE:View.GONE);
+            View edit=tile.findViewById(ui.id("id","iv_edit_btn"));edit.setVisibility(area<4&&options.area==area?View.VISIBLE:View.GONE);
+            edit.setOnClickListener(v->{panel.dismiss();editMask(area!=1,area);});
             tile.setOnClickListener(v->{
-            if(area==1&&!options.photos.isEmpty()&&options.paint.isEmpty()){panel.dismiss();paintMask();return;}
-            if((area==2||area==3)&&!options.photos.isEmpty()&&options.subject.isEmpty()){toast("这张照片尚未生成主体蒙版，可先使用自定义涂抹");return;}
+            if(area==1){panel.dismiss();editMask(false,area);return;}
+            if((area==2||area==3)&&!options.photos.isEmpty()&&options.subject.isEmpty()){panel.dismiss();editMask(true,area);return;}
             options.area=area;saveDraft();showPanel(0);
         });}
     }
@@ -164,18 +172,75 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
         TextView reset=ui.text("恢复默认（0）",13);reset.setTextColor(0xff70aeff);parent.addView(reset,new LinearLayout.LayoutParams(-1,ui.dp(32)));reset.setOnClickListener(v->{main.removeCallbacks(saveCrop);options.sensitivity=0;seek.setProgress(50);label.setText(sensitivityLabel());saveDraft();});
     }
     private String sensitivityLabel(){return "灵敏度  "+(options.sensitivity>0?"+":"")+options.sensitivity+(options.sensitivity==0?"（Vivo 默认）":"");}
-    private void showMediaChoices(boolean video){
+    private static String slotName(int index){return index==0?"封面图片/视频":"光栅图片/视频"+index;}
+    private void rasterMediaButtons(LinearLayout parent){
+        LinearLayout slots=new LinearLayout(this);slots.setOrientation(1);slots.setPadding(ui.dp(18),0,ui.dp(18),0);parent.addView(slots);
+        for(int i=0;i<3;i++){
+            final int index=i;
+            LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(ui.dp(14),0,ui.dp(14),0);row.setBackground(ui.capsule());
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,ui.dp(43));lp.bottomMargin=ui.dp(5);slots.addView(row,lp);
+            TextView title=ui.text(slotName(i),14);title.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);row.addView(title,new LinearLayout.LayoutParams(0,-1,1));
+            TextView detail=slotDetails[i]=ui.text("",12);detail.setTextColor(0xffbdbdbd);row.addView(detail,new LinearLayout.LayoutParams(-2,-1));
+            row.setContentDescription(slotName(i));row.setOnClickListener(v->showSlotChoices(index));
+        }
+        LinearLayout actions=new LinearLayout(this);slots.addView(actions,new LinearLayout.LayoutParams(-1,ui.dp(44)));
+        String[] names={"批量选图","感应视频","效果"};
+        Runnable[] clicks={()->chooseMedia(VivoMediaSelection.BATCH_IMAGES),()->chooseMedia(VivoMediaSelection.VIDEO),()->showPanel(0)};
+        for(int i=0;i<names.length;i++){final Runnable click=clicks[i];TextView button=ui.text(names[i],14);actions.addView(button,new LinearLayout.LayoutParams(0,-1,1));button.setOnClickListener(v->{if(!busy)click.run();});}
+        updateSlotDetails();
+    }
+    private void updateSlotDetails(){
+        for(int i=0;i<3;i++)if(slotDetails[i]!=null){
+            String type=i<options.rasterVideos.size()&&!options.rasterVideos.get(i).isEmpty()?"循环视频":"图片";
+            if(!options.video.isEmpty()&&i>0)type="感应视频模式";
+            else if(i>=options.photos.size())type=options.photos.isEmpty()?"默认图片":"未添加";
+            slotDetails[i].setText(type+"  ›");
+        }
+    }
+    private void showSlotChoices(int index){
         if(busy)return;
-        boolean raster=options.family==VivoOptions.RASTER;
-        String[] choices=raster?new String[]{"恢复默认搭配","选择封面",video?"选择视频":"选择光栅图片（1 至 2 张）"}:new String[]{"恢复默认搭配","选择壁纸"};
-        new AlertDialog.Builder(this).setTitle(raster?(video?"视频光栅":"图集光栅"):"壁纸")
-            .setItems(choices,(dialog,which)->{
-                if(which==0){options=VivoMediaSelection.defaults(options);saveDraft();loadImageSize();return;}
-                chooseMedia(!raster?VivoMediaSelection.WALLPAPER:which==1?VivoMediaSelection.COVER:video?VivoMediaSelection.VIDEO:VivoMediaSelection.ALBUM);
-            }).setNegativeButton("取消",null).show();
+        new AlertDialog.Builder(this).setTitle(slotName(index)).setItems(new String[]{"选择图片","选择视频 · 静音循环","裁切 / 旋转","调整顺序","恢复默认搭配"},(d,which)->{
+            if(which==0||which==1)chooseMedia((which==0?VivoMediaSelection.SLOT_IMAGE:VivoMediaSelection.SLOT_VIDEO)+index);
+            else if(which==2)editSlot(index);
+            else if(which==3)reorderSlot(index);
+            else new AlertDialog.Builder(this).setMessage("恢复三个位置的默认图片和裁切？").setNegativeButton("取消",null).setPositiveButton("恢复",(dialog,w)->{options=VivoMediaSelection.defaults(options);saveDraft();loadImageSize();}).show();
+        }).setNegativeButton("取消",null).show();
+    }
+    private void reorderSlot(int index){
+        if(!options.video.isEmpty()){toast("感应视频无需调整图片顺序");return;}
+        String[] names=new String[2];int[] targets=new int[2];for(int i=0,n=0;i<3;i++)if(i!=index){targets[n]=i;names[n++]="与"+slotName(i)+"交换";}
+        new AlertDialog.Builder(this).setTitle("调整顺序").setItems(names,(d,which)->{
+            if(busy)return;busy=true;apply.setEnabled(false);VivoMediaSelection selection=new VivoMediaSelection(getApplicationContext(),options);
+            new Thread(()->{try{selection.swapSlots(runtime,index,targets[which]);runOnUiThread(()->{busy=false;if(isDestroyed()){selection.discard();return;}options=selection.result;apply.setEnabled(true);saveDraft();loadImageSize();});}
+                catch(Exception e){selection.discard();runOnUiThread(()->{busy=false;if(!isDestroyed()){apply.setEnabled(true);toast("调整顺序失败："+e.getMessage());}});}},"VivoSlotOrder").start();
+        }).show();
+    }
+    private void editSlot(int index){
+        if(busy||runtime==null)return;
+        if(!options.video.isEmpty()&&index>0){toast("感应视频沿用主预览的双指缩放和移动");return;}
+        if(!options.photos.isEmpty()&&index>=options.photos.size()){toast("请先选择这个位置的素材");return;}
+        busy=true;apply.setEnabled(false);VivoOptions selected=VivoOptions.parse(options.json());
+        new Thread(()->{try{
+            Bitmap bitmap=VivoImages.slot(this,runtime,selected,index);
+            runOnUiThread(()->{busy=false;if(isDestroyed()||!selected.json().equals(options.json())){bitmap.recycle();return;}apply.setEnabled(true);
+                slotEditor=new VivoSlotCropEditor(this,slotName(index),bitmap,selected.slots[index],index<selected.rasterVideos.size()&&!selected.rasterVideos.get(index).isEmpty(),slot->{
+                    if(isDestroyed()||!selected.json().equals(options.json()))return;options.slots[index]=slot;saveDraft();loadImageSize();
+                });
+            });
+        }catch(Exception e){runOnUiThread(()->{busy=false;if(!isDestroyed()){apply.setEnabled(true);toast("无法编辑素材："+e.getMessage());}});}},"VivoSlotCrop").start();
+    }
+    private void showWallpaperChoices(){
+        if(busy)return;
+        new AlertDialog.Builder(this).setTitle("壁纸").setItems(new String[]{"恢复默认搭配","选择壁纸"},(dialog,which)->{
+            if(which==0){options=VivoMediaSelection.defaults(options);saveDraft();loadImageSize();}
+            else chooseMedia(VivoMediaSelection.WALLPAPER);
+        }).setNegativeButton("取消",null).show();
     }
     private void chooseMedia(int kind){
-        try{startActivityForResult(PhotoSources.vivoMedia(this,kind==VivoMediaSelection.VIDEO?"video/*":"image/*",kind==VivoMediaSelection.ALBUM),kind);}
+        if(busy)return;
+        boolean video=kind==VivoMediaSelection.VIDEO||kind>=VivoMediaSelection.SLOT_VIDEO&&kind<VivoMediaSelection.SLOT_VIDEO+3;
+        try{startActivityForResult(PhotoSources.vivoMedia(this,video?"video/*":"image/*",kind==VivoMediaSelection.BATCH_IMAGES)
+            .putExtra(Intent.EXTRA_TITLE,kind==VivoMediaSelection.BATCH_IMAGES?"选 1 至 3 张，依次替换封面、光栅1、光栅2":"选择素材"),kind);}
         catch(ActivityNotFoundException|SecurityException e){toast("无法打开相册，请检查相册是否可用");}
     }
     private void applyWallpaper(){
@@ -201,7 +266,7 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
             else toast("未应用，已保留编辑内容");
             return;
         }
-        if(result!=RESULT_OK||data==null||request<10||request>13||busy)return;
+        if(result!=RESULT_OK||data==null||!(request>=10&&request<=15||VivoMediaSelection.isSlot(request)||request==VivoMediaSelection.BATCH_IMAGES)||busy)return;
         if(runtime==null||apply==null){pendingMedia=data;pendingMediaRequest=request;return;}
         ArrayList<Uri> uris=new ArrayList<>();if(data.getClipData()!=null)for(int i=0;i<data.getClipData().getItemCount();i++)uris.add(data.getClipData().getItemAt(i).getUri());else if(data.getData()!=null)uris.add(data.getData());
         if(uris.isEmpty())return;
@@ -209,10 +274,26 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
         busy=true;apply.setEnabled(false);
         new Thread(()->{try{
             selection.importUris(runtime,request,uris);
-            runOnUiThread(()->{if(isDestroyed()){selection.discard();return;}options=selection.result;saveDraft();loadImageSize();busy=false;apply.setEnabled(true);});
+            runOnUiThread(()->{if(isDestroyed()){selection.discard();return;}options=selection.result;saveDraft();loadImageSize();
+                busy=false;apply.setEnabled(true);
+            });
         }catch(Exception e){selection.discard();runOnUiThread(()->{busy=false;if(!isDestroyed()){apply.setEnabled(true);toast("素材导入失败："+e.getMessage());}});}},"VivoImport").start();
     }
-    private void paintMask(){toast("正在接入涂抹编辑器");}
+    private void editMask(boolean subject,int area){
+        if(busy||runtime==null)return;busy=true;apply.setEnabled(false);
+        VivoOptions selected=VivoOptions.parse(options.json());
+        new Thread(()->{try(VivoImages images=VivoImages.load(this,runtime,selected)){
+            Bitmap photo=images.photos.get(0).copy(Bitmap.Config.ARGB_8888,false);
+            Bitmap source=subject?images.subject:images.paint;
+            Bitmap initial=source==null?null:source.copy(Bitmap.Config.ARGB_8888,false);
+            runOnUiThread(()->{busy=false;if(!isDestroyed())apply.setEnabled(true);if(isDestroyed()||!selected.json().equals(options.json())){photo.recycle();if(initial!=null)initial.recycle();return;}
+                maskEditor=new VivoMaskEditor(this,photo,initial,subject,file->{
+                    if(isDestroyed()||!selected.json().equals(options.json())){deleteFile(file);return;}
+                    if(subject)options.subject=file;else options.paint=file;options.area=area;saveDraft();
+                });
+            });
+        }catch(Exception e){runOnUiThread(()->{busy=false;if(!isDestroyed()){apply.setEnabled(true);toast("无法打开编辑器："+e.getMessage());}});}},"VivoMaskLoad").start();
+    }
     private void toast(String text){Toast.makeText(this,text,Toast.LENGTH_LONG).show();}
     @Override public void onSurfaceTextureAvailable(SurfaceTexture texture,int width,int height){surface=new Surface(texture);if(renderer!=null)renderer.attach(surface,width,height);configureCrop();}
     @Override public void onSurfaceTextureSizeChanged(SurfaceTexture texture,int width,int height){if(renderer!=null&&surface!=null)renderer.attach(surface,width,height);configureCrop();}
@@ -221,5 +302,5 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
     @Override protected void onResume(){super.onResume();resumed=true;if(renderer!=null)renderer.visible(true);}
     @Override protected void onPause(){resumed=false;if(renderer!=null)renderer.visible(false);super.onPause();}
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("options",options.json());state.putBoolean("awaitingApply",awaitingApply);state.putInt("previousId",previousId);state.putInt("previousLockId",previousLockId);state.putBoolean("pickerResultReliable",pickerResultReliable);if(pendingMedia!=null){state.putParcelable("pendingMedia",pendingMedia);state.putInt("pendingMediaRequest",pendingMediaRequest);}}
-    @Override protected void onDestroy(){main.removeCallbacksAndMessages(null);if(panel!=null)panel.dismiss();if(renderer!=null)renderer.close();super.onDestroy();}
+    @Override protected void onDestroy(){main.removeCallbacksAndMessages(null);if(panel!=null)panel.dismiss();if(maskEditor!=null)maskEditor.close();if(slotEditor!=null)slotEditor.close();if(renderer!=null)renderer.close();super.onDestroy();}
 }

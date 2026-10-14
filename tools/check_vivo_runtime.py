@@ -17,6 +17,7 @@ parser.add_argument('--serial', required=True, help='ADB serial of the test devi
 parser.add_argument('--coordinates', action='store_true', help='Run deterministic touch and gyro-to-pixel diagnostics')
 parser.add_argument('--build-only', action='store_true', help='Compile the probe without connecting to or changing a device')
 parser.add_argument('--media', action='store_true', help='Test independent media replacement and the original video controller')
+parser.add_argument('--editor', action='store_true', help='Test mask brush, eraser, undo and PNG save in an actual dialog')
 args = parser.parse_args()
 SDK = Path(os.environ.get('ANDROID_HOME', str(Path.home() / 'AppData/Local/Android/Sdk')))
 WIN = os.name == 'nt'
@@ -47,6 +48,7 @@ for name in ['classes', 'dex', 'assets']:
         shutil.rmtree(path)
     path.mkdir(parents=True)
 shutil.copytree(ROOT / 'app/assets/vivo/runtime', OUT / 'assets/vivo/runtime')
+shutil.copytree(ROOT / 'app/assets/vivo/models', OUT / 'assets/vivo/models')
 if args.media:
     fixture = ROOT / 'build/vivo-media-fixture.mp4'
     if not fixture.is_file():
@@ -57,6 +59,13 @@ if args.media:
             'testsrc2=size=360x800:rate=30', '-t', '3', '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p', '-an', fixture)
     shutil.copyfile(fixture, OUT / 'assets/media.mp4')
+    rotation_fixture = ROOT / 'build/vivo-rotation-fixture.mp4'
+    if not rotation_fixture.is_file():
+        run(shutil.which('ffmpeg'), '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i',
+            'color=c=red:s=160x96:r=10', '-vf',
+            'drawbox=x=80:y=0:w=80:h=48:color=lime:t=fill,drawbox=x=0:y=48:w=80:h=48:color=blue:t=fill,drawbox=x=80:y=48:w=80:h=48:color=yellow:t=fill',
+            '-t', '1', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-an', rotation_fixture)
+    shutil.copyfile(rotation_fixture, OUT / 'assets/rotation.mp4')
 (OUT / 'AndroidManifest.xml').write_text(
     '<manifest xmlns:android="http://schemas.android.com/apk/res/android" '
     f'package="{PACKAGE}"><uses-sdk android:minSdkVersion="28" android:targetSdkVersion="35"/>'
@@ -67,13 +76,14 @@ if args.media:
 sources = [ROOT / 'tests/vivo/VivoSceneProbe.java'] + [
     ROOT / 'app/java/org/aliveclean' / (name + '.java') for name in [
         'VivoEngineRuntime', 'AssetGl', 'VivoCalls', 'VivoTextureLayer', 'PhotoViewport',
-        'VivoEngineScene', 'VivoSensorGain', 'VivoOptions', 'VivoImages', 'VivoMediaSelection', 'VivoWallpaperZoom', 'VivoWallpaperDim', 'VivoDimPass', 'VivoColorSpace', 'VivoUi']]
+        'VivoEngineScene', 'VivoSensorGain', 'VivoOptions', 'VivoImages', 'VivoMediaSelection', 'VivoWallpaperZoom', 'VivoWallpaperDim', 'VivoDimPass', 'VivoColorSpace', 'VivoUi', 'VivoVideoTexture', 'VivoSubjectMask', 'VivoMaskEditor', 'VivoSlotCropEditor']]
+ort = ROOT / 'vendor/onnxruntime/classes.jar'
 run(JAVA / ('javac' + EXE), '-encoding', 'UTF-8', '-source', '8', '-target', '8',
-    '-bootclasspath', ANDROID, '-classpath', BT / 'core-lambda-stubs.jar',
+    '-bootclasspath', ANDROID, '-classpath', str(BT / 'core-lambda-stubs.jar') + os.pathsep + str(ort),
     '-d', OUT / 'classes', *sources)
 run(JAVA / ('java' + EXE), '-cp', BT / 'lib/d8.jar', 'com.android.tools.r8.D8',
     '--min-api', '28', '--lib', ANDROID, '--output', OUT / 'dex',
-    *sorted((OUT / 'classes').rglob('*.class')))
+    ort, *sorted((OUT / 'classes').rglob('*.class')))
 run(BT / ('aapt2' + EXE), 'link', '-o', OUT / 'base.apk', '--manifest',
     OUT / 'AndroidManifest.xml', '-I', ANDROID, '-A', OUT / 'assets')
 with zipfile.ZipFile(OUT / 'base.apk') as src, zipfile.ZipFile(OUT / 'unsigned.apk', 'w') as dst:
@@ -82,6 +92,8 @@ with zipfile.ZipFile(OUT / 'base.apk') as src, zipfile.ZipFile(OUT / 'unsigned.a
                      compress_type=zipfile.ZIP_STORED if entry.filename.endswith('resources.arsc')
                      else zipfile.ZIP_DEFLATED)
     dst.write(OUT / 'dex/classes.dex', 'classes.dex')
+    for library in (ROOT / 'vendor/onnxruntime/jni/arm64-v8a').glob('*.so'):
+        dst.write(library, 'lib/arm64-v8a/' + library.name)
 run(BT / ('zipalign' + EXE), '-f', '-p', '4096', OUT / 'unsigned.apk', OUT / 'aligned.apk')
 run(JAVA / ('java' + EXE), '-jar', BT / 'lib/apksigner.jar', 'sign', '--ks', KEY,
     '--ks-pass', 'pass:android', '--ks-key-alias', 'development', '--out',
@@ -91,14 +103,14 @@ if args.build_only:
     raise SystemExit(0)
 adb('install', '-r', OUT / 'probe.apk')
 try:
-    result = adb('shell', 'am', 'instrument', '--no-hidden-api-checks', '-w', '-e', 'media',str(args.media).lower(),'-e', 'coordinates', str(args.coordinates).lower(),
+    result = adb('shell', 'am', 'instrument', '--no-hidden-api-checks', '-w', '-e', 'editor',str(args.editor).lower(),'-e', 'media',str(args.media).lower(),'-e', 'coordinates', str(args.coordinates).lower(),
                  PACKAGE + '/org.aliveclean.VivoSceneProbe', capture_output=True,
-                 text=True, encoding='utf8', timeout=90)
+                 text=True, encoding='utf8', timeout=240 if args.media else 90)
     (OUT / 'result.txt').write_text(result.stdout + result.stderr, encoding='utf8')
     print(result.stdout)
     if 'VIVO_SCENE_OK' not in result.stdout:
         raise RuntimeError('Vivo renderer regression failed; see build/vivo-runtime-test/result.txt')
-    names = (['scene-video', 'raster-three-custom'] if args.media else
+    names = (['mask-editor', 'slot-editor'] if args.editor else ['scene-video', 'raster-three-custom', 'raster-mixed-video', 'subject-model'] if args.media else
              ['liquid-touch-25', 'liquid-touch-75', 'flash-axis-0', 'flash-axis-1'] if args.coordinates else
              [f'scene-{family}' for family in range(1, 4)])
     for name in names:

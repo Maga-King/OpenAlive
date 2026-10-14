@@ -15,7 +15,7 @@ final class SceneOptions {
     SceneOptions(SharedPreferences prefs) {
         int a=prefs.getInt("aod",0),l=prefs.getInt("lock",2),h=prefs.getInt("home",6);
         vivo=VivoOptions.parse(prefs.getString("vivo",""));
-        int c=prefs.getInt("cosmic",0);cosmic=c==1||c==3||c==4||(c>=6&&c<=15)||(c>=101&&c<=105)||(c>=201&&c<=205)?c:0;
+        int c=prefs.getInt("cosmic",0);cosmic=c==1||c==3||c==4||(c>=6&&c<=19)||(c>=101&&c<=105)||(c>=201&&c<=205)||(c>=301&&c<=303)?c:0;
         cosmicKeepLock=prefs.getBoolean("cosmic_keep_lock",false);
         cosmicContinuousAod=prefs.getBoolean("cosmic_continuous_aod",true);
         cosmicContinuousHome=prefs.getBoolean("cosmic_continuous_home",true);

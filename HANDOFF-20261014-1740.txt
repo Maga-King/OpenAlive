@@ -1,0 +1,217 @@
+历史交接存档：下文为当时状态，渐变渲染等问题现已修复；当前行为与验证以 BUILD.md、docs/release-notes.md 及专项文档为准。后续用户已授权上传和验证后发布。
+
+OpenAlive 任务交接 — 2026-10-14 17:40
+========================================
+
+## 当前状态总结
+
+**第 4 项 — Flyme 9 壁纸补全 — 部分完成，渐变三款渲染失败**
+
+已完成：
+- ✅ Cosmic 四款（园蓝/梅洛/金杏/青提）→ ID 16-19
+  - 缩略图、配置 JSON、shader 资源已导入
+  - 白名单扩展到 6..19
+  - 本地构建验证通过，备用机可选中并渲染
+
+- ✅ Gradient 三款（大漠/极光/远海）→ ID 301-303
+  - 配色参数已从反编译源码提取到 `app/assets/gradient/*.json`
+  - `GradientMotion.java` 和 `GradientRenderer.java` 已写
+  - 白名单扩展到 301-303
+  - 缩略图占位符已生成
+  - 编译通过，APK 已打包并安装到备用机
+
+**渲染失败原因：**
+备用机选中渐变三款后完全黑屏或花屏（"完全炸了"）。
+
+根本问题：
+1. **样条插值简化过度**：原厂渐变用 Apache Commons Math 三次样条插值（`org.apache.a.c.a.a.a`），
+   我写的 `GradientRenderer` 只传了线性占位符系数 `(y, 0, 0, 0)`，shader 期望的是完整的
+   三次多项式系数 `(c0, c1, c2, c3)`。
+
+2. **Shader uniform 结构不匹配**：原厂的 `PolynomialSpline` 结构包含 4 个 `PolynomialFunction`，
+   每个有 `from/to/coefficients(vec4)`。我的实现只是粗暴地传了 y 坐标，没有正确计算样条段。
+
+3. **坐标归一化可能错误**：原厂样条的 y 坐标范围是 0-2340（屏幕高度），需要除以 2340 归一化。
+   我在 `GradientRenderer` 里做了 `/2340f`，但没有验证 x 坐标的 0-1080 归一化是否一致。
+
+未完成：
+- ❌ Gradient 渲染器修复（需要实现真正的三次样条插值）
+- ❌ Video 三款（浪流/深潜/涟漪）— 需要 mp4 纹理播放路径，完全没动
+- ❌ Alive-photo 条目 — 原厂 APK 有，我们仓库没有，也没导入
+
+**第 1 项 — 小米桌面设置 — 未动**
+- `XiaomiDesktopSettingsActivity` 已存在
+- 缺 `check_xiaomi_desktop.py` 接入 CI
+- 图标未做
+
+---
+
+## 关键文件位置
+
+**Gradient 相关：**
+- 配色 JSON：`app/assets/gradient/{damos,jiguang,yuanhai}.json`
+- Shader：`app/assets/shader/gradient/{gradient.vert,gradient.frag}`
+- 渲染器：`app/java/org/aliveclean/GradientRenderer.java`
+- 动画状态：`app/java/org/aliveclean/GradientMotion.java`
+- 导入器：`tools/import_flyme9_gradient.py`
+- 缩略图：`app/assets/cosmic/gradient_{damos,jiguang,yuanhai}.png`
+- Catalog：`app/assets/cosmic/catalog.json`（最后 3 条是渐变）
+
+**反编译源码：**
+- Flyme 9 APK：`build/flyme9-decoded/`
+- 渐变渲染器源码：`/tmp/f9full/sources/com/meizu/flyme/sdkstage/wallpaper/gradient/`
+  - `l.java` — 渲染器主体
+  - `i.java/j.java/k.java` — 三款配色
+  - `a.java` — 样条基类
+  - `b/c/d/e/f/g.java` — 6 种样条动画
+  - `s.java` — 样条 uniform 包装
+  - `r.java` — 单个样条函数
+  - `h.java` — 配色基类（16 色字段）
+
+**白名单修改：**
+- `app/java/org/aliveclean/MainActivity.java:34` — 选择器范围扩展到 `6..19` 和 `301..303`
+- `app/java/org/aliveclean/SceneOptions.java:18` — cosmic 变体白名单同上
+- `app/java/org/aliveclean/WallpaperRenderer.java:13` — 工厂方法路由 301-303 到 GradientRenderer
+
+---
+
+## 修复渐变渲染器的方案
+
+有两个方向：
+
+### 方案 A：用 Apache Commons Math 三次样条（最接近原厂）
+
+1. 把 Apache Commons Math 的三次样条插值器（`org.apache.commons.math3.analysis.interpolation.SplineInterpolator`）
+   加进依赖或复制源码进仓库。
+
+2. 在 `GradientRenderer` 或新写一个 `GradientSpline.java` 里，对每条样条的 5 个控制点
+   `(x[0..4], y[0..4])` 调用 `SplineInterpolator.interpolate(x, y)` 得到 `PolynomialSplineFunction`。
+
+3. 从 `PolynomialSplineFunction.getPolynomials()` 拿到 4 个 `PolynomialFunction`，
+   提取每段的系数 `getCoefficients()` 和定义域 `[knots[i], knots[i+1]]`。
+
+4. 在 `render()` 里，对 6 条样条 × 4 段 = 24 个 uniform 传正确的 `from/to/coefficients`。
+
+5. 参考原厂 `s.java` 和 `r.java` 的结构，确保 uniform 名称匹配 shader 期望的：
+   ```
+   u_spline1.func1.from
+   u_spline1.func1.to
+   u_spline1.func1.coefficients (vec4)
+   ...
+   ```
+
+**优点：** 渲染结果与原厂完全一致。
+**缺点：** 依赖额外的库，或需要复制一堆数学代码进来。
+
+### 方案 B：Shader 内插值（简化实现）
+
+如果不想引入 Apache Commons Math：
+
+1. 把样条插值逻辑移到 shader 里：在 vertex shader 中用 Catmull-Rom 或 cubic Hermite
+   对 5 个控制点做插值，直接算出 `v_curve_1..6`。
+
+2. 修改 `gradient.vert`，把 `uniform PolynomialSpline u_spline1..6` 改成
+   `uniform vec2 u_spline1_points[5]` 等，传入 5 个 (x, y) 控制点。
+
+3. 在 shader 里实现简单的三次插值函数，不需要完整的分段多项式。
+
+**优点：** 不依赖外部库，代码自包含。
+**缺点：** Shader 内插值精度可能不如 CPU 端预计算；需要改 shader 代码（原厂 shader 是直接用的）。
+
+---
+
+## 建议下一步
+
+1. **如果要修渐变**：选方案 A，加 Apache Commons Math 依赖或把样条插值器抽出来。
+   参考反编译源码 `/tmp/f9full/sources/com/meizu/flyme/sdkstage/wallpaper/gradient/s.java`
+   的 `a(PointF, PointF, ...)` 方法，那里调用了 `this.f4097b.a(double[], double[])`（就是样条插值器）。
+
+2. **如果跳过渐变**：先做 Video 三款或第 1 项。Video 需要：
+   - 从原厂 APK 提取 mp4 资源（`assets/video/` 下应该有）
+   - 写一个 `VideoRenderer` + `VideoMotion`，用 `MediaPlayer` + `SurfaceTexture` 渲染到 GL 纹理
+   - 参考仓库现有的 `HomeScenePreview.java:39` 有 `SurfaceTexture` 用法
+
+3. **验证方式**：
+   - 修好后重新构建：`python tools/build_release.py`
+   - 安装到备用机：`adb -s 10.101.1.221:5555 install -r dist/OpenAlive-<version>-arm64-v8a.apk`
+   - 在壁纸选择器里选中"大漠"，观察是否正常渲染渐变动画，不应黑屏或花屏
+
+---
+
+## 构建与环境
+
+构建命令（按 `BUILD-FOR-CLAUDE.txt`）：
+```powershell
+cd E:\openalive
+$env:ANDROID_HOME = 'C:\Users\a1510\AppData\Local\Android\Sdk'
+$env:JAVA_HOME = 'C:\Program Files\Java\jdk-17'
+$env:PYTHONIOENCODING = 'utf-8'
+& 'C:\Users\a1510\AppData\Local\Programs\Python\Python312\python.exe' .\tools\build_release.py
+```
+
+或在 Git Bash：
+```bash
+cd /e/openalive
+ANDROID_HOME='C:\Users\a1510\AppData\Local\Android\Sdk' \
+JAVA_HOME='C:\Program Files\Java\jdk-17' \
+PYTHONIOENCODING='utf-8' \
+'C:\Users\a1510\AppData\Local\Programs\Python\Python312\python.exe' tools/build_release.py
+```
+
+最新成功构建：
+- APK：`dist/OpenAlive-0.4.24-preview-arm64-v8a.apk`
+- SHA256：`fc360661567e42274df7e72d30aedf1222d932b23b42a47c154df3a3b32db8a3`
+- 大小：575 MB
+- 签名证书 SHA256：`34266f7a129ba55dbb1d013308857fe6139159408b2eebfa89517389309e3632`
+- 已安装到备用机 `10.101.1.221:5555`，Cosmic 四款工作正常，Gradient 三款渲染失败
+
+---
+
+## 进度估算
+
+**第 4 项剩余工作量：**
+- Gradient 修复：中等（如果用方案 A，需要加依赖 + 写样条计算逻辑，约 2-4 小时）
+- Video 三款：大（需要写完整的 mp4 播放路径，约 4-8 小时）
+- Alive-photo：未知（原厂 APK 里有这个条目，但不清楚资源结构）
+
+**第 1 项工作量：**
+- CI 接入脚本：小（参考现有 `check_*.py`，约 1 小时）
+- 图标：小（设计 + 资源导入，约 30 分钟）
+
+**总体完成度：**
+- 第 4 项：约 40%（Cosmic 四款完成，Gradient 失败，Video 未动）
+- 第 1 项：0%
+
+---
+
+## 其他注意事项
+
+- **不要卸载重装**：用户说启用了核心破解，可以跨签名覆盖安装，但不得卸载清数据。
+- **设备限制**：只能用 `10.101.1.221:5555`，不要动主设备 `bf69d9b2`。
+- **不要 push 到 GitHub**：用户明确说"再次明确要求之前，不要 git push、触发 Actions 或发布 Release"。
+- **反编译源码是临时的**：`/tmp/f9full/` 在 Git Bash 的 `/tmp` 下，重启会丢失。如果需要重新查看，
+  重新运行：
+  ```bash
+  cd /e/openalive/build/flyme9-decoded
+  java -cp "C:/Users/a1510/AppData/Local/Microsoft/WinGet/Packages/Skylot.jadx_Microsoft.Winget.Source_8wekyb3d8bbwe/lib/jadx-gui-1.5.5-all.jar" \
+    jadx.cli.JadxCLI -d /tmp/f9full --no-res classes.dex
+  ```
+
+---
+
+## 快速恢复检查清单
+
+下一个接手的 AI 或开发者应该先：
+1. ✅ 确认构建环境（Java/Python/Android SDK/WSL Rust）— 见 `BUILD-FOR-CLAUDE.txt`
+2. ✅ 读取本交接文档 + `HANDOFF-20261014.txt`（前一次交接）
+3. ✅ 检查备用机连接：`adb devices` 看到 `10.101.1.221:5555`
+4. ✅ 试跑一次完整构建，确认能编译出 APK
+5. ⚠️  在备用机上测试 Cosmic 四款（16-19）能否正常渲染
+6. ⚠️  在备用机上测试 Gradient 三款（301-303）确认仍然黑屏/花屏
+7. 🔧 根据上述"修复方案"继续
+
+---
+
+交接人：Kiro (Claude Code session 96e737a0)
+交接时间：2026-10-14 17:40
+接手人：待定

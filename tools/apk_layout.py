@@ -6,7 +6,10 @@ RESOURCE_ALIGNMENT=4096
 def write_entry(archive,name,data):
     # Android R+ requires STORED resources. zipalign cannot fix DEFLATED data.
     compressed_pack=name.startswith('assets/xiaomi/packs/') and name.endswith('.xz')
-    archive.writestr(name,data,compress_type=zipfile.ZIP_STORED if name=='resources.arsc' or compressed_pack else zipfile.ZIP_DEFLATED)
+    entry=zipfile.ZipInfo(name,date_time=(2009,1,1,0,0,0))
+    entry.create_system=3
+    entry.external_attr=0o100644 << 16
+    archive.writestr(entry,data,compress_type=zipfile.ZIP_STORED if name=='resources.arsc' or compressed_pack else zipfile.ZIP_DEFLATED,compresslevel=9)
 
 def inspect(data,alignment=RESOURCE_ALIGNMENT):
     source=io.BytesIO(data)
