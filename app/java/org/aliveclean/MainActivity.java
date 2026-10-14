@@ -17,7 +17,8 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
     private int mode=1;
     private boolean importing;
     private boolean awaitingApply;
-    private int previousWallpaperId;
+    private int previousWallpaperId,previousLockId;
+    private boolean pickerResultReliable;
     private int importTarget; // 0 shared/lock photo, 1 independent home, 2 frame photo.
     private Surface previewSurface;
 
@@ -33,7 +34,7 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
             if(variant==1||variant==3||variant==4||(variant>=6&&variant<=15)||(variant>=101&&variant<=105)||(variant>=201&&variant<=205))draft.edit().putInt("cosmic",variant).apply();
             else if(getIntent().getBooleanExtra("photo_editor",false))draft.edit().putInt("cosmic",0).apply();
         }
-        if(state!=null){mode=state.getInt("mode",1);awaitingApply=state.getBoolean("awaitingApply",false);previousWallpaperId=state.getInt("previousWallpaperId",0);importTarget=state.getInt("importTarget",0);}
+        if(state!=null){mode=state.getInt("mode",1);awaitingApply=state.getBoolean("awaitingApply",false);previousWallpaperId=state.getInt("previousWallpaperId",0);previousLockId=state.getInt("previousLockId",0);pickerResultReliable=state.getBoolean("pickerResultReliable",false);importTarget=state.getInt("importTarget",0);}
         renderer=new RenderLoop(this,SceneOptions.DRAFT);
         try{
             editor=new OfficialEditor(this,new OfficialEditor.Actions(){
@@ -77,14 +78,15 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
     }
 
     private void applyDraft() {
-        if(importing)return;
-        android.app.WallpaperInfo current=WallpaperManager.getInstance(this).getWallpaperInfo();
-        if(current!=null&&new ComponentName(this,CleanWallpaper.class).equals(current.getComponent())){commitDraft();return;}
-        // The platform checks ambient permission when binding the service. An app-side
-        // permission query follows a different path and cannot diagnose that adapter.
-        Intent intent=new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
-        intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,new ComponentName(this,CleanWallpaper.class));
-        try{previousWallpaperId=WallpaperManager.getInstance(this).getWallpaperId(WallpaperManager.FLAG_SYSTEM);awaitingApply=true;startActivityForResult(intent,20);}catch(RuntimeException e){awaitingApply=false;android.util.Log.e("AliveClean","Wallpaper picker failed",e);toast("无法打开壁纸应用页面："+e.getMessage());}
+        if(importing||awaitingApply)return;
+        // Even an already-bound home service may not be applied to the lock screen.
+        try{
+            WallpaperManager manager=WallpaperManager.getInstance(this);
+            previousWallpaperId=manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM);
+            previousLockId=manager.getWallpaperId(WallpaperManager.FLAG_LOCK);
+            awaitingApply=true;
+            pickerResultReliable=WallpaperPicker.open(this,new ComponentName(this,CleanWallpaper.class),20);
+        }catch(RuntimeException e){awaitingApply=false;android.util.Log.e("AliveClean","Wallpaper picker failed",e);toast("无法打开壁纸应用页面："+e.getMessage());}
     }
 
     private void toast(String text){Toast.makeText(this,text,Toast.LENGTH_LONG).show();}
@@ -119,9 +121,8 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
         if(request==20&&awaitingApply){
             awaitingApply=false;
             WallpaperManager manager=WallpaperManager.getInstance(this);
-            android.app.WallpaperInfo info=manager.getWallpaperInfo();
-            boolean bound=info!=null&&new ComponentName(this,CleanWallpaper.class).equals(info.getComponent());
-            if(bound&&(result==RESULT_OK||manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM)!=previousWallpaperId)){
+            if(WallpaperPicker.applied(manager,new ComponentName(this,CleanWallpaper.class),result,
+                    pickerResultReliable,previousWallpaperId,previousLockId)){
                 commitDraft();
             }else if(result==RESULT_OK)toast("系统未切换到此壁纸，应用没有成功");
             else toast("未应用，已保留编辑内容");
@@ -221,7 +222,7 @@ public final class MainActivity extends Activity implements TextureView.SurfaceT
             byte[] b=new byte[65536];for(int n;(n=in.read(b))!=-1;)out.write(b,0,n);return file;
         }catch(IOException e){file.delete();throw e;}
     }
-    @Override protected void onSaveInstanceState(Bundle state){state.putInt("mode",mode);state.putInt("importTarget",importTarget);state.putBoolean("awaitingApply",awaitingApply);state.putInt("previousWallpaperId",previousWallpaperId);super.onSaveInstanceState(state);}
+    @Override protected void onSaveInstanceState(Bundle state){state.putInt("mode",mode);state.putInt("importTarget",importTarget);state.putBoolean("awaitingApply",awaitingApply);state.putInt("previousWallpaperId",previousWallpaperId);state.putInt("previousLockId",previousLockId);state.putBoolean("pickerResultReliable",pickerResultReliable);super.onSaveInstanceState(state);}
     @Override public void onSurfaceTextureAvailable(SurfaceTexture texture,int width,int height){previewSurface=new Surface(texture);renderer.attach(previewSurface,width,height);}
     @Override public void onSurfaceTextureSizeChanged(SurfaceTexture texture,int width,int height){renderer.attach(previewSurface,width,height);}
     @Override public boolean onSurfaceTextureDestroyed(SurfaceTexture texture){renderer.detach();if(previewSurface!=null){previewSurface.release();previewSurface=null;}return true;}

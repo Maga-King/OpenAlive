@@ -23,6 +23,7 @@ final class CosmicRenderTest {
         EGLSurface surface=EGL14.eglCreatePbufferSurface(display,configs[0],new int[]{EGL14.EGL_WIDTH,width,EGL14.EGL_HEIGHT,height,EGL14.EGL_NONE},0);
         require(EGL14.eglMakeCurrent(display,surface,surface,egl),"Pbuffer bind failed");
         try{
+            WallpaperMotionLifecycleTest.run(context);
             CosmicMotion handoff=new CosmicMotion(context.getAssets(),9,false,1);
             handoff.change(2,true);handoff.advance(1_000_000_000L,0);handoff.advance(1_300_000_000L,0);
             require(handoff.values[2]==1.181f,"Lock-to-home scale started before official delay");

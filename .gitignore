@@ -23,6 +23,8 @@ __pycache__/
 !/tools/check_platform_provider.py
 !/tools/check_hans_lease.py
 !/tools/check_render_lifecycle.py
+!/tools/check_wallpaper_motion.py
+!/tools/check_wallpaper_picker.py
 !/tools/import_cosmic.py
 !/tools/import_phoenix.py
 !/tools/import_bubble.py

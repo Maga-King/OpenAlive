@@ -54,7 +54,9 @@ final class VivoEngineScene implements AutoCloseable {
             });
             api.call(render,"setCallback",new Class<?>[]{callback},host);
             api.call(render,"glSurfaceCreate");api.call(render,"glSurfaceChange",new Class<?>[]{int.class,int.class},width,height);
-            layer=new VivoTextureLayer(api,render,width,height,photos,subject,paint,options.viewport(),family!=VivoOptions.RASTER&&options.area==3,family!=VivoOptions.FLASH&&!uprightLiquid());
+            boolean displayP3=VivoColorSpace.isDisplayP3(android.opengl.EGL14.eglGetCurrentDisplay(),android.opengl.EGL14.eglGetCurrentSurface(android.opengl.EGL14.EGL_DRAW));
+            api.call(render,"setWideColorGamutEnable",new Class<?>[]{boolean.class},displayP3);
+            layer=new VivoTextureLayer(api,render,width,height,photos,subject,paint,options.viewport(),family!=VivoOptions.RASTER&&options.area==3,family!=VivoOptions.FLASH&&!uprightLiquid(),displayP3);
             if(videoRaster())layer.video(api,runtime.getFilesDir(),options);
             layerContract=layer.proxy;Class<?> layerType=api.type("com.android.systemui.plugins.IVAGLayer");
             if(family==VivoOptions.LIQUID){
@@ -94,6 +96,10 @@ final class VivoEngineScene implements AutoCloseable {
                 }
                 api.set(plugin,"mRender",render);
                 api.call(plugin,family==VivoOptions.RASTER?"loadSource":"loadFlashCardSource",new Class<?>[]{layerType},layerContract);
+                // Host photos are already in the surface color space; decoded video
+                // still uses the original engine's sRGB-to-P3 shader when needed.
+                api.call(render,"setImageSRGBToP3Enable",new Class<?>[]{boolean.class},false);
+                api.call(render,"setVideoSRGBToP3Enable",new Class<?>[]{boolean.class},displayP3&&videoRaster());
                 controller=api.get(plugin,"mIEffectCtrl");
                 if(controller==null)throw new IllegalStateException("Original Vivo controller unavailable");
                 if(family==VivoOptions.FLASH){

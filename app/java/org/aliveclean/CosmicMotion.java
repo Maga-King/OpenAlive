@@ -16,7 +16,8 @@ final class CosmicMotion implements WallpaperMotion {
     private final Interpolator smooth=t->(float)(.5-.5*Math.cos(Math.PI*t));
     private Interpolator position=smooth,scale=smooth,background=smooth,material=smooth;
     private int mode,positionMs,scaleMs,scaleDelay,backgroundMs,materialMs,duration;
-    private long started,last;
+    private long last;
+    private final WallpaperTransitionTime transitionTime=new WallpaperTransitionTime();
     private boolean transitioning;
     private final boolean keepLock;
     final boolean phoenix;
@@ -78,7 +79,7 @@ final class CosmicMotion implements WallpaperMotion {
         if(keepLock&&next==2)next=1;
         if(next==mode)return;
         int previous=mode;mode=next;
-        System.arraycopy(values,0,from,0,SIZE);started=0;
+        System.arraycopy(values,0,from,0,SIZE);transitionTime.restart();
         positionMs=scaleMs=backgroundMs=materialMs=1000;scaleDelay=0;
         position=scale=background=material=smooth;
         if(next==0){
@@ -119,12 +120,11 @@ final class CosmicMotion implements WallpaperMotion {
         }
         if(!animate)System.arraycopy(states[mode],0,values,0,SIZE);
     }
-    public void pause(){last=0;}
+    public void pause(){last=0;transitionTime.pause();}
     public boolean active(){return transitioning;}
     public void advance(long now,float speed){
         if(transitioning){
-            if(started==0)started=now;
-            float ms=(now-started)/1_000_000f;
+            float ms=transitionTime.advance(now);
             for(int i=0;i<SIZE;i++){
                 int d=i<2?positionMs:i==2?scaleMs:i<5?1000:i<30?materialMs:backgroundMs;
                 Interpolator curve=i<2?position:i==2?scale:i<5?smooth:i<30?material:background;

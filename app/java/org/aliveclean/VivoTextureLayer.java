@@ -21,11 +21,12 @@ final class VivoTextureLayer implements InvocationHandler,AutoCloseable {
     private VivoCalls videoApi;
     private Object videoParams;
     VivoTextureLayer(VivoCalls api,Object render,int width,int height,List<Bitmap> photos,
-            Bitmap mask,Bitmap painted,PhotoViewport viewport,boolean background,boolean flipY)throws Exception{
+            Bitmap mask,Bitmap painted,PhotoViewport viewport,boolean background,boolean flipY,boolean displayP3)throws Exception{
         screen=new Size(width,height);this.flipY=flipY;
         try{
             for(Bitmap photo:photos){
-                images.add(texture(api,render,photo));
+                Bitmap upload=VivoColorSpace.convert(photo,displayP3);
+                try{images.add(texture(api,render,upload));}finally{if(upload!=photo)upload.recycle();}
                 sizes.add(new Size(photo.getWidth(),photo.getHeight()));
                 PhotoViewport crop=new PhotoViewport();crop.dimensions(photo.getWidth(),photo.getHeight(),width,height);
                 if(viewport!=null)crop.restore(viewport.centerX(),viewport.centerY(),viewport.zoom());

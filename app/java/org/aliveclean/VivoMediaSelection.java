@@ -20,7 +20,8 @@ final class VivoMediaSelection {
         return result;
     }
     void importUris(VivoEngineRuntime runtime,int kind,List<Uri> uris)throws Exception{
-        if(uris.size()!=1)throw new IOException("请选择一个素材");
+        int maximum=kind==ALBUM?2:1;
+        if(uris.isEmpty()||uris.size()>maximum)throw new IOException(kind==ALBUM?"请选择 1 至 2 张光栅图片（加上封面共 2 至 3 张）":"请选择一个素材");
         if(kind==VIDEO){video(uris.get(0));return;}
         ArrayList<String> selected=new ArrayList<>();
         for(Uri uri:uris){
@@ -46,7 +47,7 @@ final class VivoMediaSelection {
     }
     private void ensureRasterPhotos(VivoEngineRuntime runtime)throws IOException{
         if(!result.photos.isEmpty())return;
-        for(int i=0;i<2;i++){
+        for(int i=0;i<3;i++){
             Bitmap bitmap=VivoImages.asset(runtime,"vivo/default/raster-"+i+".jpg");
             try{result.photos.add(write(bitmap));}finally{bitmap.recycle();}
         }

@@ -113,7 +113,7 @@ public final class CleanWallpaper extends WallpaperService {
             boolean displayChanged=state!=lastDisplayState;
             lastDisplayState=state;
             if(next!=renderVisible){renderVisible=next;renderer.visible(next);}
-            else if(next&&displayChanged)renderer.resumeVivoDisplay();
+            else if(next&&displayChanged)renderer.resumeDisplay();
         }
         @Override public void onVisibilityChanged(boolean visible){{if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Wallpaper visible="+visible);}wallpaperVisible=visible;if(visible)update();refreshVisibility();}
         // Framework @SystemApi callback: absent from the public SDK's stubs.

@@ -48,7 +48,15 @@ for name in ['classes', 'dex', 'assets']:
     path.mkdir(parents=True)
 shutil.copytree(ROOT / 'app/assets/vivo/runtime', OUT / 'assets/vivo/runtime')
 if args.media:
-    shutil.copyfile(ROOT / 'build/vivo-media-fixture.mp4', OUT / 'assets/media.mp4')
+    fixture = ROOT / 'build/vivo-media-fixture.mp4'
+    if not fixture.is_file():
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            raise SystemExit('Media probe requires ffmpeg on PATH to create its test clip.')
+        run(ffmpeg, '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i',
+            'testsrc2=size=360x800:rate=30', '-t', '3', '-c:v', 'libx264',
+            '-pix_fmt', 'yuv420p', '-an', fixture)
+    shutil.copyfile(fixture, OUT / 'assets/media.mp4')
 (OUT / 'AndroidManifest.xml').write_text(
     '<manifest xmlns:android="http://schemas.android.com/apk/res/android" '
     f'package="{PACKAGE}"><uses-sdk android:minSdkVersion="28" android:targetSdkVersion="35"/>'
@@ -59,7 +67,7 @@ if args.media:
 sources = [ROOT / 'tests/vivo/VivoSceneProbe.java'] + [
     ROOT / 'app/java/org/aliveclean' / (name + '.java') for name in [
         'VivoEngineRuntime', 'AssetGl', 'VivoCalls', 'VivoTextureLayer', 'PhotoViewport',
-        'VivoEngineScene', 'VivoSensorGain', 'VivoOptions', 'VivoImages', 'VivoMediaSelection', 'VivoWallpaperZoom', 'VivoWallpaperDim', 'VivoDimPass', 'VivoUi']]
+        'VivoEngineScene', 'VivoSensorGain', 'VivoOptions', 'VivoImages', 'VivoMediaSelection', 'VivoWallpaperZoom', 'VivoWallpaperDim', 'VivoDimPass', 'VivoColorSpace', 'VivoUi']]
 run(JAVA / ('javac' + EXE), '-encoding', 'UTF-8', '-source', '8', '-target', '8',
     '-bootclasspath', ANDROID, '-classpath', BT / 'core-lambda-stubs.jar',
     '-d', OUT / 'classes', *sources)
@@ -90,7 +98,9 @@ try:
     print(result.stdout)
     if 'VIVO_SCENE_OK' not in result.stdout:
         raise RuntimeError('Vivo renderer regression failed; see build/vivo-runtime-test/result.txt')
-    names = ['liquid-touch-25', 'liquid-touch-75', 'flash-axis-0', 'flash-axis-1'] if args.coordinates else [f'scene-{family}' for family in range(1, 4)]
+    names = (['scene-video', 'raster-three-custom'] if args.media else
+             ['liquid-touch-25', 'liquid-touch-75', 'flash-axis-0', 'flash-axis-1'] if args.coordinates else
+             [f'scene-{family}' for family in range(1, 4)])
     for name in names:
         with (OUT / f'{name}.png').open('wb') as output:
             adb('exec-out', 'run-as', PACKAGE, 'cat', f'files/{name}.png', stdout=output)

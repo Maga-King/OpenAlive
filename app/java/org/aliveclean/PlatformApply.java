@@ -35,9 +35,8 @@ public final class PlatformApply {
                 System.exit(0);
             }
             WallpaperManager manager=WallpaperManager.getInstance(context);
-            WallpaperInfo info=android.os.Build.VERSION.SDK_INT>=34?manager.getWallpaperInfo(WallpaperManager.FLAG_LOCK):manager.getWallpaperInfo();
-            if(info==null&&manager.getWallpaperId(WallpaperManager.FLAG_LOCK)<0)info=manager.getWallpaperInfo();
-            if(info==null||!"org.aliveclean".equals(info.getPackageName()))throw new IllegalStateException("Apply the lock wallpaper first");
+            WallpaperInfo info=AppliedWallpaper.lock(manager);
+            if(!AppliedWallpaper.supported(info))throw new IllegalStateException("请在系统壁纸应用器中将 OpenAlive 应用到锁屏或桌面与锁屏");
             stage="settings";
             JSONObject report;
             try(PlatformProvider settings=new PlatformProvider("settings",0)){

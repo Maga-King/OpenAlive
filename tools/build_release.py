@@ -36,7 +36,7 @@ if not xposed.exists() or sha(xposed)!=expected:
     with urllib.request.urlopen('https://api.xposed.info/de/robv/android/xposed/api/82/api-82.jar',timeout=60) as r:xposed.write_bytes(r.read())
 if sha(xposed)!=expected:raise ValueError('Xposed API checksum mismatch')
 
-for script in ['check_layout.py','check_clock_scope.py','check_xiaomi_assets.py']:run(sys.executable,ROOT/'tools'/script)
+for script in ['check_layout.py','check_wallpaper_picker.py','check_clock_scope.py','check_xiaomi_assets.py']:run(sys.executable,ROOT/'tools'/script)
 if WIN:
     linux='/mnt/'+ROOT.drive[0].lower()+ROOT.as_posix()[2:]
     # Local Windows builds use the existing WSL NDK; CI builds directly on Linux.

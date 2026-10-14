@@ -88,9 +88,9 @@ final class RenderLoop {
         mode=next;if(textureMotion!=null)textureMotion.change(next,animate);if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!visible)frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!visible)motion.pause(true);}schedule();
     });}
     void visible(boolean value){handler.post(()->{if(visible==value)return;visible=value;if(vivo!=null)vivo.visible(value);if(cosmic!=null)cosmic.motion().pause();if(motion!=null)motion.pause(!value);if(frameMotion!=null)frameMotion.pause(!value);stopFrames();if(value){if(mode==0){long now=System.nanoTime();aodMotion.enter(now);cosmicUntil=now+5_000_000_000L;}pacer.reset();schedule();}else if(clockToken!=0)reportClock(false);});}
-    void resumeVivoDisplay(){handler.post(()->{
-        if(!visible||vivo==null)return;
-        vivo.visible(true);
+    void resumeDisplay(){handler.post(()->{
+        if(!visible)return;
+        if(vivo!=null)vivo.visible(true);
         // A pending vsync may belong to the previous display power state.
         // Re-arm once per display-state change, not on every sensor sample.
         stopFrames();pacer.reset();schedule();
@@ -175,7 +175,7 @@ final class RenderLoop {
         if(options.cosmic!=0)configs[0]=CosmicEgl.choose(display,EGL14.EGL_WINDOW_BIT);
         else if(!EGL14.eglChooseConfig(display,attrs,0,configs,0,1,count,0)||count[0]==0)throw new IllegalStateException("No GLES3 EGL config");
         egl=EGL14.eglCreateContext(display,configs[0],EGL14.EGL_NO_CONTEXT,new int[]{EGL14.EGL_CONTEXT_CLIENT_VERSION,3,EGL14.EGL_NONE},0);
-        window=EGL14.eglCreateWindowSurface(display,configs[0],surface,new int[]{EGL14.EGL_NONE},0);
+        window=options.vivo!=null?VivoColorSpace.window(display,configs[0],surface):EGL14.eglCreateWindowSurface(display,configs[0],surface,new int[]{EGL14.EGL_NONE},0);
         if(!EGL14.eglMakeCurrent(display,window,window,egl))throw new IllegalStateException("eglMakeCurrent");
         EGL14.eglSwapInterval(display,1);if(options.cosmic==0&&options.vivo==null)photo=loadPhoto(options.photo,true);
         try(InputStream in=context.getAssets().open("shader/photo/aod/lensPhoto/lens_decorator.png")){Bitmap b=BitmapFactory.decodeStream(in);if(b==null)throw new IOException("Invalid decorator");decorator=upload(b);b.recycle();}

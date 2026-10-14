@@ -23,8 +23,8 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
     private FrameLayout root;
     private TextView apply,status;
     private final PhotoViewport crop=new PhotoViewport();
-    private int imageWidth=1080,imageHeight=2400,previousId;
-    private boolean busy,awaitingApply,resumed;
+    private int imageWidth=1080,imageHeight=2400,previousId,previousLockId;
+    private boolean busy,awaitingApply,resumed,pickerResultReliable;
     private final Handler main=new Handler(Looper.getMainLooper());
     private Dialog panel;
     private Intent pendingMedia;
@@ -32,11 +32,11 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
     private final Runnable saveCrop=()->saveDraft();
 
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);getWindow().setStatusBarColor(0xff000000);getWindow().setNavigationBarColor(0xff000000);
+        super.onCreate(state);getWindow().setColorMode(android.content.pm.ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT);getWindow().setStatusBarColor(0xff000000);getWindow().setNavigationBarColor(0xff000000);
         getWindow().getDecorView().setSystemUiVisibility(0);
         int family=getIntent().getIntExtra("family",1);if(family<1||family>3)family=1;
         options=VivoOptions.parse(state==null?getSharedPreferences("vivo.editor",0).getString("family."+family,""):state.getString("options"));
-        if(state!=null){pendingMedia=state.getParcelable("pendingMedia");pendingMediaRequest=state.getInt("pendingMediaRequest");}
+        if(state!=null){awaitingApply=state.getBoolean("awaitingApply",false);previousId=state.getInt("previousId",0);previousLockId=state.getInt("previousLockId",0);pickerResultReliable=state.getBoolean("pickerResultReliable",false);pendingMedia=state.getParcelable("pendingMedia");pendingMediaRequest=state.getInt("pendingMediaRequest");}
         if(options==null||options.family!=family)options=new VivoOptions(family);
         new SceneOptions(getSharedPreferences(SceneOptions.APPLIED,0)).save(getSharedPreferences(SceneOptions.DRAFT,0));saveDraft();
         root=new FrameLayout(this);root.setBackgroundColor(Color.BLACK);setContentView(root);
@@ -50,7 +50,7 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
         LinearLayout column=new LinearLayout(this);column.setOrientation(1);root.addView(column,new FrameLayout.LayoutParams(-1,-1));
         FrameLayout header=new FrameLayout(this);column.addView(header,new LinearLayout.LayoutParams(-1,ui.dp(54)));
         TextView cancel=button("取消");FrameLayout.LayoutParams cp=new FrameLayout.LayoutParams(ui.dp(84),ui.dp(36),Gravity.START|Gravity.CENTER_VERTICAL);cp.leftMargin=ui.dp(18);header.addView(cancel,cp);cancel.setOnClickListener(v->finish());
-        apply=button("应用");FrameLayout.LayoutParams ap=new FrameLayout.LayoutParams(ui.dp(84),ui.dp(36),Gravity.END|Gravity.CENTER_VERTICAL);ap.rightMargin=ui.dp(18);header.addView(apply,ap);apply.setOnClickListener(v->applyWallpaper());
+        apply=button("应用");apply.setEnabled(!busy);FrameLayout.LayoutParams ap=new FrameLayout.LayoutParams(ui.dp(84),ui.dp(36),Gravity.END|Gravity.CENTER_VERTICAL);ap.rightMargin=ui.dp(18);header.addView(apply,ap);apply.setOnClickListener(v->applyWallpaper());
         TextView scene=ui.text("锁屏",18);column.addView(scene,new LinearLayout.LayoutParams(-1,ui.dp(36)));
         FrameLayout previewSlot=new FrameLayout(this){@Override protected void onMeasure(int ws,int hs){super.onMeasure(ws,hs);int maxW=getMeasuredWidth()-ui.dp(74),maxH=getMeasuredHeight()-ui.dp(10);float aspect=(float)getResources().getDisplayMetrics().widthPixels/getResources().getDisplayMetrics().heightPixels;int w=Math.min(maxW,Math.round(maxH*aspect)),h=Math.min(maxH,Math.round(w/aspect));if(getChildCount()>0)getChildAt(0).measure(MeasureSpec.makeMeasureSpec(w,MeasureSpec.EXACTLY),MeasureSpec.makeMeasureSpec(h,MeasureSpec.EXACTLY));}};
         column.addView(previewSlot,new LinearLayout.LayoutParams(-1,0,1));
@@ -167,7 +167,7 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
     private void showMediaChoices(boolean video){
         if(busy)return;
         boolean raster=options.family==VivoOptions.RASTER;
-        String[] choices=raster?new String[]{"恢复默认搭配","选择封面",video?"选择视频":"选择光栅图片"}:new String[]{"恢复默认搭配","选择壁纸"};
+        String[] choices=raster?new String[]{"恢复默认搭配","选择封面",video?"选择视频":"选择光栅图片（1 至 2 张）"}:new String[]{"恢复默认搭配","选择壁纸"};
         new AlertDialog.Builder(this).setTitle(raster?(video?"视频光栅":"图集光栅"):"壁纸")
             .setItems(choices,(dialog,which)->{
                 if(which==0){options=VivoMediaSelection.defaults(options);saveDraft();loadImageSize();return;}
@@ -175,23 +175,32 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
             }).setNegativeButton("取消",null).show();
     }
     private void chooseMedia(int kind){
-        try{startActivityForResult(PhotoSources.vivoMedia(this,kind==VivoMediaSelection.VIDEO?"video/*":"image/*",false),kind);}
+        try{startActivityForResult(PhotoSources.vivoMedia(this,kind==VivoMediaSelection.VIDEO?"video/*":"image/*",kind==VivoMediaSelection.ALBUM),kind);}
         catch(ActivityNotFoundException|SecurityException e){toast("无法打开相册，请检查相册是否可用");}
     }
     private void applyWallpaper(){
-        if(busy)return;saveDraft();WallpaperManager manager=WallpaperManager.getInstance(this);android.app.WallpaperInfo info=manager.getWallpaperInfo();
-        if(info!=null&&new ComponentName(this,CleanWallpaper.class).equals(info.getComponent())){commit();return;}
-        previousId=manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM);awaitingApply=true;
-        try{startActivityForResult(new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,new ComponentName(this,CleanWallpaper.class)),20);}catch(RuntimeException e){awaitingApply=false;toast("无法打开应用页面："+e.getMessage());}
+        if(busy||awaitingApply)return;saveDraft();
+        try{
+            WallpaperManager manager=WallpaperManager.getInstance(this);
+            previousId=manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM);
+            previousLockId=manager.getWallpaperId(WallpaperManager.FLAG_LOCK);awaitingApply=true;
+            pickerResultReliable=WallpaperPicker.open(this,new ComponentName(this,CleanWallpaper.class),20);
+        }catch(RuntimeException e){awaitingApply=false;toast("无法打开应用页面："+e.getMessage());}
     }
     private void commit(){
         if(!new SceneOptions(getSharedPreferences(SceneOptions.DRAFT,0)).save(getSharedPreferences(SceneOptions.APPLIED,0))){toast("保存失败，请重试");return;}
-        SceneProvider.changed(this);busy=true;apply.setEnabled(false);toast("壁纸已应用，正在配置息屏");
-        new Thread(()->{String message;try{message=RootBridge.prepareAod(this);}catch(Exception e){message="壁纸已应用，息屏配置未完成："+e.getMessage();}final String done=message;runOnUiThread(()->{busy=false;if(!isDestroyed()){apply.setEnabled(true);toast(done);}});},"VivoApply").start();
+        SceneProvider.changed(this);busy=true;if(apply!=null)apply.setEnabled(false);toast("壁纸已应用，正在配置息屏");
+        new Thread(()->{String message;try{message=RootBridge.prepareAod(this);}catch(Exception e){message="壁纸已应用，息屏配置未完成："+e.getMessage();}final String done=message;runOnUiThread(()->{busy=false;if(!isDestroyed()){if(apply!=null)apply.setEnabled(true);toast(done);}});},"VivoApply").start();
     }
     @Override protected void onActivityResult(int request,int result,Intent data){
         super.onActivityResult(request,result,data);
-        if(request==20&&awaitingApply){awaitingApply=false;WallpaperManager m=WallpaperManager.getInstance(this);android.app.WallpaperInfo info=m.getWallpaperInfo();if(info!=null&&new ComponentName(this,CleanWallpaper.class).equals(info.getComponent())&&(result==RESULT_OK||m.getWallpaperId(WallpaperManager.FLAG_SYSTEM)!=previousId))commit();return;}
+        if(request==20&&awaitingApply){
+            awaitingApply=false;
+            if(WallpaperPicker.applied(WallpaperManager.getInstance(this),new ComponentName(this,CleanWallpaper.class),result,
+                    pickerResultReliable,previousId,previousLockId))commit();
+            else toast("未应用，已保留编辑内容");
+            return;
+        }
         if(result!=RESULT_OK||data==null||request<10||request>13||busy)return;
         if(runtime==null||apply==null){pendingMedia=data;pendingMediaRequest=request;return;}
         ArrayList<Uri> uris=new ArrayList<>();if(data.getClipData()!=null)for(int i=0;i<data.getClipData().getItemCount();i++)uris.add(data.getClipData().getItemAt(i).getUri());else if(data.getData()!=null)uris.add(data.getData());
@@ -211,6 +220,6 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
     @Override public void onSurfaceTextureUpdated(SurfaceTexture texture){}
     @Override protected void onResume(){super.onResume();resumed=true;if(renderer!=null)renderer.visible(true);}
     @Override protected void onPause(){resumed=false;if(renderer!=null)renderer.visible(false);super.onPause();}
-    @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("options",options.json());if(pendingMedia!=null){state.putParcelable("pendingMedia",pendingMedia);state.putInt("pendingMediaRequest",pendingMediaRequest);}}
+    @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("options",options.json());state.putBoolean("awaitingApply",awaitingApply);state.putInt("previousId",previousId);state.putInt("previousLockId",previousLockId);state.putBoolean("pickerResultReliable",pickerResultReliable);if(pendingMedia!=null){state.putParcelable("pendingMedia",pendingMedia);state.putInt("pendingMediaRequest",pendingMediaRequest);}}
     @Override protected void onDestroy(){main.removeCallbacksAndMessages(null);if(panel!=null)panel.dismiss();if(renderer!=null)renderer.close();super.onDestroy();}
 }

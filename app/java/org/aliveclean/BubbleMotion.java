@@ -17,7 +17,8 @@ final class BubbleMotion implements WallpaperMotion {
     private final boolean keepLock;
     private int mode,previous,total,bgDuration,bgDelay;
     private Interpolator bgCurve;
-    private long started,last;
+    private long last;
+    private final WallpaperTransitionTime transitionTime=new WallpaperTransitionTime();
     private boolean moving;
     float time;
     BubbleMotion(AssetManager assets,int variant,boolean dark,int scene,boolean keepLock)throws IOException {
@@ -33,12 +34,12 @@ final class BubbleMotion implements WallpaperMotion {
         mode=keepLock&&scene==2?1:scene;System.arraycopy(states[mode],0,values,0,SIZE);
     }
     public void follow(float x,float y){} // This family has a full composition, not a clock-centered orb.
-    public void pause(){last=0;}
+    public void pause(){last=0;transitionTime.pause();}
     public boolean active(){return moving;}
     private void track(int b,int component,int ms,int wait,Interpolator curve){duration[b][component]=ms;delay[b][component]=wait;curves[b][component]=curve;}
     public void change(int scene,boolean animate){
         if(keepLock&&scene==2)scene=1;if(scene==mode)return;
-        previous=mode;mode=scene;System.arraycopy(values,0,from,0,SIZE);started=0;moving=animate;
+        previous=mode;mode=scene;System.arraycopy(values,0,from,0,SIZE);transitionTime.restart();moving=animate;
         bgDuration=300;bgDelay=0;bgCurve=smooth;
         for(int b=0;b<3;b++)for(int c=0;c<3;c++)track(b,c,300,0,smooth);
         Interpolator position=new PathInterpolator(.52f,.1f,.21f,.99f),scale=new PathInterpolator(.52f,.07f,.21f,.99f);
@@ -69,7 +70,7 @@ final class BubbleMotion implements WallpaperMotion {
     private float fraction(float elapsed,int ms,int wait,Interpolator curve){return curve.getInterpolation(Math.max(0,Math.min(1,(elapsed-wait)/ms)));}
     public void advance(long now,float speed){
         if(moving){
-            if(started==0)started=now;float elapsed=(now-started)/1_000_000f;
+            float elapsed=transitionTime.advance(now);
             for(int b=0;b<3;b++){
                 int offset=b*STRIDE;float other=fraction(elapsed,Math.max(duration[b][0],Math.max(duration[b][1],duration[b][2])),Math.min(delay[b][0],Math.min(delay[b][1],delay[b][2])),smooth);
                 for(int i=0;i<STRIDE;i++){

@@ -102,11 +102,23 @@ public final class VivoSceneProbe extends Instrumentation {
         try(InputStream in=getContext().getAssets().open("media.mp4");OutputStream out=new FileOutputStream(clip)){byte[] b=new byte[65536];for(int n;(n=in.read(b))!=-1;)out.write(b,0,n);}
         VivoMediaSelection cover=new VivoMediaSelection(getContext(),new VivoOptions(2));
         cover.importUris(runtime,VivoMediaSelection.COVER,Collections.singletonList(android.net.Uri.fromFile(photo)));
-        check(cover.result.photos.size()==2,"Custom raster must contain two images");
+        check(cover.result.photos.size()==3,"Replacing the cover dropped a factory raster image");
         String first=cover.result.photos.get(0);
         VivoMediaSelection album=new VivoMediaSelection(getContext(),cover.result);
         album.importUris(runtime,VivoMediaSelection.ALBUM,Collections.singletonList(android.net.Uri.fromFile(photo)));
         check(first.equals(album.result.photos.get(0))&&album.result.photos.size()==2,"Replacing raster changed cover");
+        VivoMediaSelection three=new VivoMediaSelection(getContext(),album.result);
+        three.importUris(runtime,VivoMediaSelection.ALBUM,Arrays.asList(android.net.Uri.fromFile(photo),android.net.Uri.fromFile(photo)));
+        check(first.equals(three.result.photos.get(0))&&three.result.photos.size()==3,"Two raster images did not preserve the cover");
+        VivoOptions saved=VivoOptions.parse(three.result.json());
+        check(saved.photos.equals(three.result.photos)&&new org.json.JSONObject(saved.engineJson()).getInt("resNum")==3,"Three-image raster did not persist into the engine configuration");
+        VivoMediaSelection overflow=new VivoMediaSelection(getContext(),saved);
+        try{overflow.importUris(runtime,VivoMediaSelection.ALBUM,Arrays.asList(android.net.Uri.fromFile(photo),android.net.Uri.fromFile(photo),android.net.Uri.fromFile(photo)));throw new AssertionError("Too many raster images accepted");}
+        catch(IOException expected){check(overflow.result.json().equals(saved.json()),"Rejected import changed the existing image set");}
+        try(VivoImages images=VivoImages.load(getContext(),runtime,saved);VivoEngineScene scene=new VivoEngineScene(runtime,saved,W,H,images.photos,images.subject,images.paint,true,()->{})){
+            check(images.photos.size()==3,"Three-image raster did not load all textures");
+            scene.visible(true);main(()->{});scene.draw();frame("raster-three-custom.png");
+        }
         VivoMediaSelection movie=new VivoMediaSelection(getContext(),album.result);
         movie.importUris(runtime,VivoMediaSelection.VIDEO,Collections.singletonList(android.net.Uri.fromFile(clip)));
         check(first.equals(movie.result.photos.get(0)),"Video changed selected cover");
@@ -144,6 +156,43 @@ public final class VivoSceneProbe extends Instrumentation {
         }
         main(()->check(listeners(runtime)==baseline[0],"Closed video retained sensor"));
         report.append("Original video render, crop, visible AOD, suspend and release OK\n");
+    }
+    void colors(VivoEngineRuntime runtime,EGLDisplay display,EGLConfig config,EGLContext gl,EGLSurface original)throws Exception{
+        for(String name:new String[]{"raster-0.jpg","raster-1.jpg","raster-2.jpg","liquid.jpg","flash.jpg"}){
+            Bitmap source=VivoImages.asset(runtime,"vivo/default/"+name);
+            check(ColorSpace.get(ColorSpace.Named.DISPLAY_P3).equals(source.getColorSpace()),"Factory ICC profile lost: "+name);source.recycle();
+        }
+        colorFrame(runtime,false);
+        android.graphics.SurfaceTexture texture=new android.graphics.SurfaceTexture(false);texture.setDefaultBufferSize(W,H);
+        android.view.Surface nativeSurface=new android.view.Surface(texture);
+        EGLSurface wide=VivoColorSpace.window(display,config,nativeSurface);
+        try{
+            check(wide!=EGL14.EGL_NO_SURFACE&&EGL14.eglMakeCurrent(display,wide,wide,gl),"Vivo native window EGL failed");
+            boolean p3=VivoColorSpace.isDisplayP3(display,wide);
+            colorFrame(runtime,p3);
+            if(mediaOnly)media(runtime,new VivoCalls(runtime));
+            report.append("Factory Display P3 ICC preserved; sRGB fallback and native window color path ").append(p3?"Display P3":"sRGB").append(" OK\n");
+        }finally{
+            EGL14.eglMakeCurrent(display,original,original,gl);
+            if(wide!=EGL14.EGL_NO_SURFACE)EGL14.eglDestroySurface(display,wide);
+            nativeSurface.release();texture.release();
+        }
+    }
+    void colorFrame(VivoEngineRuntime runtime,boolean displayP3)throws Exception{
+        for(boolean sourceP3:new boolean[]{false,true}){
+            Bitmap image=Bitmap.createBitmap(W,H,Bitmap.Config.ARGB_8888,false,ColorSpace.get(sourceP3?ColorSpace.Named.DISPLAY_P3:ColorSpace.Named.SRGB));
+            ByteBuffer raw=ByteBuffer.allocateDirect(W*H*4);
+            for(int i=0;i<W*H;i++)raw.put((byte)90).put((byte)160).put((byte)180).put((byte)255);
+            raw.rewind();image.copyPixelsFromBuffer(raw);
+            Color expected=Color.valueOf(90/255f,160/255f,180/255f,1,image.getColorSpace()).convert(ColorSpace.get(displayP3?ColorSpace.Named.DISPLAY_P3:ColorSpace.Named.SRGB));
+            int[] rgb={Math.round(expected.red()*255),Math.round(expected.green()*255),Math.round(expected.blue()*255)};
+            VivoOptions options=new VivoOptions(2);options.wallpaperZoom=false;
+            try(VivoEngineScene scene=new VivoEngineScene(runtime,options,W,H,Arrays.asList(image,image,image),null,null,true,()->{})){
+                scene.draw();ByteBuffer actual=ByteBuffer.allocateDirect(4);GLES30.glReadPixels(W/2,H/2,1,1,GLES30.GL_RGBA,GLES30.GL_UNSIGNED_BYTE,actual);
+                for(int i=0;i<3;i++)check(Math.abs((actual.get(i)&255)-rgb[i])<=3,"Color profile mismatch: sourceP3="+sourceP3+" targetP3="+displayP3+" channel="+i+" expected="+rgb[i]+" actual="+(actual.get(i)&255));
+                check(GLES30.glGetError()==0,"Color frame GL error");
+            }finally{image.recycle();}
+        }
     }
     @Override public void onCreate(Bundle b){super.onCreate(b);coordinateOnly=b!=null&&"true".equals(b.getString("coordinates"));mediaOnly=b!=null&&"true".equals(b.getString("media"));start();}
     @Override public void onStart(){
@@ -191,7 +240,7 @@ public final class VivoSceneProbe extends Instrumentation {
                 report.append("Original Vivo area/raster XML and PAG native runtime OK\n");
             });
             EGL14.eglInitialize(display,new int[1],0,new int[1],0);EGLConfig[] configs=new EGLConfig[1];int[] count={0};
-            EGL14.eglChooseConfig(display,new int[]{EGL14.EGL_RENDERABLE_TYPE,0x40,EGL14.EGL_SURFACE_TYPE,EGL14.EGL_PBUFFER_BIT,EGL14.EGL_RED_SIZE,8,EGL14.EGL_GREEN_SIZE,8,EGL14.EGL_BLUE_SIZE,8,EGL14.EGL_NONE},0,configs,0,1,count,0);
+            EGL14.eglChooseConfig(display,new int[]{EGL14.EGL_RENDERABLE_TYPE,0x40,EGL14.EGL_SURFACE_TYPE,EGL14.EGL_PBUFFER_BIT|EGL14.EGL_WINDOW_BIT,EGL14.EGL_RED_SIZE,8,EGL14.EGL_GREEN_SIZE,8,EGL14.EGL_BLUE_SIZE,8,EGL14.EGL_ALPHA_SIZE,8,EGL14.EGL_NONE},0,configs,0,1,count,0);
             gl=EGL14.eglCreateContext(display,configs[0],EGL14.EGL_NO_CONTEXT,new int[]{EGL14.EGL_CONTEXT_CLIENT_VERSION,3,EGL14.EGL_NONE},0);
             surface=EGL14.eglCreatePbufferSurface(display,configs[0],new int[]{EGL14.EGL_WIDTH,W,EGL14.EGL_HEIGHT,H,EGL14.EGL_NONE},0);
             check(EGL14.eglMakeCurrent(display,surface,surface,gl),"EGL failed");
@@ -206,6 +255,7 @@ public final class VivoSceneProbe extends Instrumentation {
                 check(GLES30.glGetError()==GLES30.GL_NO_ERROR,"Dim pass GL error");
             }
             GLES30.glDisable(GLES30.GL_SCISSOR_TEST);GLES30.glColorMask(true,true,true,true);
+            colors(runtime,display,configs[0],gl,surface);
             report.append("Unified AOD reveal: day/night wake has no full-bright frame; reversal, pause, RGB and GL restore OK\n");
             final int[] baseline={0};main(()->baseline[0]=listeners(runtime));
             if(mediaOnly){media(runtime,api);}else if(coordinateOnly){coordinates(runtime,api);}else{
