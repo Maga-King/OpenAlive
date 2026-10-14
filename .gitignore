@@ -29,6 +29,7 @@ __pycache__/
 !/tools/import_flyme9_gradient.py
 !/tools/check_wallpaper_picker.py
 !/tools/import_cosmic.py
+!/tools/import_flyme9_cosmic.py
 !/tools/import_phoenix.py
 !/tools/import_bubble.py
 !/tools/import_settings_ui.py

@@ -7,7 +7,7 @@ GitHub Actions 会在推送 `v*` 标签时编译、验证 APK，再发布 Releas
 ## 环境
 
 - Ubuntu 24.04、JDK 17、Python 3.12。
-- Rust 与 `aarch64-linux-android` 目标。
+- Rust 1.96.0（由 `rust-toolchain.toml` 固定）与 `aarch64-linux-android` 目标。
 - Android SDK Platform 35、Build Tools 35.0.0、NDK 29.0.14206865。
 - Xposed API 82（仅用于编译，由脚本下载并校验）。
 
@@ -26,7 +26,7 @@ python3 tools/build_release.py
 
 Vivo 主体分割离线运行：固定的 U2NetP 模型位于 `app/assets/vivo/models/`，ONNX Runtime Android 的 Java 与 arm64 原生库位于 `vendor/onnxruntime/`。构建校验来源清单中的 SHA-256、原生库 16 KB 页对齐，并打包许可证；用户图片不上传到服务端。
 
-资源表以未压缩形式存储并按 4096 字节对齐，签名后再次检查。安装包暂不包含视频壁纸。
+资源表以未压缩形式存储并按 4096 字节对齐，签名后再次检查。安装包暂不包含 Flyme 原厂视频壁纸；Vivo 光栅支持用户自选图片和视频。
 
 小米超级壁纸的列表和预览使用 `app/assets/xiaomi/ui.apk` 中的原版控件，构建会校验所有保留文件。需要重新生成时执行 `python tools/import_xiaomi_ui.py ThemeManager.apk 场景APK目录`，再执行 `python tools/import_xiaomi_packs.py 场景APK目录`。输入版本固定并校验原包；目录内应有 `moon.apk`、`snowmountain.apk`、`geometry.apk`、`saturn.apk`、`earth.apk` 和 `mars.apk`。
 
