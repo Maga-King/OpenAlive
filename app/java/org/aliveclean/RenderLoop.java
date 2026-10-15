@@ -105,7 +105,8 @@ final class RenderLoop {
         }
     }
     void mode(int next,boolean animate){mode(next,animate,Float.NaN,Float.NaN);}
-    void mode(int next,boolean animate,float nightLevel,float aodMask){handler.post(()->{
+    void mode(int requested,boolean animate,float nightLevel,float aodMask){handler.post(()->{
+        boolean thaw=aodFrozen;int next=adaptiveMode(requested);
         boolean lightSnapshot=(nightLevel==1f||nightLevel==.76f)&&aodMask>=0&&aodMask<1;
         if(lightSnapshot){vivoDarkWallpaper=nightLevel<1;vivoAodMask=aodMask;}
         if(mode!=next){stateReported=false;frameSample.clear();if(next==0)aodMotion.enter(System.nanoTime());else aodMotion.leave();}
@@ -113,8 +114,22 @@ final class RenderLoop {
         // Apply the wake target and scene together, before any frame can be submitted.
         if(vivo!=null&&(mode!=next||lightSnapshot)){vivo.transition(next,animate,vivoDarkWallpaper?.76f:1f,vivoAodMask);vivo.visible(renderingVisible());}
         mode=next;updateCosmicLifecycle();if(textureMotion!=null)textureMotion.change(next,animate);if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!renderingVisible())frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!renderingVisible())motion.pause(true);}schedule();
+        if(thaw&&!aodFrozen)updateRenderActivity();
     });}
-    private boolean renderingVisible(){return visible&&!backdropCovered;}
+    private boolean renderingVisible(){return visible&&!backdropCovered&&!aodFrozen;}
+    // 自适应 AOD: under panoramic AOD keep the lock composition, then stop
+    // rendering once the play window ends. ColorOS keeps the last frame.
+    private int requestedMode=-1;private boolean aodHeld,aodFrozen;
+    private final Runnable freezeAod=()->{if(requestedMode==0&&aodHeld&&!aodFrozen){aodFrozen=true;updateRenderActivity();}};
+    private int adaptiveMode(int requested){
+        if(requested!=requestedMode){
+            requestedMode=requested;handler.removeCallbacks(freezeAod);aodFrozen=false;
+            aodHeld=requested==0&&!preview&&AdaptiveAod.active(context);
+            long window=aodHeld?AdaptiveAod.renderMillis(context):-1;
+            if(window>=0)handler.postDelayed(freezeAod,window);
+        }
+        return aodHeld&&requested==0?1:requested;
+    }
     void backdrop(boolean covered){handler.post(()->{if(preview||backdropCovered==covered)return;backdropCovered=covered;updateRenderActivity();});}
     void visible(boolean value){handler.post(()->{if(visible==value)return;visible=value;updateRenderActivity();});}
     private void updateRenderActivity(){

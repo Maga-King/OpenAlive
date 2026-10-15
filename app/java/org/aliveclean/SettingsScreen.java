@@ -19,20 +19,11 @@ final class SettingsScreen {
         toolbar.setBackgroundColor(background);
         type.getMethod("setTitle",CharSequence.class).invoke(toolbar,title);
         type.getMethod("setTitleTextColor",int.class).invoke(toolbar,ui.color("colorOnSurface"));
-        if(activity instanceof HomeActivity){
-            type.getMethod("setNavigationIcon",Drawable.class).invoke(toolbar,new Object[]{null});
-            Menu menu=(Menu)type.getMethod("getMenu").invoke(toolbar);
-            MenuItem desktop=menu.add("小米桌面设置");
-            desktop.setIcon(activity.getDrawable(R.drawable.ic_xiaomi_official));
-            desktop.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-            desktop.setOnMenuItemClickListener(item->{activity.startActivity(new android.content.Intent(activity,XiaomiDesktopSettingsActivity.class));return true;});
-        }else{
-            Drawable back=ui.getDrawable(ui.id("drawable","ic_back_wallpaper_apply")).mutate();
-            back.setTint(ui.color("colorOnSurface"));
-            type.getMethod("setNavigationIcon",Drawable.class).invoke(toolbar,back);
-            type.getMethod("setNavigationContentDescription",CharSequence.class).invoke(toolbar,"返回");
-            type.getMethod("setNavigationOnClickListener",View.OnClickListener.class).invoke(toolbar,(View.OnClickListener)v->activity.finish());
-        }
+        Drawable back=ui.getDrawable(ui.id("drawable","ic_back_wallpaper_apply")).mutate();
+        back.setTint(ui.color("colorOnSurface"));
+        type.getMethod("setNavigationIcon",Drawable.class).invoke(toolbar,back);
+        type.getMethod("setNavigationContentDescription",CharSequence.class).invoke(toolbar,"返回");
+        type.getMethod("setNavigationOnClickListener",View.OnClickListener.class).invoke(toolbar,(View.OnClickListener)v->activity.finish());
         screen.addView(toolbar,new LinearLayout.LayoutParams(-1,ui.getResources().getDimensionPixelSize(ui.id("dimen","mz_action_bar_default_height_appcompat"))));
         activity.setContentView(screen);return screen;
     }

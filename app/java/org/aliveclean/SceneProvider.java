@@ -22,11 +22,19 @@ public final class SceneProvider extends ContentProvider {
             result.putInt("aod",options.aod);
             result.putBoolean("vivo_wallpaper",options.vivo!=null);
             result.putBoolean("continuous_aod",options.vivo!=null?options.vivo.animateInAod():options.cosmic!=0?options.cosmicContinuousAod:options.aod==0&&options.sailContinuousAod);
-            // Xiaomi scenes leave AOD entirely to ColorOS: no independent
-            // SuperWallpaperClock, the stock AOD clock and full-screen AOD stay.
-            if(XiaomiState.lockClock(c)!=null){
-                result.putInt("aod",-1);result.putBoolean("vivo_wallpaper",false);
+            Bundle xiaomiClock=XiaomiState.lockClock(c);
+            if(xiaomiClock!=null){
+                result.putInt("aod",101);result.putBoolean("vivo_wallpaper",false);
                 result.putBoolean("continuous_aod",false);
+                result.putBundle("xiaomi_clock",xiaomiClock);
+            }
+            // 自适应 AOD: panoramic AOD belongs to ColorOS. No independent clock;
+            // the wallpaper only refreshes for the chosen play window.
+            if(AdaptiveAod.active(c)){
+                int play=AdaptiveAod.playSeconds(c);
+                result.putInt("aod",-1);result.remove("xiaomi_clock");
+                result.putBoolean("continuous_aod",play!=0);
+                result.putLong("continuous_aod_ms",play>0?play*1000L:0);
             }
             return result;
         }catch(Exception error){throw new IllegalStateException("Scene channel unavailable",error);}

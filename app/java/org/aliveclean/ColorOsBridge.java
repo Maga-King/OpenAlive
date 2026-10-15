@@ -307,8 +307,19 @@ final class ColorOsBridge {
         refresh();
     }
     private static void updateContinuousAod(){
-        continuousAod.configure(context,selected&&channel!=null&&continuousAodRequested&&lastMode==0);
+        boolean aod=selected&&channel!=null&&continuousAodRequested&&lastMode==0;
+        // A bounded play window ends ColorOS refresh votes once it elapses.
+        if(!aod)continuousAodSince=0;
+        else if(continuousAodSince==0){
+            continuousAodSince=SystemClock.uptimeMillis();
+            main.removeCallbacks(endContinuousAod);
+            if(continuousAodLimit>0)main.postDelayed(endContinuousAod,continuousAodLimit);
+        }
+        boolean expired=aod&&continuousAodLimit>0&&SystemClock.uptimeMillis()-continuousAodSince>=continuousAodLimit;
+        continuousAod.configure(context,aod&&!expired);
     }
+    private static long continuousAodLimit,continuousAodSince;
+    private static final Runnable endContinuousAod=ColorOsBridge::updateContinuousAod;
     private static void sendBackdrop(boolean covered){
         backdropCovered=covered;
         Bundle data=new Bundle();data.putBoolean("covered",covered);send(3,data);
@@ -317,12 +328,13 @@ final class ColorOsBridge {
         notificationEffects.configure(reply.getInt("notification_mode",0),reply.getInt("notification_seconds",10),reply.getString("notification_color","blue"),reply.getInt("notification_ring_color",NotificationOptions.RING_BLUE));
         int style=reply.getInt("aod",0);
         boolean continuous=reply.getBoolean("continuous_aod",false);
+        long continuousLimit=reply.getLong("continuous_aod_ms",0);
         boolean vivo=reply.getBoolean("vivo_wallpaper",false);
         Bundle xiaomiClock=reply.getBundle("xiaomi_clock");
         main.post(()->{
             vivoWallpaper=vivo;
             if(lastMode>=0||vivoWallpaper)updateWallpaperColor(clocks.loader(),lastMode==0);
-            continuousAodRequested=continuous;updateContinuousAod();aodClock.configure(context,selected,style,xiaomiClock);if(aodClock.usesIndependentClock())clocks.scene(context,false,-1,"");
+            continuousAodRequested=continuous;continuousAodLimit=continuousLimit;updateContinuousAod();aodClock.configure(context,selected,style,xiaomiClock);if(aodClock.usesIndependentClock())clocks.scene(context,false,-1,"");
         });
     }
     private static void readConfiguration(){
@@ -336,7 +348,14 @@ final class ColorOsBridge {
             if(!observingConfiguration)try{
                 context.getContentResolver().registerContentObserver(SceneProvider.CONFIGURATION,false,new android.database.ContentObserver(worker){
                     @Override public void onChange(boolean self){readConfiguration();}
-                });observingConfiguration=true;
+                });
+                // 自适应 AOD depends on the system AOD mode (全景沉浸 or local).
+                android.database.ContentObserver aodMode=new android.database.ContentObserver(worker){
+                    @Override public void onChange(boolean self){if(selected)readConfiguration();}
+                };
+                for(String key:new String[]{"Setting_AodState","Setting_AodSwitchEnable"})
+                    context.getContentResolver().registerContentObserver(android.provider.Settings.Secure.getUriFor(key),false,aodMode);
+                observingConfiguration=true;
             }catch(Throwable error){failure("clock configuration observer",error);}
             WallpaperManager manager=WallpaperManager.getInstance(context);
             WallpaperInfo info;

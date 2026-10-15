@@ -24,21 +24,24 @@ final class HomeActivationStatus {
     private RootAuthorization.Registration rootWatch;
     private final Runnable refresh=this::queryModule;
 
-    HomeActivationStatus(Activity activity,SettingsUi ui,LinearLayout screen){
+    HomeActivationStatus(Activity activity,Look look,ViewGroup parent){
         this.activity=activity;
         LinearLayout row=new LinearLayout(activity);row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(24),dp(6),dp(24),dp(10));
-        moduleLabel=indicator(row,ui,moduleDot,"LSP 检测中");
-        View gap=new View(activity);row.addView(gap,new LinearLayout.LayoutParams(dp(22),1));
-        rootLabel=indicator(row,ui,rootDot,"ROOT 检测中");
-        row.setOnClickListener(v->start(true));
-        screen.addView(row,new LinearLayout.LayoutParams(-1,-2));
+        row.setGravity(Gravity.CENTER);row.setPadding(dp(16),dp(18),dp(16),dp(4));
+        moduleLabel=indicator(row,look,moduleDot,"LSP 检测中");
+        View gap=new View(activity);row.addView(gap,new LinearLayout.LayoutParams(dp(8),1));
+        rootLabel=indicator(row,look,rootDot,"ROOT 检测中");
+        row.setOnClickListener(v->start(true));row.setContentDescription("重新检测模块和 Root 状态");
+        parent.addView(row,new LinearLayout.LayoutParams(-1,-2));
     }
-    private TextView indicator(LinearLayout row,SettingsUi ui,GradientDrawable dot,String text){
+    private TextView indicator(LinearLayout row,Look look,GradientDrawable dot,String text){
+        LinearLayout pill=new LinearLayout(activity);pill.setOrientation(LinearLayout.HORIZONTAL);pill.setGravity(Gravity.CENTER_VERTICAL);
+        pill.setBackground(look.round(look.surface,16));pill.setPadding(dp(12),dp(7),dp(14),dp(7));
         View light=new View(activity);dot.setShape(GradientDrawable.OVAL);dot.setColor(0xff95999f);light.setBackground(dot);
-        row.addView(light,new LinearLayout.LayoutParams(dp(7),dp(7)));
-        TextView label=new TextView(activity);label.setTextSize(13);label.setTextColor(ui.color("colorOnSurface"));label.setText(text);
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.setMarginStart(dp(9));row.addView(label,lp);return label;
+        pill.addView(light,new LinearLayout.LayoutParams(dp(7),dp(7)));
+        TextView label=look.text(text,12.5f,look.muted,false);
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.setMarginStart(dp(8));pill.addView(label,lp);
+        row.addView(pill,new LinearLayout.LayoutParams(-2,-2));return label;
     }
 
     void start(){start(false);}
