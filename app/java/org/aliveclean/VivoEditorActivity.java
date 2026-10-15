@@ -112,9 +112,18 @@ public final class VivoEditorActivity extends Activity implements TextureView.Su
             else if(tab==0)areaOptions(body);
             else effectOptions(body);
         }catch(Exception e){TextView error=ui.text("选项加载失败："+e.getMessage(),14);body.addView(error);android.util.Log.e("AliveClean","Vivo panel failed",e);}
-        if(options.family!=VivoOptions.LIQUID)sensitivity(body);
-        Switch zoom=new Switch(ui);zoom.setText("息屏与亮屏壁纸缩放");zoom.setTextColor(0xff111111);zoom.setTextSize(14);zoom.setPadding(ui.dp(24),ui.dp(8),ui.dp(24),ui.dp(8));zoom.setThumbTintList(new android.content.res.ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[0]},new int[]{0xff0f77ff,0xffeeeeee}));zoom.setTrackTintList(new android.content.res.ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[0]},new int[]{0x660f77ff,0xffcccccc}));zoom.setChecked(options.wallpaperZoom);body.addView(zoom,new LinearLayout.LayoutParams(-1,ui.dp(52)));zoom.setOnCheckedChangeListener((v,on)->{options.wallpaperZoom=on;saveDraft();});
+        sensitivity(body);
+        Switch zoom=effectSwitch(body,"息屏与亮屏壁纸缩放",options.wallpaperZoom);
+        zoom.setOnCheckedChangeListener((v,on)->{options.wallpaperZoom=on;saveDraft();});
+        Switch aod=effectSwitch(body,"息屏保持动态效果",options.aodAnimation);
+        aod.setOnCheckedChangeListener((v,on)->{options.aodAnimation=on;saveDraft();});
         panel.setContentView(body);Window window=panel.getWindow();window.setBackgroundDrawableResource(android.R.color.transparent);window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);window.setDimAmount(0);window.setGravity(Gravity.BOTTOM);window.setLayout(-1,-2);panel.show();window.setLayout(-1,-2);
+    }
+    private Switch effectSwitch(LinearLayout body,String text,boolean checked){
+        Switch toggle=new Switch(ui);toggle.setText(text);toggle.setTextColor(0xff111111);toggle.setTextSize(14);toggle.setPadding(ui.dp(24),ui.dp(8),ui.dp(24),ui.dp(8));
+        toggle.setThumbTintList(new android.content.res.ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[0]},new int[]{0xff0f77ff,0xffeeeeee}));
+        toggle.setTrackTintList(new android.content.res.ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[0]},new int[]{0x660f77ff,0xffcccccc}));
+        toggle.setChecked(checked);body.addView(toggle,new LinearLayout.LayoutParams(-1,ui.dp(52)));return toggle;
     }
     private void tab(LinearLayout row,String text,boolean selected,Runnable click){
         LinearLayout column=new LinearLayout(ui);column.setOrientation(1);column.setGravity(Gravity.CENTER);row.addView(column,new LinearLayout.LayoutParams(0,-1,1));

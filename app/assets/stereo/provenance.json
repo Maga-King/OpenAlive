@@ -1,0 +1,83 @@
+{
+  "source": "Flyme 9 MzWallpaper common 1.8.15",
+  "files": [
+    {
+      "source": "assets/stereo/mz_stereo_main_v4.webp",
+      "file": "mz_stereo_main_v4.webp",
+      "sourceSha256": "48655ebd138aa999228a0814692c857aaf1e19c7a0e2763bd9de5cf48fdce784",
+      "sha256": "48655ebd138aa999228a0814692c857aaf1e19c7a0e2763bd9de5cf48fdce784"
+    },
+    {
+      "source": "assets/stereo/mz_stereo_depth_v4.png",
+      "file": "mz_stereo_depth_v4.png",
+      "sourceSha256": "5cd156298e48bc06aa32d73c78efe2033f434f6dd17784dfddf50afbaf2b3314",
+      "sha256": "5cd156298e48bc06aa32d73c78efe2033f434f6dd17784dfddf50afbaf2b3314"
+    },
+    {
+      "source": "res/drawable-nodpi/mz_wallpaper_stereo_v4.png",
+      "file": "preview_v4.png",
+      "sourceSha256": "29de5cb882cae3a6ce3006962a4096bc4d5bc558f60e42b5632803e18334d3e8",
+      "sha256": "29de5cb882cae3a6ce3006962a4096bc4d5bc558f60e42b5632803e18334d3e8"
+    },
+    {
+      "source": "assets/stereo/mz_stereo_main_v5.webp",
+      "file": "mz_stereo_main_v5.webp",
+      "sourceSha256": "5891c00a8e72de0d4bdefbb4ca5349f4133267a804645b48e0ada7224bad2409",
+      "sha256": "5891c00a8e72de0d4bdefbb4ca5349f4133267a804645b48e0ada7224bad2409"
+    },
+    {
+      "source": "assets/stereo/mz_stereo_depth_v5.png",
+      "file": "mz_stereo_depth_v5.png",
+      "sourceSha256": "e489aed47ae52ed8420442e1c8c28d30b590ef218622b92ba2c243cf2331f11f",
+      "sha256": "e489aed47ae52ed8420442e1c8c28d30b590ef218622b92ba2c243cf2331f11f"
+    },
+    {
+      "source": "res/drawable-nodpi/mz_wallpaper_stereo_v5.png",
+      "file": "preview_v5.png",
+      "sourceSha256": "b08057fe945af9f0a6c77b3bac60ffe928a275977c818316df8140271e9ee13b",
+      "sha256": "b08057fe945af9f0a6c77b3bac60ffe928a275977c818316df8140271e9ee13b"
+    },
+    {
+      "source": "assets/stereo/mz_stereo_main_v6.webp",
+      "file": "mz_stereo_main_v6.webp",
+      "sourceSha256": "fbfda975895c701e255b10fc1c97ebe385c0dc66e80664403004de5728e81181",
+      "sha256": "fbfda975895c701e255b10fc1c97ebe385c0dc66e80664403004de5728e81181"
+    },
+    {
+      "source": "assets/stereo/mz_stereo_depth_v6.png",
+      "file": "mz_stereo_depth_v6.png",
+      "sourceSha256": "5046d45ca6c78ddf7ec3fe179e1282533d833cb14d50a9f67e5ba43bf93c6b3f",
+      "sha256": "5046d45ca6c78ddf7ec3fe179e1282533d833cb14d50a9f67e5ba43bf93c6b3f"
+    },
+    {
+      "source": "res/drawable-nodpi/mz_wallpaper_stereo_v6.png",
+      "file": "preview_v6.png",
+      "sourceSha256": "bf6e5e1a0645935c0a74d24634d4ebd3f46950dc23836cf0fee9b8f1720335a3",
+      "sha256": "bf6e5e1a0645935c0a74d24634d4ebd3f46950dc23836cf0fee9b8f1720335a3"
+    },
+    {
+      "source": "assets/zsstereo/vertex.glsl",
+      "file": "vertex.glsl",
+      "sourceSha256": "e81d5409a66a04b698364c4285ffda7e6b007e9df12fe792a09769e9d54f66f0",
+      "sha256": "e81d5409a66a04b698364c4285ffda7e6b007e9df12fe792a09769e9d54f66f0"
+    },
+    {
+      "source": "assets/zsstereo/vertex_split.glsl",
+      "file": "vertex_split.glsl",
+      "sourceSha256": "d632e0de0835b176acde63bcd4b6f5acf64931175662c2e44aefa0a501ea1df0",
+      "sha256": "d632e0de0835b176acde63bcd4b6f5acf64931175662c2e44aefa0a501ea1df0"
+    },
+    {
+      "source": "assets/zsstereo/fragment_mixformanual.glsl",
+      "file": "fragment_mixformanual.glsl",
+      "sourceSha256": "9e23079101b2b996ad98fdbd71bc8cd4cf257876c1a5a7c18c8b724bf10abea9",
+      "sha256": "9e23079101b2b996ad98fdbd71bc8cd4cf257876c1a5a7c18c8b724bf10abea9"
+    },
+    {
+      "source": "assets/zsstereo/fragment_blur.glsl",
+      "file": "fragment_blur.glsl",
+      "sourceSha256": "e782f196b4c26fd94c7299c42f7b95cd3fb726314fc02235d9e9f42c73689464",
+      "sha256": "549de334e0266ccd02f0fd17d889251669da0f6db1e419ce097e80960573856a"
+    }
+  ]
+}

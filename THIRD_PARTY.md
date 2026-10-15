@@ -12,6 +12,8 @@
 - `app/assets/cosmic/`：官方 Cosmic、Phoenix 系列配色、预览图及模型数据；来源文件校验值保存在同目录 `source.json`、`phoenix-source.json`。
 - `app/assets/gradient/`、`app/assets/shader/gradient/` 和 `app/assets/cosmic/gradient_*.png`：Flyme 9 系统公共组件 1.8.15 的大漠、极光、远海配色、原始着色器及缩略图；原 APK 与文件校验值见 `gradient/source.json`。园蓝、梅洛、金杏、青提原始配色和预览图见 `cosmic/flyme9-source.json`。这些资产保留原权利人的权利。
 - `app/assets/bubble/`、`app/assets/soundviz/`：官方 Bubble 系列的数值配置和流动背景着色器；来源校验值见 `bubble/source.json`。
+- `app/assets/flyme-video/`：Flyme 9 系统公共组件 1.8.15 的浪流、深潜、涟漪原始视频、缩略图及着色器，来源和文件校验值见同目录 `source.json`。
+- `app/assets/stereo/`：同一原包的 3D 壁纸 V4–V6 主图、深度图、缩略图及两阶段视差着色器，来源、校验值与兼容修改见 `provenance.json`。这些资产保留原权利人的权利。
 - `docs/donate.png`：项目维护者提供的赞赏码，不属于代码许可范围。
 - `app/assets/notification/`：魅族 22 SystemUI 的原始通知光环和双侧光带动画，来源及文件校验值见同目录 `source.json`；使用已包含的官方 SVGA 运行库解码和绘制。
 - `app/assets/native-clock/`：魅族 22 SystemUI 与澎湃 MIUIAod 的数字字体。`original/` 保留未修改文件，使用副本按 ColorOS 固定字体约定调整行高与留白，字形和字宽不变；来源、适配说明及校验值见 `source.json`。

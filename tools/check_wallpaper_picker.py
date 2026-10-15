@@ -10,9 +10,11 @@ STUBS = {
     'android/content/ComponentName.java': '''package android.content;
 public final class ComponentName {
     final String value; public ComponentName(String value){this.value=value;}
+    public ComponentName(String pkg,String cls){this(pkg+"/"+cls);}
     public String getPackageName(){return value.contains("/")?value.substring(0,value.indexOf('/')):"";}
     public String getClassName(){return value.contains("/")?value.substring(value.indexOf('/')+1):value;}
     public boolean equals(Object o){return o instanceof ComponentName&&value.equals(((ComponentName)o).value);}
+    public int hashCode(){return value.hashCode();}
 }''',
     'android/content/ActivityNotFoundException.java': '''package android.content;
 public class ActivityNotFoundException extends RuntimeException {
@@ -21,16 +23,31 @@ public class ActivityNotFoundException extends RuntimeException {
     'android/content/Intent.java': '''package android.content;
 public class Intent {
     public static final String ACTION_SET_WALLPAPER="set";
-    public final String action; public int flags; public Object component;
+    public final String action; public int flags; public Object component; public ComponentName destination;
     public Intent(String action){this.action=action;}
+    public Intent(Intent other){action=other.action;flags=other.flags;component=other.component;destination=other.destination;}
+    public Intent setComponent(ComponentName destination){this.destination=destination;return this;}
     public Intent putExtra(String key,Object value){component=value;return this;}
     public Intent setFlags(int flags){this.flags=flags;return this;}
 }''',
     'android/content/pm/PackageManager.java': '''package android.content.pm;
 import android.content.Intent;
 public class PackageManager {
+    public static final int MATCH_ALL=131072;
+    public final java.util.List<ResolveInfo> handlers=new java.util.ArrayList<>();
+    public java.util.List<ResolveInfo> queryIntentActivities(Intent intent,int flags){return handlers;}
     public Intent launcher;
     public Intent getLaunchIntentForPackage(String name){return name.equals("com.oplus.wallpapers")?launcher:null;}
+}''',
+    'android/content/pm/ActivityInfo.java': '''package android.content.pm;
+public class ActivityInfo {public String packageName,name;public boolean exported=true,enabled=true;}''',
+    'android/content/pm/ResolveInfo.java': '''package android.content.pm;
+public class ResolveInfo {public ActivityInfo activityInfo;}''',
+    'android/widget/Toast.java': '''package android.widget;
+public class Toast {
+    public static final int LENGTH_LONG=1;
+    public static Toast makeText(android.app.Activity a,String message,int duration){return new Toast();}
+    public void show(){}
 }''',
     'android/app/Activity.java': '''package android.app;
 import android.content.*;import android.content.pm.PackageManager;import java.util.*;
@@ -38,11 +55,11 @@ public class Activity {
     public static final int RESULT_OK=-1,RESULT_CANCELED=0;
     public final PackageManager packages=new PackageManager();
     public final List<Intent> attempts=new ArrayList<>();
-    public String available;public boolean security;
+    public String available;public ComponentName explicit;public boolean security;
     public PackageManager getPackageManager(){return packages;}
     public void startActivityForResult(Intent intent,int request){
         if(request!=20)throw new AssertionError("request code lost");
-        attempts.add(intent);if(intent.action.equals(available))return;
+        attempts.add(intent);if(intent.destination!=null?intent.destination.equals(explicit):intent.action.equals(available))return;
         if(security)throw new SecurityException();throw new ActivityNotFoundException("missing");
     }
 }''',
@@ -76,12 +93,23 @@ public class WallpaperPickerTest {
             activity.packages.launcher=new Intent("launcher").setFlags(0x10000000);
             boolean reliable=WallpaperPicker.open(activity,expected,20);
             check(reliable==target.equals("change"),"result contract: "+target);
-            check(activity.attempts.get(0).component==expected,"wallpaper component lost");
+            for(Intent attempt:activity.attempts)check(attempt.component==expected,"wallpaper component lost on fallback: "+target);
             check(activity.attempts.get(activity.attempts.size()-1).flags==0,"new task breaks result delivery");
-            check(activity.attempts.size()==java.util.Arrays.asList("change","live","set","launcher").indexOf(target)+1,"fallback order");
+            check(activity.attempts.size()==(target.equals("change")?1:target.equals("live")?3:target.equals("launcher")?4:5),"fallback order");
         }
+        Activity routed=new Activity();
+        android.content.pm.ResolveInfo handler=new android.content.pm.ResolveInfo();
+        handler.activityInfo=new android.content.pm.ActivityInfo();handler.activityInfo.packageName="oem.picker";handler.activityInfo.name="oem.picker.Change";
+        routed.packages.handlers.add(handler);routed.explicit=new ComponentName("oem.picker","oem.picker.Change");
+        check(WallpaperPicker.open(routed,expected,20),"explicit component preview must be reliable");
+        check(routed.attempts.size()==2&&routed.attempts.get(1).component==expected,"explicit retry lost service");
+        Activity legacy=new Activity();legacy.explicit=new ComponentName("com.android.wallpaper.livepicker","com.android.wallpaper.livepicker.LiveWallpaperChange");
+        check(WallpaperPicker.open(legacy,expected,20)&&legacy.attempts.size()==2,"missing OEM intent filter should use explicit change activity");
+        handler.activityInfo.exported=false;
+        Activity privateEntry=new Activity();privateEntry.packages.handlers.add(handler);privateEntry.available="live";
+        check(!WallpaperPicker.open(privateEntry,expected,20)&&privateEntry.attempts.size()==3,"must not invoke private activities");
         Activity secured=new Activity();secured.available="live";secured.security=true;
-        check(!WallpaperPicker.open(secured,expected,20)&&secured.attempts.size()==2,"security rejection should fall back");
+        check(!WallpaperPicker.open(secured,expected,20)&&secured.attempts.size()==3,"security rejection should fall back");
         try{WallpaperPicker.open(new Activity(),expected,20);throw new AssertionError("missing picker accepted");}
         catch(ActivityNotFoundException correct){}
         WallpaperManager manager=new WallpaperManager();manager.home=new WallpaperInfo(expected);

@@ -6,7 +6,7 @@ import java.util.LinkedHashSet;
 
 /** Authenticated scene delivery and frame completion feedback; no per-frame IPC. */
 final class SceneChannel {
-    interface Listener {void scene(int mode,boolean animate,long time,int phase,long clockToken,float nightLevel,float aodMask);void region(AodRegion area);void disconnected();}
+    interface Listener {void scene(int mode,boolean animate,long time,int phase,long clockToken,float nightLevel,float aodMask);void region(AodRegion area);void disconnected();default void backdrop(boolean covered){}}
     private static final LinkedHashSet<Listener> listeners=new LinkedHashSet<>();
     private static Messenger messenger;
     private static volatile Messenger clockFeedback;
@@ -14,6 +14,7 @@ final class SceneChannel {
     private static IBinder owner;
     private static Bundle lastScene;
     private static AodRegion lastArea;
+    private static boolean lastBackdrop;
     private static int senderUid=-1;
     private static int clockApi;
     private static String clockError="";
@@ -40,6 +41,10 @@ final class SceneChannel {
                 }else if(message.what==2){
                     AodRegion area=decode(b);if(area==null)return true;lastArea=area;
                     for(Listener l:listeners)l.region(area);
+                }else if(message.what==3){
+                    boolean covered=b.getBoolean("covered",false);
+                    if(covered==lastBackdrop)return true;lastBackdrop=covered;
+                    for(Listener l:listeners)l.backdrop(covered);
                 }
                 return true;
             });
@@ -47,8 +52,10 @@ final class SceneChannel {
         }
         if(source!=null&&source!=owner){
             owner=source;
+            main.post(()->{if(owner==source){lastBackdrop=false;for(Listener l:listeners)l.backdrop(false);}});
             source.linkToDeath(()->main.post(()->{
-                if(owner!=source)return;owner=null;clockFeedback=null;lastScene=null;lastArea=null;
+                if(owner!=source)return;owner=null;clockFeedback=null;lastScene=null;lastArea=null;lastBackdrop=false;
+                for(Listener l:listeners)l.backdrop(false);
                 for(Listener l:listeners)l.disconnected();
             }),0);
         }
@@ -66,6 +73,7 @@ final class SceneChannel {
         listeners.add(listener);
         if(lastArea!=null)listener.region(lastArea);
         if(lastScene!=null)listener.scene(lastScene.getInt("mode"),false,lastScene.getLong("time"),lastScene.getInt("phase",0),lastScene.getLong("clock_wake",0),lastScene.getFloat("vivo_night_level",Float.NaN),lastScene.getFloat("vivo_aod_mask",Float.NaN));
+        listener.backdrop(lastBackdrop);
     }
     static void remove(Listener listener){listeners.remove(listener);}
     static AodRegion decode(Bundle b){

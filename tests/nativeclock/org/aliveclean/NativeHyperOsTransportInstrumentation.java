@@ -72,6 +72,25 @@ public final class NativeHyperOsTransportInstrumentation extends Instrumentation
                         Bundle tick=new Bundle();tick.putLong("time",System.currentTimeMillis());call(container[0],"setTime",tick);
                     }catch(Throwable error){failure[0]=error;}});
                     waitForIdleSync();
+                    // Size 2 now owns a separate lyrics face. The animated ink
+                    // intentionally starts outside its final content rectangle.
+                    // Check settled geometry, rather than the spring's first frame.
+                    boolean[] moving={true};long deadline=android.os.SystemClock.uptimeMillis()+3000;
+                    do{
+                        runOnMainSync(()->moving[0]=clock[0].sceneAnimating());
+                        if(!moving[0])break;
+                        android.os.SystemClock.sleep(20);waitForIdleSync();
+                    }while(android.os.SystemClock.uptimeMillis()<deadline);
+                    if(moving[0]){
+                        runOnMainSync(()->{try{
+                            View face=clock[0].apply(8);
+                            evidence.append("pending alpha=").append(face.getAlpha()).append(" attached=").append(face.isAttachedToWindow()).append(" shown=").append(face.isShown()).append(" window=").append(face.getWindowVisibility()).append(" root=").append(clock[0].root.getWidth()).append('x').append(clock[0].root.getHeight()).append('\n');
+                            for(android.view.ViewParent p=face.getParent();p instanceof View;p=p.getParent())evidence.append(p.getClass().getName()).append(" visible=").append(((View)p).getVisibility()).append(" alpha=").append(((View)p).getAlpha()).append('\n');
+                            java.lang.reflect.Field f=NativeOriginalClockPlugin.class.getDeclaredField("transition");f.setAccessible(true);Object transition=f.get(clock[0]);
+                            for(String name:new String[]{"pending","running","spring"}){f=transition.getClass().getDeclaredField(name);f.setAccessible(true);evidence.append(name).append('=').append(f.get(transition)).append('\n');}
+                        }catch(Throwable error){failure[0]=error;}});
+                        throw new AssertionError("scene transition did not settle: "+id+" state="+state+" size="+size);
+                    }
                     runOnMainSync(()->{try{
                         NativeOriginalClockPlugin plugin=clock[0];View host=(View)container[0];
                         int width=app.getResources().getDisplayMetrics().widthPixels;

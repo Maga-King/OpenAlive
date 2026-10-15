@@ -22,8 +22,19 @@ final class NativeClockMaterialBootstrap {
             // setScreenShotEx deliberately drops live frames before prepareColoringData.
             // Seed the original sampler with this actual frame; do not forge readiness
             // or replace the native color/shader implementation.
-            type.getMethod("setScreenShot",Bitmap.class,int[].class,boolean.class,boolean.class,Long.class)
-                    .invoke(controller,bitmap,screen,false,false,key);
+            java.lang.reflect.Method setter;
+            boolean foldOption;
+            try{
+                setter=type.getMethod("setScreenShot",Bitmap.class,int[].class,boolean.class,boolean.class,Long.class,boolean.class);
+                foldOption=true;
+            }catch(NoSuchMethodException olderPlugin){
+                setter=type.getMethod("setScreenShot",Bitmap.class,int[].class,boolean.class,boolean.class,Long.class);
+                foldOption=false;
+            }
+            // New OplusColorController adds a fold-device shader-dispatch flag.
+            // Its Kotlin default is false; keep the original sampling semantics.
+            if(foldOption)setter.invoke(controller,bitmap,screen,false,false,key,false);
+            else setter.invoke(controller,bitmap,screen,false,false,key);
             return true;
         }catch(Exception failure){pending.remove(controller);throw failure;}
     }

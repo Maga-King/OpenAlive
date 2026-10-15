@@ -27,7 +27,12 @@ __pycache__/
 !/tools/check_wallpaper_motion.py
 !/tools/check_gradient_render.py
 !/tools/import_flyme9_gradient.py
+!/tools/import_flyme9_video.py
+!/tools/import_stereo.py
+!/tools/check_flyme9_extra.py
+!/tools/check_stereo_lifecycle.py
 !/tools/check_wallpaper_picker.py
+!/tools/check_wallpaper_picker_device.py
 !/tools/import_cosmic.py
 !/tools/import_flyme9_cosmic.py
 !/tools/import_phoenix.py

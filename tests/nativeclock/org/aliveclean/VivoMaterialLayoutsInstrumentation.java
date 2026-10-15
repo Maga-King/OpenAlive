@@ -12,6 +12,7 @@ import java.io.*;
 public final class VivoMaterialLayoutsInstrumentation extends Instrumentation {
     private ClockTestActivity activity;
     private View face;
+    private NativeVivoClockFace vivoFace;
     private NativeClockHostFixture host;
     private boolean useHost;
     private boolean legacyMetrics;
@@ -44,13 +45,20 @@ public final class VivoMaterialLayoutsInstrumentation extends Instrumentation {
                     face=host.customClock.apply(8);view=(View)host.root;
                 }else if(NativeVivoClockStyles.contains(id)){NativeVivoClockFace vivo=new NativeVivoClockFace(activity,original,NativeVivoClockStyles.find(activity,id),false,false);vivo.update(time.getTimeInMillis(),time.getTimeZone(),true);face=vivo;view=face;}
                 else{NativeHyperOsFace hyper=new NativeHyperOsFace(OfficialHyperOsUi.open(activity),NativeHyperOsStyles.find(id),false,false);hyper.refresh("Asia/Shanghai",true);face=hyper;view=face;}
-                if(legacyMetrics&&face instanceof NativeVivoClockFace)for(TextView label:((NativeVivoClockFace)face).materialViews())label.setFallbackLineSpacing(false);
+                View content=face;
+                while(content instanceof NativeAdaptiveClockFace)content=((NativeAdaptiveClockFace)content).content();
+                vivoFace=null;
+                if(NativeVivoClockStyles.contains(id)){
+                    if(!(content instanceof NativeVivoClockFace))throw new AssertionError("Vivo material metadata unavailable for "+id+": "+content);
+                    vivoFace=(NativeVivoClockFace)content;
+                }else if(!(content instanceof NativeHyperOsFace))throw new AssertionError("HyperOS face unavailable for "+id+": "+content);
+                if(legacyMetrics&&vivoFace!=null)for(TextView label:vivoFace.materialViews())label.setFallbackLineSpacing(false);
                 FrameLayout scaled=new FrameLayout(activity);scaled.setClipChildren(false);scaled.setClipToPadding(false);scaled.addView(view,new FrameLayout.LayoutParams(-1,-1));
                 activity.content.addView(scaled,new FrameLayout.LayoutParams(-1,-1));scaled.setPivotX(0);scaled.setPivotY(0);scaled.setScaleX(.65f);scaled.setScaleY(.65f);scaled.setTranslationX(60);scaled.setTranslationY(140);
             });settle();
-            if(only!=null&&face instanceof NativeVivoClockFace)main(()->report.append(((NativeVivoClockFace)face).geometryReport()).append('\n'));
-            if(face instanceof NativeVivoClockFace)main(()->{
-                NativeVivoClockFace vivo=(NativeVivoClockFace)face;
+            if(only!=null&&vivoFace!=null)main(()->report.append(vivoFace.geometryReport()).append('\n'));
+            if(vivoFace!=null)main(()->{
+                NativeVivoClockFace vivo=vivoFace;
                 for(TextView label:vivo.materialViews())if(label.getVisibility()==View.VISIBLE&&vivo.glassView(label)){
                     Rect ink=new Rect();label.getPaint().getTextBounds(label.getText().toString(),0,label.length(),ink);
                     if(ink.bottom+label.getBaseline()>label.getHeight()+2)
@@ -66,11 +74,13 @@ public final class VivoMaterialLayoutsInstrumentation extends Instrumentation {
                 boolean[] ready={false};
                 do{main(()->ready[0]=useHost?host.customClock.materialApplied():material.applied());if(ready[0])break;settle();}while(SystemClock.uptimeMillis()<deadline);
                 Bitmap rendered=getUiAutomation().takeScreenshot();if(plain==null||rendered==null)throw new AssertionError("screenshot unavailable");
-                int[] loc=new int[2];main(()->face.getLocationOnScreen(loc));int expected=0,filled=0,colored=0;
-                if(useHost&&face instanceof NativeVivoClockFace){
+                RectF coverage=new RectF();
+                main(()->{coverage.set(0,0,face.getWidth(),face.getHeight());Matrix transform=new Matrix();face.transformMatrixToGlobal(transform);transform.mapRect(coverage);});
+                int expected=0,filled=0,colored=0,datePixels=0;
+                if(useHost&&vivoFace!=null){
                     java.util.List<Rect> dates=new java.util.ArrayList<>();
                     java.util.List<RectF> digits=new java.util.ArrayList<>();
-                    main(()->{NativeVivoClockFace v=(NativeVivoClockFace)face;
+                    main(()->{NativeVivoClockFace v=vivoFace;
                         for(TextView label:v.materialViews())if(label.getVisibility()==View.VISIBLE){
                             if(v.glassView(label)){
                                 Rect ink=new Rect();label.getPaint().getTextBounds(label.getText().toString(),0,label.length(),ink);
@@ -80,6 +90,7 @@ public final class VivoMaterialLayoutsInstrumentation extends Instrumentation {
                             }else{Rect rect=new Rect();if(label.getGlobalVisibleRect(rect))dates.add(rect);}
                         }
                     });
+                    if(digits.isEmpty()||dates.isEmpty())throw new AssertionError("Vivo digit/date coverage unavailable for "+id+": digits="+digits.size()+" dates="+dates.size());
                     for(Rect rect:dates){
                         int before=0,after=0;
                         for(int y=Math.max(0,rect.top);y<Math.min(plain.getHeight(),rect.bottom);y++)for(int x=Math.max(0,rect.left);x<Math.min(plain.getWidth(),rect.right);x++){
@@ -89,16 +100,18 @@ public final class VivoMaterialLayoutsInstrumentation extends Instrumentation {
                             int a=plain.getPixel(x,y),b=rendered.getPixel(x,y);
                             if(Color.red(a)>180&&Color.green(a)>180&&Color.blue(a)>180){before++;if(Color.red(b)>180&&Color.green(b)>180&&Color.blue(b)>180)after++;}
                         }
+                        datePixels+=before;
                         if(before>10&&after<before*.95)throw new AssertionError("Date changed with digit material: "+before+" -> "+after);
                     }
+                    if(datePixels<=10)throw new AssertionError("No comparable Vivo date pixels for "+id+": "+datePixels);
                 }
-                for(int y=Math.max(0,loc[1]);y<Math.min(plain.getHeight(),loc[1]+face.getHeight()*.65f);y++)for(int x=Math.max(0,loc[0]);x<Math.min(plain.getWidth(),loc[0]+face.getWidth()*.65f);x++){
+                for(int y=Math.max(0,(int)Math.floor(coverage.top));y<Math.min(plain.getHeight(),(int)Math.ceil(coverage.bottom));y++)for(int x=Math.max(0,(int)Math.floor(coverage.left));x<Math.min(plain.getWidth(),(int)Math.ceil(coverage.right));x++){
                     int a=plain.getPixel(x,y),b=rendered.getPixel(x,y);if(Color.red(a)<180||Color.green(a)<180||Color.blue(a)<180)continue;expected++;
                     if(Math.max(Color.red(b),Math.max(Color.green(b),Color.blue(b)))>16)filled++;
                     if(Math.abs(Color.red(a)-Color.red(b))+Math.abs(Color.green(a)-Color.green(b))+Math.abs(Color.blue(a)-Color.blue(b))>35)colored++;
                 }
                 boolean applied=useHost?host.customClock.materialApplied():material.applied();
-                String line=key+" glass="+glass+" size="+face.getWidth()+"x"+face.getHeight()+" expected="+expected+" filled="+filled+" colored="+colored+" applied="+applied+" layout="+face.isLayoutRequested();report.append(line).append('\n');
+                String line=key+" glass="+glass+" size="+face.getWidth()+"x"+face.getHeight()+" expected="+expected+" filled="+filled+" colored="+colored+" datePixels="+datePixels+" applied="+applied+" layout="+face.isLayoutRequested();report.append(line).append('\n');
                 if(expected<100||filled<expected*.95||colored<expected*.5||!applied){failures++;save(plain,key+"-plain");save(rendered,key+(glass?"-glass":"-blur"));}
                 if(only!=null){save(plain,key+"-plain");save(rendered,key+(glass?"-glass":"-blur"));}
                 rendered.recycle();

@@ -21,6 +21,8 @@ final class NativeVivoClockPlugin extends NativeOriginalClockPlugin {
         public void update(long time,TimeZone zone,boolean format24){for(NativeVivoClockFace face:all)face.update(time,zone,format24);}
         public void color(int color){for(NativeVivoClockFace face:all)face.color(color);}
         public void numberBounds(RectF out){active.numberBounds(out);}
+        public float lockDigitHeight(){return all[0].digitHeight();}
+        public boolean lockDigitsStacked(){return all[0].digitsStacked();}
         public void close(){}
     }
 }

@@ -45,6 +45,8 @@ final class NativeFlymeClockPlugin extends NativeOriginalClockPlugin {
         }
         public void color(int color)throws Exception{face.color(color);compactFace.color(color);lockFace.color(color);compactLockFace.color(color);}
         public void numberBounds(RectF out){if(aod)((FlymeAliveAodFace)active()).numberBounds(out);else((OfficialClockFace)active()).numberBounds(out);}
+        public float lockDigitHeight(){return lockFace.digitHeight();}
+        public boolean lockDigitsStacked(){return lockFace.digitsStacked();}
         public void close(){lockFace.close();compactLockFace.close();}
     }
 }

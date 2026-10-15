@@ -27,6 +27,61 @@ public final class VivoSceneProbe extends Instrumentation {
         if(error[0]!=null)throw new Exception("Main-thread test failed",error[0]);
     }
     static void check(boolean result,String message){if(!result)throw new AssertionError(message);}
+    void liquidSensitivity(VivoEngineRuntime runtime,VivoCalls api)throws Exception{
+        Class<?> callback=api.type("e4.a");float[][] samples={new float[3],new float[3]};Object[] sensors=new Object[2];
+        for(int i=0;i<2;i++){
+            final int index=i;
+            Object receiver=Proxy.newProxyInstance(callback.getClassLoader(),new Class<?>[]{callback},(p,m,args)->{
+                if(m.getName().equals("p"))for(int axis=0;axis<3;axis++)samples[index][axis]=(Float)args[axis];return null;
+            });
+            sensors[i]=api.make("e4.b",new Class<?>[]{Context.class,callback,int.class},runtime,receiver,1);
+        }
+        Object original=api.get(sensors[1],"b");
+        Constructor<SensorEvent> ctor=SensorEvent.class.getDeclaredConstructor(int.class);ctor.setAccessible(true);
+        SensorEvent event=ctor.newInstance(3);event.sensor=(Sensor)api.get(sensors[0],"c");
+        try(VivoLiquidSensitivity scaled=new VivoLiquidSensitivity(api,sensors[1],0)){
+            for(int relative:new int[]{0,-50,50,0,25,-25,0}){
+                scaled.relative(relative);float factor=VivoSensorGain.multiplier(relative);
+                for(int step=0;step<100;step++){
+                    event.values[0]=step<80?0:(step%3-1)*1.2f;event.values[1]=step<80?0:(step%2)*.8f;event.values[2]=9.81f;
+                    float[] before=event.values.clone();
+                    ((SensorEventListener)sensors[0]).onSensorChanged(event);((SensorEventListener)sensors[1]).onSensorChanged(event);
+                    check(Arrays.equals(event.values,before),"Liquid gain mutates raw sensor event");
+                    for(String field:new String[]{"g","h","i"})check(api.get(sensors[0],field).equals(api.get(sensors[1],field)),"Slider disturbed gravity filter");
+                    for(int axis=0;axis<3;axis++)check(Math.abs(samples[1][axis]-samples[0][axis]*factor)<.000001,"Liquid motion gain mismatch "+relative);
+                }
+            }
+        }
+        check(api.get(sensors[1],"b")==original,"Liquid callback not restored on release");
+        report.append("Liquid native accelerometer: -50..50 motion gain, exact default, unchanged gravity filter and release OK\n");
+    }
+    void aodToggle(VivoEngineScene scene,VivoOptions options,VivoEngineRuntime runtime,int baseline)throws Exception{
+        check(VivoOptions.parse("{\"family\":"+options.family+"}").animateInAod(),"Legacy config must default to animated AOD");
+        Object controller=new VivoCalls(runtime).get(scene,"controller");
+        VivoCalls api=new VivoCalls(runtime);
+        scene.mode(0,false);main(()->{});
+        check((Boolean)api.get(scene,"running"),"Default AOD stopped family="+options.family);
+        for(int i=0;i<2;i++){
+            options.aodAnimation=false;
+            VivoOptions saved=VivoOptions.parse(options.json());check(!saved.animateInAod(),"AOD off was not saved");
+            check(scene.updateSensitivity(saved),"AOD toggle rebuilt scene");main(()->{});scene.draw();
+            check(!(Boolean)api.get(scene,"running"),"AOD off still animating");
+            main(()->check(listeners(runtime)==baseline,"AOD off retained sensors"));
+            scene.mode(1,false);main(()->{});
+            check((Boolean)api.get(scene,"running"),"AOD off incorrectly stops lock-screen animation");
+            scene.mode(0,false);main(()->{});
+            check(!(Boolean)api.get(scene,"running"),"Next AOD ignores disabled option");
+            options.aodAnimation=true;check(scene.updateSensitivity(options),"AOD resume rebuilt scene");main(()->{});
+            check((Boolean)api.get(scene,"running"),"AOD reenable did not resume");
+            scene.visible(false);main(()->{});
+            check(!(Boolean)api.get(scene,"running"),"Black screen still animating");
+            main(()->check(listeners(runtime)==baseline,"Black screen retained sensors"));
+            scene.visible(true);main(()->{});scene.draw();
+            check((Boolean)api.get(scene,"running"),"Black-to-AOD did not resume");
+            check(controller==api.get(scene,"controller"),"AOD lifecycle replaced controller");
+        }
+        scene.mode(1,false);main(()->{});
+    }
     int[] pixels(){
         ByteBuffer bytes=ByteBuffer.allocateDirect(W*H*4);GLES30.glReadPixels(0,0,W,H,GLES30.GL_RGBA,GLES30.GL_UNSIGNED_BYTE,bytes);
         int[] result=new int[W*H];for(int y=0;y<H;y++)for(int x=0;x<W;x++){int k=4*((H-1-y)*W+x);result[y*W+x]=0xff000000|((bytes.get(k)&255)<<16)|((bytes.get(k+1)&255)<<8)|(bytes.get(k+2)&255);}return result;
@@ -152,6 +207,7 @@ public final class VivoSceneProbe extends Instrumentation {
             main(()->check(listeners(runtime)==baseline[0],"Hidden video retained sensor"));
             scene.visible(true);main(()->{});
             main(()->check(listeners(runtime)==baseline[0]+1,"Video AOD wake lost sensor"));
+            aodToggle(scene,options,runtime,baseline[0]);
             PhotoViewport crop=new PhotoViewport();crop.restore(.6f,.5f,1.2f);scene.crop(crop);scene.draw();
         }
         main(()->check(listeners(runtime)==baseline[0],"Closed video retained sensor"));
@@ -412,6 +468,7 @@ public final class VivoSceneProbe extends Instrumentation {
             check(new VivoOptions(1).area==2&&new VivoOptions(3).area==1,"Downloaded native defaults lost");
             check(VivoOptions.parse("{\"family\":3,\"area\":4}").area==4,"Explicit user area overwritten");
             check(VivoSensorGain.multiplier(0)==1&&VivoSensorGain.multiplier(-50)==.1f,"Native gain/range changed");
+            main(()->liquidSensitivity(runtime,api));
             VivoWallpaperZoom zoom=new VivoWallpaperZoom();long now=1_000_000_000L;
             zoom.mode(0,true,now);float previous=1.05f;
             for(int i=1;i<=90;i++){float current=zoom.sample(now+i*16_666_667L);check(current<=previous+.00001&&current>=1,"AOD zoom overshoots");previous=current;}
@@ -507,6 +564,7 @@ public final class VivoSceneProbe extends Instrumentation {
                     scene.darkWallpaper(true,false);scene.draw();frame("scene-"+family+"-dim.png");
                     check(GLES30.glGetError()==GLES30.GL_NO_ERROR,"Dimmed original Vivo frame GL error");
                     scene.darkWallpaper(false,false);scene.draw();
+                    aodToggle(scene,options,runtime,baseline[0]);
                     if(family!=1){
                         Object controller=api.get(scene,"controller"),sensor=api.get(api.get(controller,"f"),"e");
                         main(()->{
@@ -579,6 +637,17 @@ public final class VivoSceneProbe extends Instrumentation {
                 try{
                     scene.visible(true);main(()->{});
                     if(family==1){scene.touch(0,.5f,.6f);scene.touch(1,.5f,.6f);main(()->{});}
+                    if(family==1){
+                        Object identity=api.get(scene,"controller");
+                        for(int relative:new int[]{-50,50,0}){
+                            options.sensitivity=relative;check(scene.updateSensitivity(options),"Liquid sensitivity rebuilt scene");main(()->{});
+                            check(identity==api.get(scene,"controller"),"Liquid slider changed controller");
+                            Object gain=api.get(scene,"liquidSensitivity");
+                            check((Float)api.get(gain,"gain")==VivoSensorGain.multiplier(relative),"Liquid style did not receive gain");
+                            scene.draw();
+                        }
+                    }
+                    aodToggle(scene,options,runtime,baseline[0]);
                     for(int i=0;i<4;i++){scene.draw();SystemClock.sleep(16);}
                     check(GLES30.glGetError()==0,"Variant GL error family="+family+" style="+style+" area="+area);
                     PhotoViewport moved=new PhotoViewport();moved.restore(.6f,.5f,1.2f);scene.crop(moved);scene.draw();
@@ -586,7 +655,7 @@ public final class VivoSceneProbe extends Instrumentation {
                 }finally{scene.close();main(()->{});}
                 main(()->check(listeners(runtime)==baseline[0],"Variant leaked sensor"));
             }
-            report.append("All 36 liquid/flash style and area combinations: render, touch, crop, release OK\n");
+            report.append("All 36 liquid/flash style and area combinations: render, touch, crop, AOD toggle, black-screen suspend, release OK\n");
             }
             report.append("VIVO_SCENE_OK\n");
         }catch(Throwable error){StringWriter writer=new StringWriter();error.printStackTrace(new PrintWriter(writer));report.append(writer);}

@@ -46,6 +46,8 @@ final class NativeHyperOsClockPlugin extends NativeOriginalClockPlugin {
             for(NativeHyperOsFace face:new NativeHyperOsFace[]{fullLock,smallLock,aod,smallAod})face.color(value);
         }
         public void numberBounds(RectF out){active.numberBounds(out);}
+        public float lockDigitHeight(){return fullLock.digitHeight();}
+        public boolean lockDigitsStacked(){return fullLock.digitsStacked();}
         public void close(){for(NativeHyperOsFace face:new NativeHyperOsFace[]{fullLock,smallLock,aod,smallAod})face.close();}
     }
 }

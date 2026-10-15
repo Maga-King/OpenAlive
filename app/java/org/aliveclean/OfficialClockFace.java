@@ -67,6 +67,27 @@ final class OfficialClockFace extends FrameLayout implements AutoCloseable {
             out.union(x+ink.left,y+ink.top,x+ink.right,y+ink.bottom);
         }
     }
+    float digitHeight(){
+        float minimum=Float.POSITIVE_INFINITY;
+        for(TextView digit:digits){
+            if(digit.getVisibility()!=VISIBLE)continue;
+            float height=NativeClockDigitMetrics.textHeight(digit);
+            if(height<=0)return 0;
+            minimum=Math.min(minimum,height);
+        }
+        return Float.isFinite(minimum)?minimum:0;
+    }
+    boolean digitsStacked(){
+        java.util.ArrayList<android.graphics.RectF> bounds=new java.util.ArrayList<>();
+        for(TextView digit:digits){
+            if(digit.getVisibility()!=VISIBLE||digit.getLayout()==null)continue;
+            android.graphics.Rect ink=new android.graphics.Rect();digit.getPaint().getTextBounds("0123456789",0,10,ink);
+            android.graphics.Rect position=new android.graphics.Rect();digit.getDrawingRect(position);offsetDescendantRectToMyCoords(digit,position);
+            android.graphics.RectF area=new android.graphics.RectF(ink);
+            area.offset(position.left+digit.getTotalPaddingLeft(),position.top+digit.getTotalPaddingTop()+digit.getLayout().getLineBaseline(0));bounds.add(area);
+        }
+        return NativeClockDigitMetrics.stacked(bounds);
+    }
     void dateBounds(android.graphics.RectF out){android.graphics.Rect r=new android.graphics.Rect();date.getDrawingRect(r);offsetDescendantRectToMyCoords(date,r);out.set(r);}
     void active(boolean enabled){if(enabled)updates.start();else updates.stop();}
     @Override protected void onDetachedFromWindow(){updates.stop();super.onDetachedFromWindow();}

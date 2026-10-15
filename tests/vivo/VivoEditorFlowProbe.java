@@ -17,6 +17,18 @@ public final class VivoEditorFlowProbe extends Instrumentation {
     Object get(Object o,String name)throws Exception{Field f=o.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(o);}
     void call(Object o,String name,Class<?>[] types,Object... args)throws Exception{Method m=o.getClass().getDeclaredMethod(name,types);m.setAccessible(true);m.invoke(o,args);}
     void check(boolean b,String text){if(!b)throw new AssertionError(text);}
+    android.widget.Switch findSwitch(View view,String text){
+        if(view instanceof android.widget.Switch&&text.contentEquals(((android.widget.Switch)view).getText()))return (android.widget.Switch)view;
+        if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++){
+            android.widget.Switch found=findSwitch(((ViewGroup)view).getChildAt(i),text);if(found!=null)return found;
+        }return null;
+    }
+    android.widget.SeekBar findSensitivity(View view){
+        if(view instanceof android.widget.SeekBar&&view.getContentDescription()!=null&&view.getContentDescription().toString().startsWith("传感器灵敏度"))return (android.widget.SeekBar)view;
+        if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++){
+            android.widget.SeekBar found=findSensitivity(((ViewGroup)view).getChildAt(i));if(found!=null)return found;
+        }return null;
+    }
     interface Ready{boolean yes()throws Exception;}
     void until(Ready ready,String message)throws Exception{long end=SystemClock.uptimeMillis()+15000;boolean[] ok={false};do{main(()->ok[0]=ready.yes());if(ok[0])return;SystemClock.sleep(40);}while(SystemClock.uptimeMillis()<end);throw new AssertionError(message);}
     void gl(Object loop,Work work)throws Exception{CountDownLatch latch=new CountDownLatch(1);Throwable[] error={null};((Handler)get(loop,"handler")).post(()->{try{work.run();}catch(Throwable e){error[0]=e;}finally{latch.countDown();}});check(latch.await(15,TimeUnit.SECONDS),"GL work timed out");if(error[0]!=null)throw new AssertionError(error[0]);}
@@ -35,9 +47,12 @@ public final class VivoEditorFlowProbe extends Instrumentation {
         Map<String,?> savedEditor=new HashMap<>(editor.getAll()),savedDraft=new HashMap<>(draft.getAll());Set<String> before=new HashSet<>(Arrays.asList(context.fileList()));
         StringBuilder report=new StringBuilder();boolean passed=false;
         try{
+            for(android.content.pm.ActivityInfo info:context.getPackageManager().getPackageInfo(context.getPackageName(),android.content.pm.PackageManager.GET_ACTIVITIES).activities)
+                check(info.screenOrientation==android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,"Page not portrait: "+info.name);
             for(int family:new int[]{1,3}){
                 editor.edit().remove("family."+family).commit();
                 activity=(VivoEditorActivity)startActivitySync(new Intent(context,VivoEditorActivity.class).putExtra("family",family).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));final VivoEditorActivity a=activity;
+                main(()->a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
                 until(()->get(a,"runtime")!=null&&get(a,"apply")!=null&&((View)get(a,"preview")).getWidth()>0,"Editor did not load");
                 File photo=new File(context.getFilesDir(),"vivo-flow-fixture.png");Bitmap b=Bitmap.createBitmap(800,1200,Bitmap.Config.ARGB_8888);b.eraseColor(0xff3366aa);try(OutputStream out=new FileOutputStream(photo)){b.compress(Bitmap.CompressFormat.PNG,100,out);}b.recycle();
                 main(()->a.onActivityResult(10,Activity.RESULT_OK,new Intent().setData(android.net.Uri.fromFile(photo))));
@@ -58,7 +73,39 @@ public final class VivoEditorFlowProbe extends Instrumentation {
                 main(()->check(((VivoOptions)get(a,"options")).zoom>1.2f,"Pinch did not update crop"));
                 report.append("family ").append(family).append(": fresh import drawing+subject dialogs, continuous pinch and same scene after save OK; gesture+drain ms=").append(SystemClock.uptimeMillis()-start).append('\n');
                 main(a::finish);activity=null;waitForIdleSync();
-            }passed=true;report.append("VIVO_EDITOR_FLOW_OK\n");
+            }
+            for(int family:new int[]{1,2,3}){
+                editor.edit().remove("family."+family).commit();
+                for(int visit=0;visit<2;visit++){
+                    final boolean initial=visit==0;
+                    activity=(VivoEditorActivity)startActivitySync(new Intent(context,VivoEditorActivity.class).putExtra("family",family).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));final VivoEditorActivity a=activity;
+                    main(()->a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
+                    until(()->get(a,"runtime")!=null&&get(a,"apply")!=null,"Editor did not load for AOD option");
+                    main(()->{
+                        call(a,"showPanel",new Class<?>[]{int.class},0);
+                        Dialog panel=(Dialog)get(a,"panel");View root=panel.getWindow().getDecorView();
+                        check(a.getRequestedOrientation()==android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,"Editor requested non-portrait orientation");
+                        android.widget.Switch zoom=findSwitch(root,"息屏与亮屏壁纸缩放"),aod=findSwitch(root,"息屏保持动态效果");
+                        check(zoom!=null&&aod!=null,"Missing wallpaper switches");
+                        ViewGroup body=(ViewGroup)zoom.getParent();
+                        check(aod.getParent()==body&&body.indexOfChild(aod)==body.indexOfChild(zoom)+1,"AOD option must follow zoom");
+                        check(aod.isChecked()==initial,"AOD default or persisted state incorrect");
+                        android.widget.SeekBar seek=findSensitivity(root);check(seek!=null,"Missing sensitivity slider, family="+family);
+                        if(initial)check(seek.getProgress()==50,"Sensitivity must default to Vivo gain");
+                        else check(seek.getProgress()>50,"Sensitivity did not persist on reopen");
+                        if(initial){aod.setChecked(false);check(!VivoOptions.parse(editor.getString("family."+family,"")).aodAnimation,"Editor did not persist disabled AOD");check(!VivoOptions.parse(draft.getString("vivo","")).aodAnimation,"Render draft missed AOD option");}
+                    });
+                    until(()->findSensitivity(((Dialog)get(a,"panel")).getWindow().getDecorView()).getWidth()>0,"Sensitivity slider was not laid out");
+                    main(()->{
+                        Dialog panel=(Dialog)get(a,"panel");android.widget.SeekBar seek=findSensitivity(panel.getWindow().getDecorView());
+                        if(initial){touch(seek,0,seek.getWidth()*.75f,seek.getHeight()*.5f);touch(seek,1,seek.getWidth()*.75f,seek.getHeight()*.5f);
+                            check(VivoOptions.parse(editor.getString("family."+family,"")).sensitivity>0,"Dragging sensitivity did not save");}
+                        panel.dismiss();a.finish();
+                    });activity=null;waitForIdleSync();
+                }
+                report.append("family ").append(family).append(": portrait, sensitivity slider drag/save/reopen, AOD switch position/default/save/reopen OK\n");
+            }
+            passed=true;report.append("VIVO_EDITOR_FLOW_OK\n");
         }catch(Throwable e){StringWriter w=new StringWriter();e.printStackTrace(new PrintWriter(w));report.append(w);}
         finally{if(activity!=null){final Activity a=activity;main(a::finish);}waitForIdleSync();restore(editor,savedEditor);restore(draft,savedDraft);
             for(String name:context.fileList())if(name.startsWith("vivo-")&&!before.contains(name))context.deleteFile(name);

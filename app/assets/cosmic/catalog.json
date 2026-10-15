@@ -174,5 +174,41 @@
     "name": "远海",
     "thumbnail": "gradient_yuanhai.png",
     "family": "gradient"
+  },
+  {
+    "id": 401,
+    "name": "浪流",
+    "thumbnail": "flyme-video/langliu.png",
+    "family": "video"
+  },
+  {
+    "id": 402,
+    "name": "深潜",
+    "thumbnail": "flyme-video/shenqian.png",
+    "family": "video"
+  },
+  {
+    "id": 403,
+    "name": "涟漪",
+    "thumbnail": "flyme-video/lianyi.png",
+    "family": "video"
+  },
+  {
+    "id": 501,
+    "name": "3D壁纸 V4",
+    "thumbnail": "stereo/preview_v4.png",
+    "family": "stereo"
+  },
+  {
+    "id": 502,
+    "name": "3D壁纸 V5",
+    "thumbnail": "stereo/preview_v5.png",
+    "family": "stereo"
+  },
+  {
+    "id": 503,
+    "name": "3D壁纸 V6",
+    "thumbnail": "stereo/preview_v6.png",
+    "family": "stereo"
   }
 ]

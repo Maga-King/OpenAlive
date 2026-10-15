@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.aliveclean" android:versionCode="44" android:versionName="0.4.28-preview">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.aliveclean" android:versionCode="51" android:versionName="0.4.35-preview">
   <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="35"/>
   <uses-permission android:name="android.permission.SET_WALLPAPER"/>
   <uses-permission android:name="android.permission.AMBIENT_WALLPAPER"/>
@@ -35,31 +35,31 @@
     <meta-data android:name="xposedminversion" android:value="82"/>
     <meta-data android:name="xposeddescription" android:value="OpenAlive · 当前壁纸的 ColorOS AOD 适配"/>
     <meta-data android:name="xposedscope" android:resource="@array/xposed_scope"/>
-    <activity android:name=".XiaomiLibraryActivity" android:exported="false"/>
-    <activity android:name=".XiaomiDesktopSettingsActivity" android:exported="false"/>
+    <activity android:screenOrientation="portrait" android:name=".XiaomiLibraryActivity" android:exported="false"/>
+    <activity android:screenOrientation="portrait" android:name=".XiaomiDesktopSettingsActivity" android:exported="false"/>
     <provider android:name=".XiaomiState" android:authorities="org.aliveclean.xiaomi" android:exported="false"/>
-    <activity android:name=".XiaomiPreviewActivity$Earth" android:process=":xiaomi_preview_earth" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
+    <activity android:screenOrientation="portrait" android:name=".XiaomiPreviewActivity$Earth" android:process=":xiaomi_preview_earth" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <service android:name=".XiaomiWallpaper$Earth" android:process=":xiaomi_earth" android:exported="true" android:permission="android.permission.BIND_WALLPAPER"><intent-filter><action android:name="android.service.wallpaper.WallpaperService"/></intent-filter><meta-data android:name="android.service.wallpaper" android:resource="@xml/xiaomi_wallpaper"/></service>
-    <activity android:name=".XiaomiPreviewActivity$Moon" android:process=":xiaomi_preview_moon" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
+    <activity android:screenOrientation="portrait" android:name=".XiaomiPreviewActivity$Moon" android:process=":xiaomi_preview_moon" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <service android:name=".XiaomiWallpaper$Moon" android:process=":xiaomi_moon" android:exported="true" android:permission="android.permission.BIND_WALLPAPER"><intent-filter><action android:name="android.service.wallpaper.WallpaperService"/></intent-filter><meta-data android:name="android.service.wallpaper" android:resource="@xml/xiaomi_wallpaper"/></service>
-    <activity android:name=".XiaomiPreviewActivity$Mars" android:process=":xiaomi_preview_mars" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
+    <activity android:screenOrientation="portrait" android:name=".XiaomiPreviewActivity$Mars" android:process=":xiaomi_preview_mars" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <service android:name=".XiaomiWallpaper$Mars" android:process=":xiaomi_mars" android:exported="true" android:permission="android.permission.BIND_WALLPAPER"><intent-filter><action android:name="android.service.wallpaper.WallpaperService"/></intent-filter><meta-data android:name="android.service.wallpaper" android:resource="@xml/xiaomi_wallpaper"/></service>
-    <activity android:name=".XiaomiPreviewActivity$Saturn" android:process=":xiaomi_preview_saturn" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
+    <activity android:screenOrientation="portrait" android:name=".XiaomiPreviewActivity$Saturn" android:process=":xiaomi_preview_saturn" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <service android:name=".XiaomiWallpaper$Saturn" android:process=":xiaomi_saturn" android:exported="true" android:permission="android.permission.BIND_WALLPAPER"><intent-filter><action android:name="android.service.wallpaper.WallpaperService"/></intent-filter><meta-data android:name="android.service.wallpaper" android:resource="@xml/xiaomi_wallpaper"/></service>
-    <activity android:name=".XiaomiPreviewActivity$Snowmountain" android:process=":xiaomi_preview_snowmountain" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
+    <activity android:screenOrientation="portrait" android:name=".XiaomiPreviewActivity$Snowmountain" android:process=":xiaomi_preview_snowmountain" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <service android:name=".XiaomiWallpaper$Snowmountain" android:process=":xiaomi_snowmountain" android:exported="true" android:permission="android.permission.BIND_WALLPAPER"><intent-filter><action android:name="android.service.wallpaper.WallpaperService"/></intent-filter><meta-data android:name="android.service.wallpaper" android:resource="@xml/xiaomi_wallpaper"/></service>
-    <activity android:name=".XiaomiPreviewActivity$Geometry" android:process=":xiaomi_preview_geometry" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
+    <activity android:screenOrientation="portrait" android:name=".XiaomiPreviewActivity$Geometry" android:process=":xiaomi_preview_geometry" android:exported="false" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" android:launchMode="singleTop" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <service android:name=".XiaomiWallpaper$Geometry" android:process=":xiaomi_geometry" android:exported="true" android:permission="android.permission.BIND_WALLPAPER"><intent-filter><action android:name="android.service.wallpaper.WallpaperService"/></intent-filter><meta-data android:name="android.service.wallpaper" android:resource="@xml/xiaomi_wallpaper"/></service>
-    <activity android:name=".VivoLibraryActivity" android:exported="false" android:theme="@style/Theme.Clean.Editor" />
-        <activity android:name=".VivoEditorActivity" android:exported="false" android:theme="@style/Theme.Clean.Editor" />
-        <activity android:name=".HomeActivity" android:exported="true">
+    <activity android:screenOrientation="portrait" android:name=".VivoLibraryActivity" android:exported="false" android:theme="@style/Theme.Clean.Editor" />
+        <activity android:screenOrientation="portrait" android:name=".VivoEditorActivity" android:exported="false" android:theme="@style/Theme.Clean.Editor" />
+        <activity android:screenOrientation="portrait" android:name=".HomeActivity" android:exported="true">
       <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
     </activity>
-    <activity android:name=".DynamicLibraryActivity" android:exported="false"/>
-    <activity android:name=".NotificationSettingsActivity" android:exported="false"/>
-    <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.Clean.Editor"/>
-    <activity android:name=".FrameCropActivity" android:exported="false" android:theme="@android:style/Theme.Material.NoActionBar"/>
-    <activity android:name=".PhotoCropActivity" android:exported="false" android:theme="@android:style/Theme.Material.NoActionBar"/>
+    <activity android:screenOrientation="portrait" android:name=".DynamicLibraryActivity" android:exported="false"/>
+    <activity android:screenOrientation="portrait" android:name=".NotificationSettingsActivity" android:exported="false"/>
+    <activity android:screenOrientation="portrait" android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.Clean.Editor"/>
+    <activity android:screenOrientation="portrait" android:name=".FrameCropActivity" android:exported="false" android:theme="@android:style/Theme.Material.NoActionBar"/>
+    <activity android:screenOrientation="portrait" android:name=".PhotoCropActivity" android:exported="false" android:theme="@android:style/Theme.Material.NoActionBar"/>
     <provider android:name=".SceneProvider" android:authorities="org.aliveclean.scene" android:exported="true" android:permission="android.permission.STATUS_BAR"/>
     <provider android:name=".NativeClockStatusProvider" android:authorities="org.aliveclean.clock.runtime" android:exported="true" android:directBootAware="true"/>
     <service android:name=".CleanWallpaper" android:exported="true" android:permission="android.permission.BIND_WALLPAPER">

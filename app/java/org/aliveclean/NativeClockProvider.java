@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.AssetManager;
 import java.util.function.Function;
+import android.view.Display;
 
 /** Platform-only factory boundary; vendor and module class loaders never share AndroidX. */
 final class NativeClockProvider implements Function<String,Object> {
@@ -13,6 +14,13 @@ final class NativeClockProvider implements Function<String,Object> {
     NativeClockProvider(Context host,AssetManager assets,Function<String,Object> original){
         this.original=original;
         context=resourceContext(host,assets);
+    }
+    static Object stockProvider(Context host)throws Exception{
+        Display display=((android.hardware.display.DisplayManager)host.getSystemService(Context.DISPLAY_SERVICE)).getDisplay(Display.DEFAULT_DISPLAY);
+        Context visual=host.createDisplayContext(display);
+        Context vendor=host.createPackageContext("com.oplus.keyguard.personality.clocks",Context.CONTEXT_INCLUDE_CODE|Context.CONTEXT_IGNORE_SECURITY).createDisplayContext(display);
+        Class<?> type=vendor.getClassLoader().loadClass("com.oplus.keyguard.OplusStyleClockPluginProvider");
+        return type.getConstructor(Context.class,Context.class).newInstance(visual,vendor);
     }
     static Context resourceContext(Context host,AssetManager assets){
         // Only immutable bundled clock code/resources belong in DE storage.

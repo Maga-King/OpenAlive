@@ -30,6 +30,8 @@ final class ColorOsBridge {
     private static ColorOsAodClock aodClock;
     private static ColorOsContinuousAod continuousAod;
     private static ColorOsNotificationEffects notificationEffects;
+    private static ColorOsImmersiveBackdrop immersiveBackdrop;
+    private static boolean backdropCovered;
     private static boolean continuousAodRequested;
     private static final Messenger clockFeedback=new Messenger(new Handler(Looper.getMainLooper(),message->{
         if(message.sendingUid==wallpaperUid&&wallpaperUid>=0&&message.what==1&&selected&&aodClock!=null){
@@ -57,6 +59,7 @@ final class ColorOsBridge {
         aodClock=new ColorOsAodClock(cl);clockApi=aodClock.install();
         continuousAod=new ColorOsContinuousAod(cl);continuousAod.install();
         notificationEffects=new ColorOsNotificationEffects(cl,()->selected);notificationEffects.install();
+        immersiveBackdrop=new ColorOsImmersiveBackdrop(cl,()->selected,ColorOsBridge::sendBackdrop);immersiveBackdrop.install();
         try{
             XposedHelpers.findAndHookMethod(application,"onCreate",new XC_MethodHook(){
                 @Override protected void afterHookedMethod(MethodHookParam p){initialize((Context)p.thisObject);}
@@ -118,6 +121,7 @@ final class ColorOsBridge {
             stateOrder.accept(mode,time,phase);
             if(stateOrder.mode()!=mode)return;
             lastMode=mode;lastPhase=stateOrder.phase();
+            immersiveBackdrop.scene(mode);
             updateContinuousAod();
             updateWallpaperColor(clocks.loader(),mode==0);
             clocks.scene(context,!aodClock.usesIndependentClock(),mode,state);
@@ -305,6 +309,10 @@ final class ColorOsBridge {
     private static void updateContinuousAod(){
         continuousAod.configure(context,selected&&channel!=null&&continuousAodRequested&&lastMode==0);
     }
+    private static void sendBackdrop(boolean covered){
+        backdropCovered=covered;
+        Bundle data=new Bundle();data.putBoolean("covered",covered);send(3,data);
+    }
     private static void configure(Bundle reply){
         notificationEffects.configure(reply.getInt("notification_mode",0),reply.getInt("notification_seconds",10),reply.getString("notification_color","blue"),reply.getInt("notification_ring_color",NotificationOptions.RING_BLUE));
         int style=reply.getInt("aod",0);
@@ -338,8 +346,8 @@ final class ColorOsBridge {
             selected=info!=null&&"org.aliveclean".equals(info.getPackageName());
             {if(Diagnostics.TRACE)XposedBridge.log("AliveClean: lock wallpaper selected="+selected);}
             if(selected){connect();readConfiguration();}
-            else main.post(()->{localWallpaperColor=-1;vivoWallpaper=false;notificationEffects.configure(0,10,"blue");updateContinuousAod();aodClock.configure(context,false,0);clocks.scene(context,false,-1,"");stateOrder.disconnect();lastMode=-1;lastPhase=0;synchronized(ColorOsBridge.class){connectAttempts=0;}});
-        }catch(Throwable error){selected=false;main.post(()->{continuousAodRequested=false;updateContinuousAod();aodClock.configure(context,false,0);});failure("wallpaper selection",error);}
+            else main.post(()->{immersiveBackdrop.clear();localWallpaperColor=-1;vivoWallpaper=false;notificationEffects.configure(0,10,"blue");updateContinuousAod();aodClock.configure(context,false,0);clocks.scene(context,false,-1,"");stateOrder.disconnect();lastMode=-1;lastPhase=0;synchronized(ColorOsBridge.class){connectAttempts=0;}});
+        }catch(Throwable error){selected=false;main.post(()->{immersiveBackdrop.clear();continuousAodRequested=false;updateContinuousAod();aodClock.configure(context,false,0);});failure("wallpaper selection",error);}
     });}
     private static synchronized void connect(){
         if(connecting||channel!=null||worker==null||!selected)return;connecting=true;
@@ -360,6 +368,7 @@ final class ColorOsBridge {
                     localWallpaperColor=-1;
                     if(lastMode>=0||vivoWallpaper)updateWallpaperColor(clocks.loader(),lastMode==0);
                     if(lastMode>=0){Bundle b=new Bundle();b.putInt("mode",lastMode);b.putBoolean("animate",false);b.putInt("phase",lastPhase);b.putLong("time",SystemClock.uptimeMillis());b.putLong("clock_wake",aodClock.wakeToken());send(1,b);}
+                    sendBackdrop(backdropCovered);immersiveBackdrop.refresh();
                 });
             }catch(Throwable error){
                 failure("scene channel",error);
@@ -385,6 +394,9 @@ final class ColorOsBridge {
         Messenger target=channel;
         if(target!=null)try{Message message=Message.obtain();message.what=what;message.setData(data);target.send(message);return;}
         catch(RemoteException error){channel=null;main.post(ColorOsBridge::updateContinuousAod);}
+        // Coverage is optional state on the authenticated Binder channel. A dead
+        // connection restores rendering at the receiver; never send it as layout.
+        if(what==3){connect();return;}
         if(context!=null){
             Intent event=new Intent(what==1?ACTION:ACTION_LAYOUT).setPackage("org.aliveclean").addFlags(Intent.FLAG_RECEIVER_FOREGROUND).putExtras(data);
             context.sendBroadcast(event);connect();

@@ -47,7 +47,13 @@ final class NativeClockWidgetBridge {
         if(args.containsKey("displayWidgetCols"))columns=Math.max(1,args.getInt("displayWidgetCols"));
         publish();
     }
-    int occupiedRows(boolean large){return ready?(large?originalRows:occupiedRows):0;}
+    int occupiedRows(boolean large){
+        // Lyrics exit can restore showing rows before origin rows (1, 0).
+        // Never reserve less space for the large clock than for the widgets
+        // already present. ColorOS rejects bigHeight <= smallHeight and then
+        // toggles clock size again when the second row callback arrives.
+        return ready?(large?Math.max(originalRows,occupiedRows):occupiedRows):0;
+    }
     void translation(float x,float y){
         if(!Float.isFinite(x)||!Float.isFinite(y))return;
         Bundle args=new Bundle();args.putFloat("widgetsContainerTranslationX",x);args.putFloat("widgetsContainerTranslationY",y);

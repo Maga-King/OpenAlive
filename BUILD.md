@@ -26,7 +26,7 @@ python3 tools/build_release.py
 
 Vivo 主体分割离线运行：固定的 U2NetP 模型位于 `app/assets/vivo/models/`，ONNX Runtime Android 的 Java 与 arm64 原生库位于 `vendor/onnxruntime/`。构建校验来源清单中的 SHA-256、原生库 16 KB 页对齐，并打包许可证；用户图片不上传到服务端。
 
-资源表以未压缩形式存储并按 4096 字节对齐，签名后再次检查。安装包暂不包含 Flyme 原厂视频壁纸；Vivo 光栅支持用户自选图片和视频。
+资源表以未压缩形式存储并按 4096 字节对齐，签名后再次检查。安装包包含 Flyme 9 浪流、深潜、涟漪原始视频，MP4 保持未压缩以供 AssetManager.openFd 解码；Vivo 光栅支持用户自选图片和视频。
 
 小米超级壁纸的列表和预览使用 `app/assets/xiaomi/ui.apk` 中的原版控件，构建会校验所有保留文件。需要重新生成时执行 `python tools/import_xiaomi_ui.py ThemeManager.apk 场景APK目录`，再执行 `python tools/import_xiaomi_packs.py 场景APK目录`。输入版本固定并校验原包；目录内应有 `moon.apk`、`snowmountain.apk`、`geometry.apk`、`saturn.apk`、`earth.apk` 和 `mars.apk`。
 

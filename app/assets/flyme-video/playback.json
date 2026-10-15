@@ -1,0 +1,24 @@
+{
+  "normal_speed": 1.0,
+  "slowdown_delay_ms": 7000,
+  "slowdown_duration_ms": 1000,
+  "slow_speed": 0.3333,
+  "slowdown_interpolator": "linear",
+  "stop_after_slowdown": true,
+  "render_rate": "int(speed * 30 + 30)",
+  "resume": "retain source time, restart activity window at normal speed",
+  "scene_geometry": "same video in AOD, lock and home",
+  "portrait": "stretch original quad to viewport",
+  "landscape": "quad height is integer(viewportWidth squared / viewportHeight)",
+  "normal_theme_dark_strength": [
+    0,
+    0,
+    0
+  ],
+  "dark_theme_dark_strength": [
+    1,
+    1,
+    1
+  ],
+  "dark_transition_ms": 100
+}

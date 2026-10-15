@@ -45,7 +45,7 @@ public final class DynamicLibraryActivity extends Activity {
             grid.setOnItemClickListener((parent,view,p,id)->startActivity(new Intent(this,MainActivity.class).putExtra("cosmic_variant",entries.get(p).id)));
             for(Entry entry:entries)decoder.execute(()->{
                 if(Thread.currentThread().isInterrupted())return;
-                try(InputStream input=getAssets().open("cosmic/"+entry.thumbnail)){
+                try(InputStream input=getAssets().open(entry.thumbnail.indexOf('/')>=0?entry.thumbnail:"cosmic/"+entry.thumbnail)){
                     BitmapFactory.Options options=new BitmapFactory.Options();options.inSampleSize=2;Bitmap bitmap=BitmapFactory.decodeStream(input,null,options);
                     runOnUiThread(()->{if(isDestroyed()){if(bitmap!=null)bitmap.recycle();return;}entry.bitmap=bitmap;adapter.notifyDataSetChanged();});
                 }catch(IOException error){android.util.Log.e("AliveClean","Wallpaper thumbnail unavailable",error);}

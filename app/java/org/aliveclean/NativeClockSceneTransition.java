@@ -33,10 +33,24 @@ final class NativeClockSceneTransition {
     }
     boolean running(){return running||pending!=null;}
     RectF capture(){
-        RectF bounds=new RectF();faces.numberBounds(bounds);
-        Matrix matrix=new Matrix();faces.active().transformMatrixToGlobal(matrix);matrix.mapRect(bounds);
+        RectF bounds=new RectF();
+        if(pending!=null){
+            // The incoming face is still hidden and has never been drawn. A
+            // second size request in the same frame must keep the visible
+            // source, not capture the undisplayed intermediate clock's size.
+            // from remains in screen coordinates until the pending pre-draw.
+            bounds.set(from);
+        }else{
+            faces.numberBounds(bounds);
+            Matrix matrix=new Matrix();faces.active().transformMatrixToGlobal(matrix);matrix.mapRect(bounds);
+        }
+        // A replacement is not completion of the old scene. In particular, do
+        // not settle its widgets synchronously while the new state is pending.
+        completed=null;
         cancel();return bounds;
     }
+    /** A new layout budget changes the endpoint without changing the visible face. */
+    void retarget(RectF source,Runnable done){start(null,source,done);}
     void start(View previous,RectF source,Runnable done){
         incoming=faces.active();completed=done;
         if(previous==incoming||source.isEmpty()||!root.isAttachedToWindow()) {finish();return;}
@@ -72,6 +86,9 @@ final class NativeClockSceneTransition {
         View progress=new View(root.getContext());progress.setAlpha(0);
         // Native TransitionDrawUpdater is driven by attachment/pre-draw. An
         // unattached dummy View queues the transition forever.
+        // The native updater invalidates this view to schedule its pre-draw.
+        // A zero-size overlay may not dirty the host after layout has settled.
+        progress.layout(0,0,1,1);
         progressView=progress;parent.getOverlay().add(progress);
         spring=type.getConstructor(View.class,loader.loadClass("x6.l")).newInstance(progress,null);
         abort=type.getMethod("abortTransToViewSilent");
@@ -87,6 +104,7 @@ final class NativeClockSceneTransition {
         running=true;frame(0);
         type.getMethod("setAlpha",float.class,boolean.class,loader.loadClass(ns+"TransitionSet"),property,loader.loadClass(ns+"TransitionCustomAction"))
                 .invoke(spring,1f,true,null,spec,null);
+        parent.postInvalidateOnAnimation();
     }
     private void frame(float progress){
         if(incoming==null)return;

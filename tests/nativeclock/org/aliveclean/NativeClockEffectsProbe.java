@@ -21,13 +21,21 @@ public final class NativeClockEffectsProbe extends Activity {
     private NativeOriginalClockPlugin clock;
     private final ArrayList<String> ids=new ArrayList<>();
     private Bitmap wallpaper;
-    private int index,checked,materialChecks,geometryTransitions;
+    private int index,checked,materialChecks,geometryTransitions,handoff,clippingFrames,styleClippingFrames;
     private long start;
-    private boolean intermediate,midCapture,moving;
+    private boolean intermediate,midCapture,moving,finished;
     private Object controller;
+    private final android.view.ViewTreeObserver.OnPreDrawListener clipping=()->{
+        if(clock!=null&&clock.sceneAnimating())safe(()->{
+            View view=clock.apply(8);if(view.getAlpha()<=0)return;
+            checkClipping(view);clippingFrames++;styleClippingFrames++;
+        });
+        return true;
+    };
     private final StringBuilder detail=new StringBuilder();
     @Override public void onCreate(Bundle args){
         super.onCreate(args);stage=new FrameLayout(this);setContentView(stage);
+        stage.getViewTreeObserver().addOnPreDrawListener(clipping);
         getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         stage.post(()->safe(()->{
             if(getApplicationInfo().targetSdkVersion!=37)throw new AssertionError("SDK37 required");
@@ -35,6 +43,12 @@ public final class NativeClockEffectsProbe extends Activity {
             stage.setBackground(new android.graphics.drawable.BitmapDrawable(getResources(),wallpaper));
             ids.add(NativeFlymeClockPlugin.ID);ids.add(NativeFlymeClockPlugin.HORIZONTAL_ID);ids.add(NativeFlymeArtworkPlugin.PERSPECTIVE);
             for(NativeHyperOsStyles.Style s:NativeHyperOsStyles.ALL)ids.add(s.id);
+            String only=getIntent().getStringExtra("style");
+            if(only!=null){
+                for(NativeVivoClockStyles.Style s:NativeVivoClockStyles.all(this))ids.add(s.id);
+                ids.removeIf(id->!java.util.Arrays.stream(only.split(",")).anyMatch(id::endsWith));
+                if(ids.isEmpty())throw new AssertionError("No requested clock styles: "+only);
+            }
             bootstrap();
         }));
     }
@@ -60,7 +74,13 @@ public final class NativeClockEffectsProbe extends Activity {
         });
         type.getMethod("addColoringListener",coloring).invoke(controller,region);
         type.getMethod("setColoringConfig",int.class,int.class,boolean.class,int.class,boolean.class,boolean.class).invoke(controller,1,0,true,0,false,false);
-        type.getMethod("setScreenShotEx",Bitmap.class,int[].class,boolean.class,Long.class).invoke(controller,wallpaper,new int[]{wallpaper.getWidth(),wallpaper.getHeight()},true,1L);
+        try{
+            type.getMethod("setScreenShotEx",Bitmap.class,int[].class,boolean.class,Long.class,boolean.class)
+                    .invoke(controller,wallpaper,new int[]{wallpaper.getWidth(),wallpaper.getHeight()},true,1L,false);
+        }catch(NoSuchMethodException olderPlugin){
+            type.getMethod("setScreenShotEx",Bitmap.class,int[].class,boolean.class,Long.class)
+                    .invoke(controller,wallpaper,new int[]{wallpaper.getWidth(),wallpaper.getHeight()},true,1L);
+        }
         java.lang.reflect.Field store=type.getSuperclass().getDeclaredField("wallpaperBitmapStore");store.setAccessible(true);Object value=store.get(controller);
         if(value.getClass().getMethod("getBitmap").invoke(value)!=null)throw new AssertionError("Live-first baseline no longer drops input");
         if(!NativeClockMaterialBootstrap.seed(controller,wallpaper,new int[]{wallpaper.getWidth(),wallpaper.getHeight()},2L))throw new AssertionError("Seed not attempted");
@@ -77,7 +97,7 @@ public final class NativeClockEffectsProbe extends Activity {
     private void next()throws Exception{
         if(index==ids.size()){
             if(geometryTransitions==0)throw new AssertionError("Every transition lacked geometry");
-            done("NATIVE_EFFECTS_OK styles="+index+" transitions="+checked+" glass="+materialChecks+"\ngeometryTransitions="+geometryTransitions+"\n"+detail);return;
+            done("NATIVE_EFFECTS_OK styles="+index+" transitions="+checked+" glass="+materialChecks+" clippingFrames="+clippingFrames+"\ngeometryTransitions="+geometryTransitions+"\n"+detail);return;
         }
         // Setup scopes are bit flags: clock=2, widgets=4, base UI=8.
         nativeHost=new NativeClockHostFixture(this,6);
@@ -100,20 +120,28 @@ public final class NativeClockEffectsProbe extends Activity {
         stage.postDelayed(()->safe(()->{
             if(!clock.materialApplied())throw new AssertionError("Initial glass absent "+ids.get(index)+" "+NativeClockLoadState.snapshot());
             assertWidgets(true);
-            begin(3);
+            handoff=0;styleClippingFrames=0;begin(3);
         }),120);
     }
     private void scene(int state,boolean anim){
-        Bundle args=new Bundle();args.putInt("uiState",state);args.putInt("clockSize",1);args.putBoolean("isAnim",anim);
+        scene(state,1,anim);
+    }
+    private void scene(int state,int size,boolean anim){
+        Bundle args=new Bundle();args.putInt("uiState",state);args.putInt("clockSize",size);args.putBoolean("isAnim",anim);
         try{nativeHost.call("onClockStateChanged",args);}catch(Exception failure){throw new IllegalStateException(failure);}
     }
-    private void begin(int state)throws Exception{
+    private void begin(int state)throws Exception{begin(state,1);}
+    private void begin(int state,int size)throws Exception{
         android.graphics.RectF before=new android.graphics.RectF();
-        if(clock.apply(8) instanceof NativeHyperOsFace)((NativeHyperOsFace)clock.apply(8)).numberBounds(before);
-        detail.append(ids.get(index)).append(" state=").append(state).append(" from=").append(before).append('\n');
-        scene(state,true);start=android.os.SystemClock.uptimeMillis();intermediate=false;moving=false;midCapture=false;waitTransition(state);
+        View original=originalFace(clock.apply(8));
+        if(original instanceof NativeHyperOsFace)((NativeHyperOsFace)original).numberBounds(before);
+        detail.append(ids.get(index)).append(" state=").append(state).append(" size=").append(size).append(" from=").append(before).append('\n');
+        scene(state,size,true);
+        // Run after the scene's pending pre-draw has made its first frame visible.
+        stage.getViewTreeObserver().removeOnPreDrawListener(clipping);stage.getViewTreeObserver().addOnPreDrawListener(clipping);
+        start=android.os.SystemClock.uptimeMillis();intermediate=false;moving=false;midCapture=false;waitTransition(state,size);
     }
-    private void waitTransition(int state){stage.postDelayed(()->safe(()->{
+    private void waitTransition(int state,int size){stage.postDelayed(()->safe(()->{
         long elapsed=android.os.SystemClock.uptimeMillis()-start;
         View view=clock.apply(8);
         if(clock.sceneAnimating()&&view.getAlpha()>0){
@@ -124,20 +152,20 @@ public final class NativeClockEffectsProbe extends Activity {
             // Several original faces keep digit size but change their position.
             intermediate=true;
             if(view.getScaleY()!=1||view.getTranslationX()!=0||view.getTranslationY()!=0)moving=true;
-            if(!clock.materialApplied())throw new AssertionError("Glass absent during handoff "+ids.get(index));
-            checkClipping(view);
+            if(size!=2&&!clock.materialApplied())throw new AssertionError("Glass absent during handoff "+ids.get(index));
             if(state==2&&index==0&&!midCapture&&elapsed>100){
                 midCapture=true;capture("clock-effects-mid.png",()->{});
             }
         }
         if(clock.sceneAnimating()){
             if(elapsed>3500)throw new AssertionError("Scene did not settle "+ids.get(index)+" "+NativeClockLoadState.snapshot());
-            waitTransition(state);return;
+            waitTransition(state,size);return;
         }
         if(!intermediate){
-            if(view instanceof NativeHyperOsFace){
+            View original=originalFace(view);
+            if(original instanceof NativeHyperOsFace){
                 java.lang.reflect.Field field=NativeHyperOsFace.class.getDeclaredField("numbers");field.setAccessible(true);
-                for(Object item:(java.util.List<?>)field.get(view)){
+                for(Object item:(java.util.List<?>)field.get(original)){
                     View number=(View)item;detail.append(number).append(" alpha=").append(number.getAlpha()).append('\n');
                     try{detail.append(number.getClass().getMethod("getTextBoundsWithPosition").invoke(number)).append('\n');}catch(Exception ignored){}
                 }
@@ -145,19 +173,31 @@ public final class NativeClockEffectsProbe extends Activity {
             throw new AssertionError("No intermediate frames "+ids.get(index)+" "+NativeClockLoadState.snapshot()+"\n"+detail+"\n"+view);
         }
         if(view.getAlpha()!=1||view.getScaleY()!=1||view.getTranslationY()!=0)throw new AssertionError("Scene residue");
-        if(clock.clockContainer.getChildCount()!=4)throw new AssertionError("Original face lost after overlay");
+        int originals=0,immersed=0;
+        for(int i=0;i<clock.clockContainer.getChildCount();i++){
+            if(clock.clockContainer.getChildAt(i) instanceof NativeOfficialClockFaces)immersed++;else originals++;
+        }
+        if(originals!=4||immersed!=1)throw new AssertionError("Clock face lost or leaked after overlay: original="+originals+" immersed="+immersed);
         checked++;
         assertWidgets(state==2||state==5);
         if(moving)geometryTransitions++;
-        if(state==3){begin(2);return;}
+        switch(++handoff){
+            case 1:begin(2,0);return;
+            case 2:begin(2,1);return;
+            case 3:begin(2,2);return;
+            case 4:begin(2,1);return;
+        }
+        if(styleClippingFrames==0)throw new AssertionError("No drawn transition frames checked for clipping");
+        detail.append("clippingFrames=").append(styleClippingFrames).append('\n');
         material();
     }),16);}
     private void checkClipping(View face){
         Rect visible=clock.apply("getClockVisibleRect",null).getParcelable("visibleRect");
         android.graphics.RectF ink=new android.graphics.RectF(visible);
-        if(face instanceof NativeHyperOsFace){
-            ((NativeHyperOsFace)face).contentBounds(ink);
-            android.graphics.Matrix full=new android.graphics.Matrix();face.transformMatrixToGlobal(full);full.mapRect(ink);
+        View original=originalFace(face);
+        if(original instanceof NativeHyperOsFace){
+            ((NativeHyperOsFace)original).contentBounds(ink);
+            android.graphics.Matrix full=new android.graphics.Matrix();original.transformMatrixToGlobal(full);full.mapRect(ink);
         }
         // Only screen-visible pixels are expected; some original large presets
         // intentionally extend beyond the display at their unscaled endpoint.
@@ -166,17 +206,105 @@ public final class NativeClockEffectsProbe extends Activity {
         if(clock.id.contains(".doodle.")){
             if(ink.left<screen.left-2||ink.right>screen.right+2)throw new AssertionError("Weekday artwork outside preview "+ink+" "+screen);
         }
-        if(!ink.intersect(screen))return;
-        for(android.view.ViewParent p=face.getParent();p instanceof android.view.ViewGroup;p=p.getParent()){
-            android.view.ViewGroup group=(android.view.ViewGroup)p;
-            if(group==host)break;
-            if(!group.getClipChildren()&&!group.getClipToPadding()&&group.getClipBounds()==null&&!group.getClipToOutline())continue;
-            android.graphics.RectF limit=new android.graphics.RectF(0,0,group.getWidth(),group.getHeight());
-            if(group.getClipToPadding())limit.set(group.getPaddingLeft(),group.getPaddingTop(),group.getWidth()-group.getPaddingRight(),group.getHeight()-group.getPaddingBottom());
-            Rect clip=group.getClipBounds();if(clip!=null)limit.intersect(new android.graphics.RectF(clip));
-            matrix.reset();group.transformMatrixToGlobal(matrix);matrix.mapRect(limit);limit.inset(-2,-2);
-            if(!limit.contains(ink))throw new AssertionError("Animated digits clipped by "+group+" ink="+ink+" limit="+limit);
+        ArrayList<Ink> leaves=new ArrayList<>();collectInk(original,leaves);
+        if(leaves.isEmpty())throw new AssertionError("No original drawing geometry for "+original);
+        for(Ink leaf:leaves)checkLeafClipping(leaf,original,screen);
+    }
+    private View originalFace(View face){
+        while(face instanceof NativeAdaptiveClockFace)face=((NativeAdaptiveClockFace)face).content();
+        if(!(face instanceof NativeOfficialClockFaces)&&NativeHyperOsStyles.find(clock.id)!=null&&!(face instanceof NativeHyperOsFace))
+            throw new AssertionError("HyperOS geometry unavailable: "+face);
+        return face;
+    }
+    private static final class Ink{
+        final View view;final android.graphics.RectF bounds;
+        Ink(View view,android.graphics.RectF bounds){this.view=view;this.bounds=new android.graphics.RectF(bounds);}
+    }
+    private void collectInk(View original,ArrayList<Ink> leaves){
+        try{
+            if(original instanceof NativeHyperOsFace){
+                java.lang.reflect.Field field=NativeHyperOsFace.class.getDeclaredField("content");field.setAccessible(true);
+                java.lang.reflect.Method method=NativeHyperOsFace.class.getDeclaredMethod("ink",View.class);method.setAccessible(true);
+                for(Object item:(java.util.List<?>)field.get(original)){
+                    View view=(View)item;if(!visibleWithin(view,original))continue;
+                    android.graphics.RectF bounds=(android.graphics.RectF)method.invoke(null,view);
+                    if(!bounds.isEmpty())leaves.add(new Ink(view,bounds));
+                }
+            }else if(original instanceof NativeFlymePerspectiveFace){
+                java.lang.reflect.Method method=NativeFlymePerspectiveFace.class.getDeclaredMethod("ink",android.widget.TextView.class,android.graphics.Matrix.class);method.setAccessible(true);
+                for(String name:new String[]{"time","date","week"}){
+                    java.lang.reflect.Field field=NativeFlymePerspectiveFace.class.getDeclaredField(name);field.setAccessible(true);
+                    View view=(View)field.get(original);if(!visibleWithin(view,original))continue;
+                    android.graphics.Matrix draw=null;
+                    if(!name.equals("week")){field=NativeFlymePerspectiveFace.class.getDeclaredField(name+"Matrix");field.setAccessible(true);draw=(android.graphics.Matrix)field.get(original);}
+                    android.graphics.RectF bounds=(android.graphics.RectF)method.invoke(null,view,draw);
+                    if(!bounds.isEmpty())leaves.add(new Ink(view,bounds));
+                }
+            }else if(original instanceof FlymeAliveAodFace){
+                android.graphics.RectF bounds=new android.graphics.RectF();((FlymeAliveAodFace)original).numberBounds(bounds);leaves.add(new Ink(original,bounds));
+                ((FlymeAliveAodFace)original).dateBounds(bounds);if(!bounds.isEmpty())leaves.add(new Ink(original,bounds));
+            }else collectTextInk(original,leaves);
+        }catch(ReflectiveOperationException failure){throw new AssertionError("Original drawing geometry unavailable",failure);}
+    }
+    private boolean visibleWithin(View view,View original){
+        for(;;){
+            if(view.getVisibility()!=View.VISIBLE||view.getAlpha()<=0)return false;
+            if(view==original)return true;
+            if(!(view.getParent() instanceof View))return false;view=(View)view.getParent();
         }
+    }
+    private void collectTextInk(View view,ArrayList<Ink> leaves)throws ReflectiveOperationException{
+        if(view.getVisibility()!=View.VISIBLE||view.getAlpha()<=0)return;
+        if(view instanceof android.widget.TextView){
+            android.widget.TextView text=(android.widget.TextView)view;android.text.Layout layout=text.getLayout();
+            android.graphics.RectF bounds=new android.graphics.RectF();
+            if(layout!=null)for(int line=0;line<layout.getLineCount();line++){
+                int begin=layout.getLineStart(line),end=layout.getLineEnd(line);if(begin==end)continue;
+                android.graphics.Path path=new android.graphics.Path();
+                text.getPaint().getTextPath(text.getText().toString(),begin,end,text.getTotalPaddingLeft()+layout.getLineLeft(line)-text.getScrollX(),text.getTotalPaddingTop()+layout.getLineBaseline(line)-text.getScrollY(),path);
+                android.graphics.RectF lineBounds=new android.graphics.RectF();path.computeBounds(lineBounds,true);bounds.union(lineBounds);
+            }
+            if(view.getClass().getName().equals("com.oplus.keyguard.clock.digital.widget.MyCustomizedTextView")){
+                java.lang.reflect.Field offset=view.getClass().getDeclaredField("fontMetricsDrawOffsetY");offset.setAccessible(true);bounds.offset(0,offset.getFloat(view));
+            }
+            android.graphics.drawable.Drawable left=text.getCompoundDrawables()[0];
+            if(left!=null){android.graphics.RectF image=new android.graphics.RectF(left.getBounds());image.offset(text.getPaddingLeft(),text.getPaddingTop()+(text.getHeight()-text.getPaddingTop()-text.getPaddingBottom()-image.height())/2);bounds.union(image);}
+            if(!bounds.isEmpty())leaves.add(new Ink(view,bounds));
+        }else if(view instanceof android.view.ViewGroup){
+            android.view.ViewGroup group=(android.view.ViewGroup)view;for(int i=0;i<group.getChildCount();i++)collectTextInk(group.getChildAt(i),leaves);
+        }
+    }
+    private void checkLeafClipping(Ink leaf,View original,android.graphics.RectF screen){
+        android.graphics.RectF ink=new android.graphics.RectF(leaf.bounds);android.graphics.Matrix matrix=new android.graphics.Matrix();leaf.view.transformMatrixToGlobal(matrix);matrix.mapRect(ink);
+        if(!ink.intersect(screen))return;
+        for(View node=leaf.view;node!=host&&node.getParent() instanceof View;node=(View)node.getParent()){
+            android.view.ViewParent parent=node.getParent();
+            // clipChildren is applied to each child's own RenderNode bounds.
+            if(parent instanceof android.view.ViewGroup&&((android.view.ViewGroup)parent).getClipChildren())assertClip(node,new android.graphics.RectF(0,0,node.getWidth(),node.getHeight()),ink,leaf,"parent clipChildren");
+            // A RenderEffect or alpha layer has a finite input surface even if
+            // every enclosing ViewGroup allows drawing outside child bounds.
+            if((node==original&&clock.materialApplied())||node.getLayerType()!=View.LAYER_TYPE_NONE||(node.getAlpha()<1&&node.hasOverlappingRendering()))
+                assertClip(node,new android.graphics.RectF(0,0,node.getWidth(),node.getHeight()),ink,leaf,"effect/alpha layer input");
+            Rect clip=node.getClipBounds();if(clip!=null)assertClip(node,new android.graphics.RectF(clip),ink,leaf,"explicit clipBounds");
+            if(node instanceof android.view.ViewGroup){
+                android.view.ViewGroup group=(android.view.ViewGroup)node;
+                if(group.getClipToPadding()&&(group.getPaddingLeft()!=0||group.getPaddingTop()!=0||group.getPaddingRight()!=0||group.getPaddingBottom()!=0))
+                    assertClip(node,new android.graphics.RectF(group.getPaddingLeft(),group.getPaddingTop(),group.getWidth()-group.getPaddingRight(),group.getHeight()-group.getPaddingBottom()),ink,leaf,"clipToPadding");
+            }
+            if(node.getClipToOutline())throw new AssertionError("Outline clipping requires pixel coverage: "+clipChain(leaf.view));
+        }
+    }
+    private void assertClip(View node,android.graphics.RectF local,android.graphics.RectF ink,Ink leaf,String reason){
+        android.graphics.Matrix matrix=new android.graphics.Matrix();node.transformMatrixToGlobal(matrix);matrix.mapRect(local);local.inset(-2,-2);
+        if(!local.contains(ink))throw new AssertionError("Animated artwork crosses "+reason+" of "+node+" ink="+ink+" limit="+local+" leafInk="+leaf.bounds+"\n"+clipChain(leaf.view));
+    }
+    private String clipChain(View leaf){
+        StringBuilder out=new StringBuilder(clock.id).append(" handoff=").append(handoff).append(" frame=").append(styleClippingFrames);
+        for(View node=leaf;node!=host&&node.getParent() instanceof View;node=(View)node.getParent()){
+            out.append('\n').append(node).append(" size=").append(node.getWidth()).append('x').append(node.getHeight()).append(" scale=").append(node.getScaleX()).append(',').append(node.getScaleY()).append(" translate=").append(node.getTranslationX()).append(',').append(node.getTranslationY()).append(" alpha=").append(node.getAlpha()).append(" layer=").append(node.getLayerType()).append(" clip=").append(node.getClipBounds()).append(" outline=").append(node.getClipToOutline());
+            if(node instanceof android.view.ViewGroup){android.view.ViewGroup group=(android.view.ViewGroup)node;out.append(" children=").append(group.getClipChildren()).append(" padding=").append(group.getClipToPadding()).append(':').append(group.getPaddingLeft()).append(',').append(group.getPaddingTop()).append(',').append(group.getPaddingRight()).append(',').append(group.getPaddingBottom());}
+        }
+        return out.toString();
     }
     private void material()throws Exception{
         stage.postDelayed(()->safe(()->{
@@ -281,8 +409,10 @@ public final class NativeClockEffectsProbe extends Activity {
         }catch(Throwable failure){done(android.util.Log.getStackTraceString(failure));}},new Handler());
     }
     private interface Task{void run()throws Exception;}
-    private void safe(Task task){try{task.run();}catch(Throwable failure){done(android.util.Log.getStackTraceString(failure));}}
+    private void safe(Task task){if(finished)return;try{task.run();}catch(Throwable failure){done(android.util.Log.getStackTraceString(failure));}}
     private void done(String result){
+        if(finished)return;finished=true;
+        if(stage!=null&&stage.getViewTreeObserver().isAlive())stage.getViewTreeObserver().removeOnPreDrawListener(clipping);
         if(nativeHost!=null){try{nativeHost.close();}catch(Exception ignored){}nativeHost=null;clock=null;}
         try(java.io.FileOutputStream file=openFileOutput("effects.txt",MODE_PRIVATE)){file.write(result.getBytes(java.nio.charset.StandardCharsets.UTF_8));}catch(Exception ignored){}
         android.util.Log.i("OpenAliveClockProbe",result);finish();

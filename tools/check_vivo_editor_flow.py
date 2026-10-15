@@ -12,6 +12,10 @@ for name in ['classes','dex']:(OUT/name).mkdir(exist_ok=True)
 PACKAGE='org.aliveclean.editorflow'
 def run(*cmd,**kw):return subprocess.run(list(map(str,cmd)),check=True,**kw)
 def adb(*cmd,**kw):return run(SDK/'platform-tools/adb.exe','-s',args.serial,*cmd,**kw)
+power=adb('shell','dumpsys','power',capture_output=True,text=True,encoding='utf8').stdout
+window=adb('shell','dumpsys','window',capture_output=True,text=True,encoding='utf8').stdout
+if 'mWakefulness=Awake' not in power or 'isKeyguardShowing=true' in window:
+    raise SystemExit('Unlock the selected device before running the visible editor regression.')
 (OUT/'AndroidManifest.xml').write_text('<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="'+PACKAGE+'"><uses-sdk android:minSdkVersion="28" android:targetSdkVersion="35"/><application/><instrumentation android:name="org.aliveclean.VivoEditorFlowProbe" android:targetPackage="org.aliveclean"/></manifest>',encoding='utf8')
 run(JAVA/'javac.exe','-encoding','UTF-8','-source','8','-target','8','-bootclasspath',ANDROID,'-classpath',str(ROOT/'build/release/classes')+os.pathsep+str(BT/'core-lambda-stubs.jar'),'-d',OUT/'classes',ROOT/'tests/vivo/VivoEditorFlowProbe.java')
 run(JAVA/'java.exe','-cp',BT/'lib/d8.jar','com.android.tools.r8.D8','--min-api','28','--lib',ANDROID,'--classpath',ROOT/'build/release/classes','--output',OUT/'dex',*sorted((OUT/'classes').rglob('*.class')))

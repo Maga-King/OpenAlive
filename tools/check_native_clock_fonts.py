@@ -22,11 +22,11 @@ def run(*args, **kwargs):
         kwargs.setdefault('errors', 'replace')
     return subprocess.run(list(map(str,args)), check=True, **kwargs)
 
-def instrument_foreground(component, timeout=90, hidden_api=False):
+def instrument_foreground(component, timeout=90, hidden_api=False, extras=()):
     # Instrumentation restarts the test process, so opening a window before it
     # starts does not bypass HyperOS's background launch gate. Wait for the
     # test's explicit launch stage, then open this disposable activity via adb.
-    process=subprocess.Popen([*ADB,'shell','am','instrument',*(['--no-hidden-api-checks'] if hidden_api else []),'-w',component],
+    process=subprocess.Popen([*ADB,'shell','am','instrument',*(['--no-hidden-api-checks'] if hidden_api else []),*extras,'-w',component],
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',errors='replace')
     lines=queue.Queue()
     def read_output():
@@ -75,11 +75,18 @@ def instrument_foreground(component, timeout=90, hidden_api=False):
 <instrumentation android:name="org.aliveclean.NativeClockEditBoxInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
 <instrumentation android:name="org.aliveclean.NativeVivoClocksInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
 <instrumentation android:name="org.aliveclean.VivoMaterialLayoutsInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
+<instrumentation android:name="org.aliveclean.NativeImmersedClockInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
+<instrumentation android:name="org.aliveclean.NativeOfficialImmersedInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
+<instrumentation android:name="org.aliveclean.NativeClockJitterInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
+<instrumentation android:name="org.aliveclean.NativeClockPixelClippingInstrumentation" android:targetPackage="org.aliveclean.nativeclocktest"/>
 </manifest>''', encoding='utf-8')
 if '--material-flow' in sys.argv:
     manifest=(OUT/'AndroidManifest.xml').read_text(encoding='utf8')
     manifest=manifest.replace('android:hardwareAccelerated="false"','android:hardwareAccelerated="true"')
     manifest=manifest.replace('android:targetSdkVersion="35"','android:targetSdkVersion="37"')
+    (OUT/'AndroidManifest.xml').write_text(manifest,encoding='utf8')
+if '--pixel-clipping' in sys.argv:
+    manifest=(OUT/'AndroidManifest.xml').read_text(encoding='utf8').replace('android:hardwareAccelerated="false"','android:hardwareAccelerated="true"')
     (OUT/'AndroidManifest.xml').write_text(manifest,encoding='utf8')
 if '--release-host' in sys.argv or '--effects' in sys.argv:
     manifest=(OUT/'AndroidManifest.xml').read_text(encoding='utf8').replace('android:debuggable="true"','android:debuggable="false"')
@@ -127,8 +134,46 @@ run(*ADB,'install','-r',OUT/'test.apk')
 if '--prepare-only' in sys.argv:
     sys.exit(0)
 try:
+    if '--pixel-clipping' in sys.argv:
+        extras=[]
+        for arg in sys.argv:
+            if arg.startswith('--pixel-') and '=' in arg:
+                key,value=arg[len('--pixel-'):].split('=',1);extras+=['-e',key,value]
+        probe=instrument_foreground('org.aliveclean.nativeclocktest/org.aliveclean.NativeClockPixelClippingInstrumentation',timeout=240,hidden_api=True,extras=extras)
+        (OUT/(sys.argv[1]+'-pixel-clipping.txt')).write_text(probe.stdout+probe.stderr,encoding='utf8')
+        print(probe.stdout)
+        names=run(*ADB,'shell','run-as','org.aliveclean.nativeclocktest','ls','files',capture_output=True,text=True).stdout.splitlines()
+        for name in names:
+            if name.startswith(('pixel-','native-clock-pixel','direct-','native-')):
+                data=run(*ADB,'exec-out','run-as','org.aliveclean.nativeclocktest','cat','files/'+name,capture_output=True)
+                (OUT/name).write_bytes(data.stdout)
+        assert 'NATIVE_CLOCK_PIXEL_CLIPPING_OK' in probe.stdout,probe.stdout
+        sys.exit(0)
+    if '--clock-jitter' in sys.argv:
+        probe=instrument_foreground('org.aliveclean.nativeclocktest/org.aliveclean.NativeClockJitterInstrumentation',timeout=180,hidden_api=True)
+        (OUT/(sys.argv[1]+'-clock-jitter.txt')).write_text(probe.stdout+probe.stderr,encoding='utf8')
+        trace=run(*ADB,'exec-out','run-as','org.aliveclean.nativeclocktest','cat','files/native-clock-jitter.txt',capture_output=True)
+        (OUT/(sys.argv[1]+'-clock-jitter-trace.txt')).write_bytes(trace.stdout)
+        print(probe.stdout)
+        assert 'NATIVE_CLOCK_JITTER_OK' in probe.stdout,probe.stdout
+        sys.exit(0)
+    if '--official-immersed' in sys.argv:
+        probe=run(*ADB,'shell','am','instrument','--no-hidden-api-checks','-w','org.aliveclean.nativeclocktest/org.aliveclean.NativeOfficialImmersedInstrumentation',capture_output=True,text=True,timeout=120)
+        (OUT/(sys.argv[1]+'-official-immersed.txt')).write_text(probe.stdout+probe.stderr,encoding='utf8')
+        print(probe.stdout)
+        assert 'NATIVE_OFFICIAL_IMMERSED_OK' in probe.stdout,probe.stdout
+        if '--immersed-only' not in sys.argv:sys.exit(0)
+    if '--immersed-only' in sys.argv:
+        probe=run(*ADB,'shell','am','instrument','--no-hidden-api-checks','-w','org.aliveclean.nativeclocktest/org.aliveclean.NativeImmersedClockInstrumentation',capture_output=True,text=True,timeout=240)
+        (OUT/(sys.argv[1]+'-immersed.txt')).write_text(probe.stdout+probe.stderr,encoding='utf8')
+        print(probe.stdout)
+        assert 'NATIVE_IMMERSED_CLOCK_OK' in probe.stdout, probe.stdout
+        raster=run(*ADB,'exec-out','run-as','org.aliveclean.nativeclocktest','cat','files/immersed-doodle.png',capture_output=True)
+        (OUT/(sys.argv[1]+'-immersed-doodle.png')).write_bytes(raster.stdout)
+        sys.exit(0)
     if '--effects' in sys.argv:
-        probe=run(*ADB,'shell','am','instrument','--no-hidden-api-checks','-w','org.aliveclean.nativeclocktest/org.aliveclean.NativeClockEffectsInstrumentation',capture_output=True,text=True,timeout=180)
+        selected=next((arg.split('=',1)[1] for arg in sys.argv if arg.startswith('--effects-styles=')),None)
+        probe=run(*ADB,'shell','am','instrument','--no-hidden-api-checks',*(['-e','style',selected] if selected else []),'-w','org.aliveclean.nativeclocktest/org.aliveclean.NativeClockEffectsInstrumentation',capture_output=True,text=True,timeout=180)
         print(probe.stdout)
         deadline=time.monotonic()+180
         result=''
@@ -141,7 +186,8 @@ try:
         for index in (0,3,17,'mid','soft','wallpaper-soft'):
             data=subprocess.run([*ADB,'exec-out','su','-c',f'cat /data/user/0/org.aliveclean.nativeclocktest/files/clock-effects-{index}.png'],capture_output=True)
             if data.returncode==0:(OUT/f'{sys.argv[1]}-clock-effects-{index}.png').write_bytes(data.stdout)
-        assert 'NATIVE_EFFECTS_OK styles=21 transitions=42 glass=21' in result,result
+        count=len(selected.split(',')) if selected else 21
+        assert f'NATIVE_EFFECTS_OK styles={count} transitions={count*5} glass={count}' in result,result
         sys.exit(0)
     if '--release-host' in sys.argv:
         run(*ADB,'shell','am','start','-W','-n','org.aliveclean.nativeclocktest/org.aliveclean.NativeClockReleaseProbe')
@@ -241,7 +287,7 @@ try:
         print(fingerprint.stdout)
         assert 'NATIVE_FINGERPRINT_CLOCK_OK' in fingerprint.stdout, fingerprint.stdout
     if '--hyperos-native' in sys.argv:
-        native = instrument_foreground('org.aliveclean.nativeclocktest/org.aliveclean.NativeHyperOsTransportInstrumentation')
+        native = instrument_foreground('org.aliveclean.nativeclocktest/org.aliveclean.NativeHyperOsTransportInstrumentation',timeout=240)
         (OUT/(sys.argv[1]+'-hyperos-native.txt')).write_text(native.stdout+native.stderr,encoding='utf-8')
         print(native.stdout)
         assert 'NATIVE_HYPEROS_OK' in native.stdout, native.stdout

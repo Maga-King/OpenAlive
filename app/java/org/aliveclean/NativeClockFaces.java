@@ -14,5 +14,8 @@ interface NativeClockFaces extends AutoCloseable {
     void update(long time,TimeZone zone,boolean format24);
     void color(int color)throws Exception;
     void numberBounds(RectF out);
+    /** Natural single-row digit height; unknown geometry must not enable shrinking. */
+    default float lockDigitHeight(){return 0;}
+    default boolean lockDigitsStacked(){return false;}
     @Override void close();
 }

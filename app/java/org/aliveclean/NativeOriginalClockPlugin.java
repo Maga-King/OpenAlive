@@ -18,7 +18,7 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
         BiPredicate<BiFunction<String, Bundle, Bundle>, Boolean> {
     final String id;
     final LinearLayout root;
-    private final NativeClockFaces faces;
+    private final NativeImmersedClockFaces faces;
     private final boolean vertical;
     final FrameLayout clockContainer;
     private final NativeClockWidgetBridge widgets=new NativeClockWidgetBridge();
@@ -31,6 +31,7 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
     private boolean compact;
     private int uiState=5;
     private int nativeClockSize=1;
+    private int expectedClockHeight=Integer.MAX_VALUE;
     private String nativeReturnStyle="";
     private android.app.Dialog editor;
     private NativeClockEditBox editBox;
@@ -47,8 +48,9 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
     private boolean material24Hour;
 
     NativeOriginalClockPlugin(Context context,String id,NativeClockFaces faces,boolean vertical) throws Exception {
-        this.id=id;this.faces=faces;this.vertical=vertical;
+        this.id=id;this.vertical=vertical;
         geometry=new NativeClockGeometry(context);
+        this.faces=new NativeImmersedClockFaces(context,faces,geometry);
         widgets.style(vertical?7:0);
         widgets.color(2,color,true);
         widgets.beginScene(uiState,nativeClockSize,false);widgets.settledScene();
@@ -59,11 +61,12 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
         // Stable view contract shared with the retention AOD host across class loaders.
         // Only clock faces live here; the system widget container is a sibling.
         clockContainer.setTag("org.aliveclean.native_clock_content");
-        faces.attach(clockContainer);
-        faces.scene(uiState,compact);
+        this.faces.attach(clockContainer);
+        this.faces.scene(uiState,compact);
         root.addView(clockContainer, new LinearLayout.LayoutParams(-1, -2));
-        transition=new NativeClockSceneTransition(root,clockContainer,faces);
+        transition=new NativeClockSceneTransition(root,clockContainer,this.faces);
         material=new NativeClockMaterial(root);
+        this.faces.immersed.callbacks((name,args)->callback==null?null:callback.apply(name,args),()->{if(!released){updateInset();notifyLayout();}});
         clockContainer.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob) -> notifyLayout());
         root.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener(){
             @Override public void onViewAttachedToWindow(View v){widgets.recruit();}
@@ -194,18 +197,26 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
                     }
                 }
                 updateInset();
-                faces.scene(uiState,compact);
+                faces.scene(uiState,compact,nativeClockSize==2);
                 clockContainer.setVisibility(View.VISIBLE);
                 boolean animateScene=animate&&previousState!=1&&uiState!=1;
                 widgets.beginScene(uiState,nativeClockSize,animateScene);
-                material.scene(activeFace(),coloringType);
+                material.scene(faces.materialTarget(),faces.showing()&&coloringType<5?0:coloringType);
                 updateEditBox(false);
                 if(animateScene){
                     transition.start(previous,start,()->{material.settled();widgets.settledScene();recoverWidgets();});
                 }else {widgets.settledScene();recoverWidgets();}
                 requestWallpaper();
                 return null;
+            case "onClockExpectedHeightChange":
+                if(args==null)return null;
+                int expected=args.getInt("expectedClockHeight",Integer.MAX_VALUE);
+                if(expected<0||expected==expectedClockHeight)return null;
+                expectedClockHeight=expected;
+                updateBigClockBudget();
+                return null;
             case "setWallpaperBitmap":
+                faces.immersed.command(command,args);
                 Bundle options=args==null?null:args.getBundle("wallpaperBitmapOptionData");
                 wallpaperInfo=options==null?new Bundle():options.deepCopy();
                 material.wallpaper(args==null?null:(android.graphics.Bitmap)args.getParcelable("wallpaperBitmap"));
@@ -287,7 +298,8 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
         int value=glass?0xffffffff:mode==2?(dark?0xffffffff:0xff000000):
                 mode==4?wallpaperInfo.getInt("wallpaperColor",color):color;
         try{faces.color(value);}catch(Exception failure){throw new IllegalStateException("Clock color update",failure);}
-        material.scene(activeFace(),mode);
+        faces.immersed.color(mode,value,colorDepth);
+        material.scene(faces.materialTarget(),faces.showing()&&mode<5?0:mode);
         widgets.color(mode>=5?1:mode,value,dark);
     }
     private void requestWallpaper(){
@@ -319,7 +331,7 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
     }
 
     private void updateInset(){
-        int top=geometry.top(aod,compact,vertical);
+        int top=(uiState==2||uiState==5)&&nativeClockSize==2?faces.immersed.top():geometry.top(aod,compact,vertical);
         root.setPadding(0,top,0,0);
         if(aod&&burnX!=-1&&burnY!=-1){
             root.animate().cancel();root.setTranslationX(burnX);root.setTranslationY(burnY-top);
@@ -331,15 +343,23 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
         if (released || clockContainer.getHeight() == 0) return;
         Bundle args = new Bundle(); args.putInt("commandDestination", 1);
         int width=clockContainer.getWidth();
-        int smallHeight=contentHeight(faces.lock(true),width),bigHeight=contentHeight(faces.lock(false),width);
+        updateBigClockBudget();
+        int smallHeight=contentHeight(faces.lock(true),width);
+        contentHeight(faces.lock(false),width);
+        int bigHeight=faces.naturalBigHeight(),minimumBigHeight=faces.minimumBigHeight();
         // ColorOS always expects small-clock metrics plus a separate big-clock
         // bundle, regardless of which scene is currently visible.
         int smallWidgets=geometry.widgetExtent(widgets.occupiedRows(false));
         int bigWidgets=geometry.widgetExtent(widgets.occupiedRows(true));
         args.putInt("clockHeight",smallHeight+smallWidgets);args.putInt("clockTop",geometry.top(false,true,false));
-        Bundle big=new Bundle();big.putInt("bigClockCurHeight",bigHeight+bigWidgets);big.putInt("bigClockMinHeight",bigHeight+bigWidgets);
+        // The host uses these independent metrics to place immersive media/lyrics.
+        // Widgets are hidden in this scene, so their rows must not reserve space.
+        args.putInt("clockHeightImmersed",faces.immersed.contentHeight());args.putInt("clockTopImmersed",faces.immersed.top());
+        // These are natural font endpoints, never the current notification scale.
+        // SystemUI uses their interval to keep the large scene while asking it to fit.
+        Bundle big=new Bundle();big.putInt("bigClockCurHeight",bigHeight+bigWidgets);big.putInt("bigClockMinHeight",minimumBigHeight+bigWidgets);
         big.putInt("bigClockTop",geometry.top(false,false,vertical));
-        big.putInt("bigClockContentHeightAtCurFont",bigHeight);big.putInt("bigClockContentHeightAtMinFont",bigHeight);
+        big.putInt("bigClockContentHeightAtCurFont",bigHeight);big.putInt("bigClockContentHeightAtMinFont",minimumBigHeight);
         big.putInt("bigClockWidgetsHeight",bigWidgets);
         args.putBundle("bigClockPositionParams",big);
         // Native total heights include occupied widgets for notification avoidance;
@@ -348,8 +368,17 @@ class NativeOriginalClockPlugin implements IntFunction<View>, BiFunction<String,
         else if (callback != null) callback.apply("onClockLayoutCalculated", args.deepCopy());
         widgets.layout(geometry.widgetInset(),clockContainer.getBottom()+geometry.widgetGap(),geometry.widgetInset());
     }
+    private void updateBigClockBudget(){
+        boolean changed=faces.budget(expectedClockHeight,geometry.top(false,false,vertical),geometry.widgetExtent(widgets.occupiedRows(true)));
+        // budget() only queues layout. Capture before the new internal scale is
+        // measured, including widget-row changes during a running scene spring.
+        if(changed&&faces.active()==faces.lock(false)&&transition.running()){
+            RectF source=transition.capture();
+            transition.retarget(source,()->{material.settled();widgets.settledScene();recoverWidgets();});
+        }
+    }
     private static int contentHeight(View view,int width){
-        if(view.getVisibility()!=View.VISIBLE){
+        if(view.getVisibility()!=View.VISIBLE||view.isLayoutRequested()||view.getMeasuredWidth()!=width){
             view.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
         }
         return view.getMeasuredHeight();

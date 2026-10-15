@@ -18,6 +18,7 @@ final class VivoEngineScene implements AutoCloseable {
     private Object render,controller,plugin,layerContract;
     private VivoTextureLayer layer;
     private VivoSensorGain sensorGain;
+    private VivoLiquidSensitivity liquidSensitivity;
     private Bitmap liquidMask;
     private int photoWidth,photoHeight;
     private VivoOptions options;
@@ -85,6 +86,8 @@ final class VivoEngineScene implements AutoCloseable {
                 controller=api.make(BASE+"plugin.naturaleffects.NaturalEffectsPreCtrl",new Class<?>[]{render.getClass()},render);
                 api.call(controller,"create",new Class<?>[]{config.getClass(),layerType},config,layerContract);
                 api.call(controller,"onGLSurfaceChanged",new Class<?>[]{int.class,int.class},width,height);
+                Object animation=api.get(api.get(controller,"mStrategy"),"d");
+                liquidSensitivity=new VivoLiquidSensitivity(api,api.get(animation,options.style==1?"f":"e"),options.sensitivity);
             }else{
                 Object data=bean(BASE+"PageContext$Data","{}");
                 Object wrap=api.make(BASE+"ThemeEditInterfaceWrap",new Class<?>[]{api.type(BASE+"PageManager")},(Object)null);
@@ -174,8 +177,10 @@ final class VivoEngineScene implements AutoCloseable {
     boolean updateSensitivity(VivoOptions next){
         if(closed||!options.sameScene(next))return false;
         if(options.wallpaperZoom!=next.wallpaperZoom){zoom.enabled(next.wallpaperZoom,mode,System.nanoTime());invalidate.run();}
+        boolean animationChanged=options.aodAnimation!=next.aodAnimation;
         options=VivoOptions.parse(next.json());int relative=next.sensitivity;
-        main.post(()->{if(!closed&&sensorGain!=null)sensorGain.relative(relative);});
+        if(animationChanged){updateAnimation();invalidate.run();}
+        main.post(()->{if(!closed){if(sensorGain!=null)sensorGain.relative(relative);if(liquidSensitivity!=null)liquidSensitivity.relative(relative);}});
         return true;
     }
     void draw()throws Exception{
@@ -262,7 +267,7 @@ final class VivoEngineScene implements AutoCloseable {
         // The original animation controllers are main-thread objects. Wait only from GL;
         // no UI path waits on GL, avoiding the inverse lock order during surface teardown.
         FutureTask<Void> shutdown=new FutureTask<>(()->{
-            if(controller!=null){stop();if(family==VivoOptions.LIQUID)api.call(controller,"destroy");
+            if(controller!=null){stop();if(liquidSensitivity!=null)liquidSensitivity.close();if(family==VivoOptions.LIQUID)api.call(controller,"destroy");
                 else if(family==VivoOptions.FLASH)api.call(plugin,"stopDraw");}
             return null;
         });

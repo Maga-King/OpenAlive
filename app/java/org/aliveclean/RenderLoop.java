@@ -21,6 +21,9 @@ final class RenderLoop {
     private EGLSurface window=EGL14.EGL_NO_SURFACE;
     private long scene;
     private WallpaperRenderer cosmic;
+    private StereoSensor stereoSensor;
+    private SceneOptions renderedOptions;
+    private boolean stereoAodAnimation=true;
     private VivoEngineScene vivo;
     private boolean vivoDarkWallpaper;
     private float vivoAodMask=.5f;
@@ -41,6 +44,7 @@ final class RenderLoop {
     private int homeWidth,homeHeight;
     private float aspect=1;
     private boolean visible=true;
+    private boolean backdropCovered;
     private boolean stateReported;
     private long clockToken,seenClockToken;
     private final AodMotionWindow aodMotion=new AodMotionWindow();
@@ -60,8 +64,8 @@ final class RenderLoop {
     RenderLoop(Context context){this(context,SceneOptions.APPLIED);}
     RenderLoop(Context context,String name){this.context=context.getApplicationContext();preview=SceneOptions.DRAFT.equals(name);preferences=context.getSharedPreferences(name,0);thread.start();handler=new Handler(thread.getLooper());preferences.registerOnSharedPreferenceChangeListener(changes);}
     void attach(Surface surface,int w,int h){handler.post(()->{release();if(!surface.isValid()||w<1||h<1)return;try{init(surface,w,h);schedule();}catch(Exception e){Log.e("AliveClean","Renderer initialization failed",e);release();}});}
-    void touch(int action,float x,float y){handler.post(()->{if(vivo!=null)vivo.touch(action,x,y);});}
-    void vivoDarkWallpaper(boolean dark){handler.post(()->{vivoDarkWallpaper=dark;if(vivo!=null){vivo.darkWallpaper(dark,visible);schedule();}});}
+    void touch(int action,float x,float y){handler.post(()->{if(vivo!=null)vivo.touch(action,x,y);if(cosmic!=null&&action==0){cosmic.interaction();schedule();}});}
+    void vivoDarkWallpaper(boolean dark){handler.post(()->{vivoDarkWallpaper=dark;if(vivo!=null){vivo.darkWallpaper(dark,renderingVisible());schedule();}});}
     void vivoCrop(float x,float y,float zoom){
         queueCrop(x,y,zoom,false);
     }
@@ -84,7 +88,7 @@ final class RenderLoop {
     }
     void detach(){handler.post(()->{release();attachedSurface=null;});}
     void mode(int next){mode(next,true);}
-    void clockTransition(long token){handler.post(()->{if(preview||token==seenClockToken)return;seenClockToken=token;clockToken=token;if(token!=0)schedule();});}
+    void clockTransition(long token){handler.post(()->{if(preview||token==seenClockToken)return;seenClockToken=token;clockToken=token;if(token!=0){if(renderingVisible())schedule();else reportClock(false);}});}
     private void reportClock(boolean submitted){
         long token=clockToken;clockToken=0;
         if(token!=0&&!preview){{if(Diagnostics.TRACE)Log.i("AliveClean","Frame clock token="+token+" submitted="+submitted);}SceneChannel.frameReady(token,submitted);}
@@ -107,13 +111,23 @@ final class RenderLoop {
         if(mode!=next){stateReported=false;frameSample.clear();if(next==0)aodMotion.enter(System.nanoTime());else aodMotion.leave();}
         if(cosmic!=null&&mode!=next){cosmic.motion().change(next,animate);cosmicUntil=System.nanoTime()+5_000_000_000L;}
         // Apply the wake target and scene together, before any frame can be submitted.
-        if(vivo!=null&&(mode!=next||lightSnapshot)){vivo.transition(next,animate,vivoDarkWallpaper?.76f:1f,vivoAodMask);vivo.visible(visible);}
-        mode=next;if(textureMotion!=null)textureMotion.change(next,animate);if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!visible)frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!visible)motion.pause(true);}schedule();
+        if(vivo!=null&&(mode!=next||lightSnapshot)){vivo.transition(next,animate,vivoDarkWallpaper?.76f:1f,vivoAodMask);vivo.visible(renderingVisible());}
+        mode=next;updateCosmicLifecycle();if(textureMotion!=null)textureMotion.change(next,animate);if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!renderingVisible())frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!renderingVisible())motion.pause(true);}schedule();
     });}
-    void visible(boolean value){handler.post(()->{if(visible==value)return;visible=value;if(vivo!=null)vivo.visible(value);if(cosmic!=null)cosmic.motion().pause();if(motion!=null)motion.pause(!value);if(frameMotion!=null)frameMotion.pause(!value);stopFrames();if(value){if(mode==0){long now=System.nanoTime();aodMotion.enter(now);cosmicUntil=now+5_000_000_000L;}pacer.reset();schedule();}else if(clockToken!=0)reportClock(false);});}
+    private boolean renderingVisible(){return visible&&!backdropCovered;}
+    void backdrop(boolean covered){handler.post(()->{if(preview||backdropCovered==covered)return;backdropCovered=covered;updateRenderActivity();});}
+    void visible(boolean value){handler.post(()->{if(visible==value)return;visible=value;updateRenderActivity();});}
+    private void updateRenderActivity(){
+        boolean active=renderingVisible();
+        if(vivo!=null)vivo.visible(active);if(cosmic!=null)cosmic.motion().pause();updateCosmicLifecycle();
+        if(motion!=null)motion.pause(!active);if(frameMotion!=null)frameMotion.pause(!active);stopFrames();
+        if(active){if(mode==0){long now=System.nanoTime();aodMotion.enter(now);cosmicUntil=now+5_000_000_000L;}pacer.reset();schedule();}
+        else if(clockToken!=0)reportClock(false);
+    }
     void resumeDisplay(){handler.post(()->{
-        if(!visible)return;
+        if(!renderingVisible())return;
         if(vivo!=null)vivo.visible(true);
+        if(cosmic!=null)cosmic.interaction();
         // A pending vsync may belong to the previous display power state.
         // Re-arm once per display-state change, not on every sensor sample.
         stopFrames();pacer.reset();schedule();
@@ -121,17 +135,35 @@ final class RenderLoop {
     void reload(){if(!closed){handler.removeCallbacks(reloadTask);handler.post(reloadTask);}}
     private void reloadScene(){if(scene==0&&cosmic==null&&vivo==null)return;try{
         SceneOptions options=new SceneOptions(preferences);
+        if(cosmic instanceof StereoRenderer&&renderedOptions!=null&&options.cosmic==renderedOptions.cosmic&&options.cosmicKeepLock==renderedOptions.cosmicKeepLock){
+            ((StereoRenderer)cosmic).configure(options.stereoSensitivity,options.stereoAodAnimation);
+            renderedOptions=options;stereoAodAnimation=options.stereoAodAnimation;updateCosmicLifecycle();schedule();return;
+        }
         if(vivo!=null&&vivo.updateSensitivity(options.vivo))return;
         if(vivo!=null||options.vivo!=null){Surface surface=attachedSurface;release();if(surface!=null&&surface.isValid()){init(surface,width,height);schedule();}return;}
         if((cosmic!=null)!=(options.cosmic!=0)){
             Surface surface=attachedSurface;release();
             if(surface!=null&&surface.isValid()){init(surface,width,height);schedule();}return;
-        }if(motion!=null){motion.close();motion=null;}closeFrame();if(cosmic!=null){cosmic.close();cosmic=null;}if(scene!=0)NativeScene.destroy(scene);scene=0;GLES30.glDeleteTextures(1,new int[]{photo},0);photo=0;clearAuxiliary();if(options.cosmic==0)photo=loadPhoto(options.photo,true);createScene(options);schedule();}catch(Exception e){Log.e("AliveClean","Scene reload failed",e);release();}}
+        }if(motion!=null){motion.close();motion=null;}closeFrame();closeCosmic();if(scene!=0)NativeScene.destroy(scene);scene=0;GLES30.glDeleteTextures(1,new int[]{photo},0);photo=0;clearAuxiliary();if(options.cosmic==0)photo=loadPhoto(options.photo,true);createScene(options);schedule();}catch(Exception e){Log.e("AliveClean","Scene reload failed",e);release();}}
     void close(){if(closed)return;closed=true;preferences.unregisterOnSharedPreferenceChangeListener(changes);handler.post(()->{release();thread.quitSafely();});}
-    private void schedule(){if(visible&&(scene!=0||cosmic!=null||vivo!=null)&&choreographer!=null&&!framePosted){framePosted=true;choreographer.postFrameCallback(frame);}}
+    private void schedule(){if(renderingVisible()&&(scene!=0||cosmic!=null||vivo!=null)&&choreographer!=null&&!framePosted){framePosted=true;choreographer.postFrameCallback(frame);}}
     private void onVsync(long time){framePosted=false;frameTime=time;handler.post(renderTask);}
     private void stopFrames(){if(choreographer!=null)choreographer.removeFrameCallback(frame);framePosted=false;handler.removeCallbacks(renderTask);}
+    private void updateCosmicLifecycle(){
+        try{
+            if(cosmic!=null){
+                cosmic.continuous(preview||(mode==0?cosmicContinuousAod:cosmicContinuousHome));
+                cosmic.visible(renderingVisible());
+            }
+            if(stereoSensor!=null)stereoSensor.setActive(renderingVisible()&&(mode!=0||stereoAodAnimation));
+        }catch(RuntimeException failure){Log.e("AliveClean","Wallpaper lifecycle failed",failure);release();}
+    }
+    private void closeCosmic(){
+        if(stereoSensor!=null){stereoSensor.close();stereoSensor=null;}
+        if(cosmic!=null){cosmic.close();cosmic=null;}
+    }
     private void createScene(SceneOptions options)throws IOException{
+        renderedOptions=options;stereoAodAnimation=options.stereoAodAnimation;
         if(options.vivo!=null){
             try{
                 VivoEngineRuntime runtime=VivoEngineRuntime.prepare(context).get(20,java.util.concurrent.TimeUnit.SECONDS);
@@ -139,14 +171,19 @@ final class RenderLoop {
                 try(VivoImages images=VivoImages.load(context,runtime,options.vivo)){
                     vivo=new VivoEngineScene(runtime,options.vivo,width,height,images.photos,images.subject,images.paint,preview,()->handler.post(()->schedule()));
                 }
-                vivo.transition(mode,false,vivoDarkWallpaper?.76f:1f,vivoAodMask);vivo.visible(visible);pacer.reset();return;
+                vivo.transition(mode,false,vivoDarkWallpaper?.76f:1f,vivoAodMask);vivo.visible(renderingVisible());pacer.reset();return;
             }catch(Exception e){throw new IOException("Vivo engine initialization failed",e);}
         }
         cosmicContinuousAod=options.cosmicContinuousAod;cosmicContinuousHome=options.cosmicContinuousHome;
         sailContinuousAod=options.cosmic==0&&options.aod==0&&options.sailContinuousAod;
         if(options.cosmic!=0){
             boolean dark=(context.getResources().getConfiguration().uiMode&android.content.res.Configuration.UI_MODE_NIGHT_MASK)==android.content.res.Configuration.UI_MODE_NIGHT_YES;
-            cosmic=WallpaperRenderer.create(context.getAssets(),options.cosmic,dark,width,height,mode,options.cosmicKeepLock);
+            cosmic=WallpaperRenderer.create(context.getAssets(),options.cosmic,dark,width,height,mode,options.cosmicKeepLock,this::schedule);
+            if(cosmic instanceof StereoRenderer)((StereoRenderer)cosmic).configure(options.stereoSensitivity,options.stereoAodAnimation);
+            if(cosmic instanceof StereoRenderer)stereoSensor=new StereoSensor(context,handler,(x,y,z,time)->{
+                if(cosmic instanceof StereoRenderer){((StereoMotion)cosmic.motion()).gyroscope(x,y,z,time);if(cosmic.motion().active())schedule();}
+            });
+            updateCosmicLifecycle();
             cosmicUntil=System.nanoTime()+5_000_000_000L;
             applyAodRegion();choreographer=Choreographer.getInstance();pacer.reset();return;
         }
@@ -224,14 +261,15 @@ final class RenderLoop {
         return ids[0];
     }
     private void render(long time){
-        if(!visible||(scene==0&&cosmic==null&&vivo==null))return;
+        if(!renderingVisible()||(scene==0&&cosmic==null&&vivo==null))return;
         if(vivo!=null){try{vivo.draw();if(!EGL14.eglSwapBuffers(display,window))throw new IllegalStateException("Vivo EGL swap failed");if(clockToken!=0)reportClock(false);if(vivo.transitionActive())schedule();}catch(Exception e){Log.e("AliveClean","Vivo frame failed",e);release();}return;}
         if(cosmic!=null){
             try{
                 boolean continuous=preview||(mode==0?cosmicContinuousAod:cosmicContinuousHome);
                 float speed=continuous?1:Math.max(0,Math.min(1,(cosmicUntil-time)/3_000_000_000f));
                 cosmic.motion().advance(time,speed);
-                boolean moving=cosmic.motion().active()||continuous||time<cosmicUntil;
+                boolean ownsTiming=cosmic instanceof FlymeVideoRenderer||cosmic instanceof StereoRenderer;
+                boolean moving=cosmic.motion().active()||(!ownsTiming&&(continuous||time<cosmicUntil));
                 if(pacer.due(time)||!moving){
                     cosmic.render();
                     if(!EGL14.eglSwapBuffers(display,window))throw new IllegalStateException("Cosmic EGL swap failed");
@@ -268,5 +306,5 @@ final class RenderLoop {
         }catch(Exception e){Log.e("AliveClean","Frame failed",e);release();}
     }
     private void closeFrame(){if(textureMotion!=null){textureMotion.close();textureMotion=null;}if(scene!=0)reportClock(false);frameSample.clear();if(frameMotion!=null){frameMotion.close();frameMotion=null;}if(masks!=null){masks.close();masks=null;}}
-    private void release(){stopFrames();if(vivo!=null){vivo.close();vivo=null;}if(cosmic!=null){cosmic.close();cosmic=null;}handler.removeCallbacks(reloadTask);closeFrame();if(motion!=null){motion.close();motion=null;}if(display!=EGL14.EGL_NO_DISPLAY){if(scene!=0){NativeScene.destroy(scene);scene=0;}clearAuxiliary();GLES30.glDeleteTextures(2,new int[]{photo,decorator},0);photo=decorator=0;EGL14.eglMakeCurrent(display,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_CONTEXT);if(window!=EGL14.EGL_NO_SURFACE)EGL14.eglDestroySurface(display,window);if(egl!=EGL14.EGL_NO_CONTEXT)EGL14.eglDestroyContext(display,egl);EGL14.eglTerminate(display);EGL14.eglReleaseThread();}display=EGL14.EGL_NO_DISPLAY;egl=EGL14.EGL_NO_CONTEXT;window=EGL14.EGL_NO_SURFACE;}
+    private void release(){stopFrames();if(vivo!=null){vivo.close();vivo=null;}closeCosmic();handler.removeCallbacks(reloadTask);closeFrame();if(motion!=null){motion.close();motion=null;}if(display!=EGL14.EGL_NO_DISPLAY){if(scene!=0){NativeScene.destroy(scene);scene=0;}clearAuxiliary();GLES30.glDeleteTextures(2,new int[]{photo,decorator},0);photo=decorator=0;EGL14.eglMakeCurrent(display,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_CONTEXT);if(window!=EGL14.EGL_NO_SURFACE)EGL14.eglDestroySurface(display,window);if(egl!=EGL14.EGL_NO_CONTEXT)EGL14.eglDestroyContext(display,egl);EGL14.eglTerminate(display);EGL14.eglReleaseThread();}display=EGL14.EGL_NO_DISPLAY;egl=EGL14.EGL_NO_CONTEXT;window=EGL14.EGL_NO_SURFACE;}
 }

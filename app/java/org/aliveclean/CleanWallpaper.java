@@ -80,7 +80,8 @@ public final class CleanWallpaper extends WallpaperService {
             int display=engineDisplayId();
             if(region!=null&&region.displayId==display){receivedLayout=true;renderer.aodRegion(region,display);}
         }
-        @Override public void disconnected(){scenesState.disconnect();update();}
+        @Override public void backdrop(boolean covered){if(!isPreview()&&engineDisplayId()==android.view.Display.DEFAULT_DISPLAY)renderer.backdrop(covered);}
+        @Override public void disconnected(){renderer.backdrop(false);scenesState.disconnect();update();}
         private android.view.Display engineDisplay(){
             if(android.os.Build.VERSION.SDK_INT>=30)return getDisplayContext().getDisplay();
             return getSystemService(android.hardware.display.DisplayManager.class).getDisplay(android.view.Display.DEFAULT_DISPLAY);

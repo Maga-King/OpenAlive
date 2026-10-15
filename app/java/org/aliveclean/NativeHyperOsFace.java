@@ -16,6 +16,7 @@ final class NativeHyperOsFace extends FrameLayout implements AutoCloseable {
     private final OfficialHyperOsClockFace original;
     private final List<View> content=new ArrayList<>();
     private final List<View> numbers=new ArrayList<>();
+    private final List<View> rowDigits=new ArrayList<>();
     private int nativeHeight,cropTop;
     private final boolean fitArtwork;
     private float artworkScale=1,artworkX;
@@ -36,6 +37,7 @@ final class NativeHyperOsFace extends FrameLayout implements AutoCloseable {
                 if(child==null||child==face)continue;
                 collectLeaves(child,content);
                 if(name.startsWith("HOUR")||name.startsWith("MIN")||name.startsWith("COLON")||name.equals("FULL_HOUR")||name.equals("FULL_MINUTE")||name.equals("FULL_COLON")||name.equals("FULL_TIME")||name.startsWith("TIME_AREA"))collectLeaves(child,numbers);
+                if(name.startsWith("HOUR")||name.startsWith("MIN")||name.equals("FULL_HOUR")||name.equals("FULL_MINUTE")||name.equals("FULL_TIME"))collectLeaves(child,rowDigits);
             }
             if(compact){
                 // Some original notification renderers expose FULL_TIME;
@@ -44,13 +46,13 @@ final class NativeHyperOsFace extends FrameLayout implements AutoCloseable {
                 if(time!=null&&time!=face){collectLeaves(time,content);collectLeaves(time,numbers);}
                 for(String name:new String[]{"time_hour","time_minute","time_hour_minute","date_and_week"}){
                     int id=getResources().getIdentifier(name,"id","com.miui.aod");View child=id==0?null:face.findViewById(id);
-                    if(child!=null){collectLeaves(child,content);if(name.startsWith("time_"))collectLeaves(child,numbers);}
+                    if(child!=null){collectLeaves(child,content);if(name.startsWith("time_"))collectLeaves(child,numbers);if(name.equals("time_hour")||name.equals("time_minute"))collectLeaves(child,rowDigits);}
                 }
             }
             if(style.template.equals("doodle")){
                 for(String name:new String[]{"time_hour","time_minute","time_dot","data_day","data_month","data_image","week_today","week_todayis"}){
                     int id=getResources().getIdentifier(name,"id","com.miui.aod");View child=id==0?null:face.findViewById(id);
-                    if(child!=null){collectLeaves(child,content);if(name.startsWith("time_"))collectLeaves(child,numbers);}
+                    if(child!=null){collectLeaves(child,content);if(name.startsWith("time_"))collectLeaves(child,numbers);if(name.equals("time_hour")||name.equals("time_minute"))collectLeaves(child,rowDigits);}
                 }
             }
         }
@@ -113,6 +115,49 @@ final class NativeHyperOsFace extends FrameLayout implements AutoCloseable {
             RectF box=ink(view);if(!box.isEmpty()){map(view,this,box);out.union(box);}
         }
     }
+    float digitHeight(){
+        float minimum=Float.POSITIVE_INFINITY;
+        for(View view:rowDigits){
+            if(!visible(view,this))continue;
+            RectF box;
+            if(view instanceof TextView){
+                float height=NativeClockDigitMetrics.textHeight((TextView)view);
+                if(height<=0)return 0;
+                box=new RectF(0,0,1,height);
+            }else if(view.getClass().getName().equals("com.miui.clock.allInOne.TimeView")){
+                try{
+                    // Original TimeView.handleParams applies width/height/weight
+                    // font axes, then builds ONE baseline with Paint.getTextPath.
+                    // AllInOneBase exposes separate FULL_HOUR / FULL_MINUTE leaves;
+                    // double-row layout lives in their parent, not in this paint.
+                    view.getClass().getMethod("handleParams").invoke(view);
+                    android.graphics.Paint paint=new android.graphics.Paint((android.graphics.Paint)view.getClass().getField("textPaint").get(view));
+                    box=new RectF();
+                    // Sample each digit at one origin so rotated layouts do not
+                    // mistake the width of a ten-digit sample for a row's height.
+                    for(char digit='0';digit<='9';digit++){
+                        Path path=new Path();paint.getTextPath(String.valueOf(digit),0,1,0,0,path);
+                        RectF glyph=new RectF();path.computeBounds(glyph,true);box.union(glyph);
+                    }
+                }catch(ReflectiveOperationException unavailable){return 0;}
+            }else if(view instanceof android.widget.ImageView||view.getClass().getName().equals("com.miui.clock.MiuiClockNumberView")){
+                box=ink(view);
+            }else return 0; // Unknown custom renderers have no proven single-row metric.
+            if(box.isEmpty())continue;
+            map(view,this,box);
+            if(!Float.isFinite(box.height())||box.height()<=0)return 0;
+            minimum=Math.min(minimum,box.height());
+        }
+        return Float.isFinite(minimum)?minimum:0;
+    }
+    boolean digitsStacked(){
+        List<RectF> digits=new ArrayList<>();
+        for(View view:rowDigits)if(visible(view,this)){
+            RectF box=ink(view);if(box.isEmpty())continue;
+            map(view,this,box);digits.add(box);
+        }
+        return NativeClockDigitMetrics.stacked(digits);
+    }
     private static RectF ink(View view){
         RectF result=new RectF();
         if(view instanceof TextView){
@@ -169,10 +214,21 @@ final class NativeHyperOsFace extends FrameLayout implements AutoCloseable {
         return true;
     }
     private static void map(View child,View ancestor,RectF box){
-        Matrix local=new Matrix();child.transformMatrixToGlobal(local);
-        Matrix parent=new Matrix(),inverse=new Matrix();ancestor.transformMatrixToGlobal(parent);
-        if(!parent.invert(inverse))throw new IllegalStateException("Original clock transform is singular");
-        local.postConcat(inverse);local.mapRect(box);
+        // Layout metrics must not inherit rounding from SystemUI's wake scale.
+        // Going through global coordinates and inverting a 0.9 ancestor scale
+        // can turn an integer edge into N+epsilon; ceil then adds a pixel and
+        // crosses the host's notification-size threshold. Compose only the
+        // descendant transforms, preserving the artwork's own scale/rotation.
+        Matrix local=new Matrix();View current=child;
+        while(current!=ancestor){
+            ViewParent parent=current.getParent();
+            if(!(parent instanceof View))throw new IllegalStateException("Original clock ancestor unavailable");
+            View parentView=(View)parent;
+            local.postConcat(current.getMatrix());
+            local.postTranslate(current.getLeft()-parentView.getScrollX(),current.getTop()-parentView.getScrollY());
+            current=parentView;
+        }
+        local.mapRect(box);
     }
-    @Override public void close(){original.close();removeAllViews();content.clear();numbers.clear();}
+    @Override public void close(){original.close();removeAllViews();content.clear();numbers.clear();rowDigits.clear();}
 }

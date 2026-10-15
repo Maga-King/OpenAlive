@@ -1,0 +1,76 @@
+{
+  "source": "Flyme 9 sdkstage 1.8.15 (com.meizu.flyme.sdkstage)",
+  "apk_sha256": "8f37e745a7ad216725bf4692aee2a7088e24da1db953eb8c98fe826b0097ede6",
+  "files": {
+    "mz_video_wallpaper_v1_1080.mp4": {
+      "original": "assets/video/mz_video_wallpaper_v1_1080.mp4",
+      "bytes": 9136082,
+      "sha256": "9ddcc780647e53144dffa66e84a885322cba13a80cb1e55e11a20dffd06d58ae"
+    },
+    "langliu.png": {
+      "original": "res/drawable-nodpi-v4/mz_wallpaper_video_v1.png",
+      "bytes": 133836,
+      "sha256": "c167de3ba14a067eb6f8d01706450531b047afe2235a616f585b916d0451bbb9"
+    },
+    "mz_video_wallpaper_v2_1080.mp4": {
+      "original": "assets/video/mz_video_wallpaper_v2_1080.mp4",
+      "bytes": 9957958,
+      "sha256": "5b7b2bb59fce1560f1676fc672b55ca8bbc8b7198323d11494a247279b30f6f6"
+    },
+    "shenqian.png": {
+      "original": "res/drawable-nodpi-v4/mz_wallpaper_video_v2.png",
+      "bytes": 126693,
+      "sha256": "3336b2a39ac09fb7d5c598b528af634c0d5668833cadff2ff3a3bdcadddef6df"
+    },
+    "mz_video_wallpaper_v3_1080.mp4": {
+      "original": "assets/video/mz_video_wallpaper_v3_1080.mp4",
+      "bytes": 7953042,
+      "sha256": "3d4721f370bc15234525c8b331725be399a2b7826f4ba3fe51cbd5c4af66cdbc"
+    },
+    "lianyi.png": {
+      "original": "res/drawable-nodpi-v4/mz_wallpaper_video_v3.png",
+      "bytes": 143209,
+      "sha256": "f489bc7f04f55b772f85cae4d3994758e89f48829f6479df79a6c04a3bf5dc6e"
+    },
+    "video_vertex.glsl": {
+      "original": "assets/video/video_vertex.glsl",
+      "bytes": 372,
+      "sha256": "56caad19b37e6f14836bd0a466933b50a01b0e894b41f562526b7e8a8d61fdf7"
+    },
+    "video_frag.glsl": {
+      "original": "assets/video/video_frag.glsl",
+      "bytes": 369,
+      "sha256": "8539bde3f9c463bad2bfa382fef797edea1ad768911d86d1667cff01fb537cfd"
+    },
+    "dark_utlis.glsl": {
+      "original": "assets/shader/base/dark_utlis.glsl",
+      "bytes": 794,
+      "sha256": "ae04848bf67d57c3bac415abae85c12b674698c8df1598b717887d283ed8ab63"
+    }
+  },
+  "behavior_sources": [
+    "com.meizu.flyme.sdkstage.wallpaper.video.h",
+    "com.meizu.flyme.sdkstage.wallpaper.video.h$3",
+    "com.meizu.flyme.sdkstage.wallpaper.video.h$3$1",
+    "com.meizu.flyme.sdkstage.wallpaper.video.c",
+    "com.meizu.flyme.sdkstage.wallpaper.video.d",
+    "com.meizu.flyme.sdkstage.wallpaper.video.g",
+    "com.meizu.flyme.sdkstage.wallpaper.video.l",
+    "com.meizu.flyme.sdkstage.wallpaper.video.m",
+    "com.meizu.flyme.sdkstage.wallpaper.video.v17.a",
+    "com.meizu.flyme.sdkstage.wallpaper.video.v17.b",
+    "com.meizu.flyme.sdkstage.wallpaper.video.v17.c"
+  ],
+  "derived_files": {
+    "video_runtime_frag.glsl": {
+      "original": "assets/video/video_frag.glsl",
+      "change": "Redirect dark helper include to the byte-identical private original",
+      "sha256": "494e0c8c1697fde5513102190bad32987a22164146fbe374f4b53effe507a736"
+    },
+    "thumbnail_runtime_frag.glsl": {
+      "original": "assets/video/video_frag.glsl",
+      "change": "Use private original dark helper and sampler2D for the official loading thumbnail",
+      "sha256": "de31f2b9044bc320f0e7d6b651ac7d3f7c701706b8e9025aef797dbb626c5ab0"
+    }
+  }
+}

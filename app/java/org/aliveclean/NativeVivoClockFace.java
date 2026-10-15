@@ -186,4 +186,19 @@ final class NativeVivoClockFace extends FrameLayout {
         content.layout(0,0,r-l,nativeHeight);content.setPivotX(0);content.setPivotY(0);content.setScaleX(fit);content.setScaleY(fit);content.setTranslationX(offsetX);content.setTranslationY(offsetY);
     }
     void numberBounds(RectF out){out.setEmpty();for(TextView number:numbers)if(number.getVisibility()==VISIBLE)out.union(bounds(number));out.set(out.left*fit+offsetX,out.top*fit+offsetY,out.right*fit+offsetX,out.bottom*fit+offsetY);}
+    float digitHeight(){
+        float minimum=Float.POSITIVE_INFINITY;
+        for(TextView number:numbers){
+            if(number.getVisibility()!=VISIBLE||name(number).equals("colon"))continue;
+            float height=NativeClockDigitMetrics.textHeight(number)*fit;
+            if(height<=0||!Float.isFinite(height))return 0;
+            minimum=Math.min(minimum,height);
+        }
+        return Float.isFinite(minimum)?minimum:0;
+    }
+    boolean digitsStacked(){
+        ArrayList<RectF> digits=new ArrayList<>();
+        for(TextView number:numbers)if(number.getVisibility()==VISIBLE&&!name(number).equals("colon"))digits.add(bounds(number));
+        return NativeClockDigitMetrics.stacked(digits);
+    }
 }

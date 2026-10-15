@@ -22,6 +22,7 @@ final class OfficialEditor implements AutoCloseable {
         void apply();
         default void keepLock(boolean value){}
         default void continuous(String key,boolean value){}
+        default void stereoSensitivity(int value){}
     }
     private final Activity activity;
     private final OfficialUi ui;
@@ -44,6 +45,10 @@ final class OfficialEditor implements AutoCloseable {
     private final View cosmicSettings;
     private final CompoundButton keepLockSwitch;
     private final CompoundButton cosmicAodSwitch,cosmicHomeSwitch;
+    private final CompoundButton stereoAodSwitch;
+    private final LinearLayout stereoControls;
+    private final TextView stereoSensitivityLabel;
+    private final SeekBar stereoSensitivity;
     private boolean bindingKeepLock;
 
     OfficialEditor(Activity activity,Actions actions,TextureView.SurfaceTextureListener listener)throws Exception {
@@ -88,6 +93,30 @@ final class OfficialEditor implements AutoCloseable {
         keepLockSwitch=toggle(cosmicControls,"桌面保持锁屏效果");
         cosmicAodSwitch=toggle(cosmicControls,"息屏动画持续播放");
         cosmicHomeSwitch=toggle(cosmicControls,"锁屏与桌面动画持续播放");
+        stereoControls=new LinearLayout(activity);stereoControls.setOrientation(LinearLayout.VERTICAL);
+        cosmicControls.addView(stereoControls,new LinearLayout.LayoutParams(-1,-2));
+        stereoAodSwitch=toggle(stereoControls,"息屏保持动态效果");
+        stereoAodSwitch.setOnCheckedChangeListener((button,value)->{if(!bindingKeepLock&&!busy&&options!=null)actions.continuous("stereo_aod_animation",value);});
+        stereoSensitivityLabel=new TextView(ui);stereoSensitivityLabel.setTextColor(-1);stereoSensitivityLabel.setTextSize(15);
+        stereoSensitivityLabel.setPadding(dp(16),dp(12),dp(16),0);stereoControls.addView(stereoSensitivityLabel);
+        stereoSensitivity=new SeekBar(ui);stereoSensitivity.setMax(100);
+        stereoSensitivity.setProgressTintList(android.content.res.ColorStateList.valueOf(0xff70aeff));
+        stereoSensitivity.setThumbTintList(android.content.res.ColorStateList.valueOf(0xff70aeff));
+        stereoSensitivity.setContentDescription("传感器灵敏度，负50至正50，0为Flyme默认");
+        LinearLayout.LayoutParams slider=new LinearLayout.LayoutParams(-1,dp(44));slider.setMargins(dp(16),0,dp(16),0);
+        stereoControls.addView(stereoSensitivity,slider);
+        stereoSensitivity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onStartTrackingTouch(SeekBar bar){}
+            public void onProgressChanged(SeekBar bar,int progress,boolean user){if(user&&!bindingKeepLock&&!busy){stereoLabel(progress-50);actions.stereoSensitivity(progress-50);}}
+            public void onStopTrackingTouch(SeekBar bar){}
+        });
+        LinearLayout ends=new LinearLayout(activity);ends.setPadding(dp(16),0,dp(16),0);
+        TextView low=new TextView(ui),high=new TextView(ui);low.setText("−50  更缓");high.setText("更灵敏  +50");
+        low.setTextColor(0xffbdbdbd);high.setTextColor(0xffbdbdbd);low.setTextSize(12);high.setTextSize(12);high.setGravity(Gravity.END);
+        ends.addView(low,new LinearLayout.LayoutParams(0,-2,1));ends.addView(high,new LinearLayout.LayoutParams(0,-2,1));stereoControls.addView(ends);
+        TextView reset=new TextView(ui);reset.setText("恢复默认（0）");reset.setTextSize(13);reset.setTextColor(0xff70aeff);
+        reset.setPadding(dp(16),dp(8),dp(16),dp(8));stereoControls.addView(reset);
+        reset.setOnClickListener(v->{if(!busy){stereoSensitivity.setProgress(50);stereoLabel(0);actions.stereoSensitivity(0);}});
         View settingsBar=ui.inflate("editor_lockscreen_button_photo_wp_legacy_sysui",null);
         cosmicSettings=ui.find(settingsBar,"btn_alive_texture");
         ((ViewGroup)cosmicSettings.getParent()).removeView(cosmicSettings);
@@ -129,6 +158,7 @@ final class OfficialEditor implements AutoCloseable {
     }
 
     private View find(String name){return ui.find(root,name);}
+    private void stereoLabel(int value){stereoSensitivityLabel.setText("灵敏度  "+(value>0?"+":"")+value+(value==0?"（Flyme 默认）":""));}
     private CompoundButton toggle(LinearLayout parent,String label){
         LinearLayout row=new LinearLayout(activity);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(16),dp(4),dp(16),dp(4));
         TextView text=new TextView(ui);text.setText(label);text.setTextColor(-1);text.setTextSize(15);
@@ -161,6 +191,13 @@ final class OfficialEditor implements AutoCloseable {
         cosmicSettings.setVisibility(chosen.cosmic!=0?View.VISIBLE:View.GONE);cosmicSettings.setEnabled(!busy);
         bindingKeepLock=true;keepLockSwitch.setChecked(chosen.cosmicKeepLock);
         cosmicAodSwitch.setChecked(chosen.cosmicContinuousAod);cosmicHomeSwitch.setChecked(chosen.cosmicContinuousHome);
+        boolean video=chosen.cosmic>=401&&chosen.cosmic<=403,stereo=chosen.cosmic>=501&&chosen.cosmic<=503;
+        ((View)keepLockSwitch.getParent()).setVisibility(video?View.GONE:View.VISIBLE);
+        ((View)cosmicAodSwitch.getParent()).setVisibility(stereo?View.GONE:View.VISIBLE);
+        ((View)cosmicHomeSwitch.getParent()).setVisibility(stereo?View.GONE:View.VISIBLE);
+        stereoControls.setVisibility(stereo?View.VISIBLE:View.GONE);
+        stereoAodSwitch.setChecked(chosen.stereoAodAnimation);
+        stereoSensitivity.setProgress(chosen.stereoSensitivity+50);stereoLabel(chosen.stereoSensitivity);
         bindingKeepLock=false;setEnabled(cosmicControls,!busy);
         apply.setEnabled(!busy);
         for(View bar:bars)setEnabled(bar,!busy);
