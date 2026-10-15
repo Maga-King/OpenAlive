@@ -19,7 +19,6 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     private final SceneState scenes=new SceneState();
     private XiaomiPacks.Pack pack; private XiaomiPlayer.Runtime runtime; private XiaomiPlayer player;
     private SceneEngine owner; private DisplayManager displays; private boolean destroyed,ambient,ready; private int land,mode=-1;
-    private Runnable pendingLock;
     private int desktopAmplitude,desktopResponsiveness,offsetGeneration;
     private final Messenger client=new Messenger(new Handler(Looper.getMainLooper(),m->{
         if(m.sendingUid!=android.os.Process.myUid())return true;Bundle b=m.getData();
@@ -67,24 +66,21 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     private void updateMode(boolean force){if(owner==null)return;int next=owner.isPreview()?1:scenes.fallback(ambient,getSystemService(KeyguardManager.class).isKeyguardLocked());setMode(next,force);}
     private void setMode(int next,boolean force){
         if(next<0||next>2)return;
-        if(next!=1&&pendingLock!=null){main.removeCallbacks(pendingLock);pendingLock=null;}
-        if(!force&&mode==next)return;
-        boolean waking=next==1&&(mode==0||pendingLock!=null)&&owner!=null&&!owner.isPreview();mode=next;
-        if(waking){
-            if(pendingLock!=null)return;
-            // Xiaomi screenOn also waits 100 ms and discards the candidate
-            // after authentication. Touch-to-wake can precede fingerprint
-            // success; sending Lock immediately bends a direct AOD->Desk path.
-            pendingLock=()->{
-                pendingLock=null;if(destroyed||mode!=1||owner==null||!owner.surface)return;
-                if(!getSystemService(KeyguardManager.class).isKeyguardLocked())return;
-                send(force?"ForceLock":"Lock");
-            };
-            main.postDelayed(pendingLock,100);return;
-        }
-        send((force?new String[]{"ForceAOD","ForceLock","ForceLand"}:new String[]{"AOD","Lock","Desk"})[mode]);
+        // AOD belongs to ColorOS full-screen AOD, which shows this surface under
+        // its own clock. The scene keeps the lock composition there: Desk->AOD
+        // plays the original Desk->Lock move, Lock->AOD and AOD->Lock send nothing.
+        int shown=mode<0?-1:mode==0?1:mode,target=next==0?1:next;
+        mode=next;main.removeCallbacks(settleAod);aodSettled=false;
+        if(mode==0)main.postDelayed(settleAod,AOD_SETTLE_MS);
+        if(force||shown!=target)send((force?new String[]{null,"ForceLock","ForceLand"}:new String[]{null,"Lock","Desk"})[target]);
+        refresh();
     }
-    private boolean canRun(){if(owner==null||!owner.surface||!owner.visible)return false;Display d=owner.display();if(d==null)return false;return d.getState()!=Display.STATE_OFF&&d.getState()!=Display.STATE_UNKNOWN;}
+    // Long enough for the Desk->Lock move to finish under the AOD fade-in.
+    private static final long AOD_SETTLE_MS=2000;
+    private boolean aodSettled;
+    private final Runnable settleAod=()->{if(mode==0){aodSettled=true;refresh();}};
+    private boolean canRun(){if(owner==null||!owner.surface||!owner.visible)return false;if(aodSettled&&!owner.isPreview())return false;
+Display d=owner.display();if(d==null)return false;return d.getState()!=Display.STATE_OFF&&d.getState()!=Display.STATE_UNKNOWN;}
     private void refresh(){if(player==null)return;try{player.running(canRun());}catch(Exception e){failure(e);}}
     private void sendOffset(){if(owner!=null&&owner.offset>=0)send("Offset_"+XiaomiDesktopMotion.offset(owner.offset,desktopAmplitude));}
     private void queueOffset(SceneEngine engine,float value){
@@ -97,7 +93,7 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     private void failure(Throwable e){android.util.Log.e("OpenAliveXiaomi","Wallpaper runtime",e);}
     @Override protected void dump(java.io.FileDescriptor fd,java.io.PrintWriter out,String[] args){
         super.dump(fd,out,args);
-        out.println("Xiaomi family="+(pack==null?"loading":pack.id)+" ready="+ready+" running="+(player!=null&&player.isRunning())+" mode="+mode+" land="+land+" pendingLock="+(pendingLock!=null));
+        out.println("Xiaomi family="+(pack==null?"loading":pack.id)+" ready="+ready+" running="+(player!=null&&player.isRunning())+" mode="+mode+" land="+land+" aodSettled="+aodSettled);
         if(player!=null)out.println("  player "+player.status());
         for(SceneEngine e:engines){Display d=e.display();out.println("  owner="+(e==owner)+" preview="+e.isPreview()+" surface="+e.surface+" visible="+e.visible+" display="+(d==null?-1:d.getState())+" offset="+e.offset);}
     }
