@@ -21,7 +21,7 @@ public final class AppSettingsActivity extends Activity {
     };
     private boolean binding;
     private FrameLayout shrinkSlot,widthSlot;
-    private Switch shortcuts,largeClock;
+    private Switch shortcuts;
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
@@ -59,14 +59,12 @@ public final class AppSettingsActivity extends Activity {
         lock.addView(shrink);
         shortcuts=look.toggle();View shortcutRow=look.row(0,"息屏保留快捷入口",null,shortcuts);shortcutRow.setOnClickListener(v->shortcuts.toggle());
         shortcuts.setOnCheckedChangeListener((v,on)->{if(!binding)LockTweaks.save(this,"aod_shortcuts",on);});lock.addView(shortcutRow);
-        largeClock=look.toggle();View clockRow=look.row(0,"通知下沉时保持大时钟",null,largeClock);clockRow.setOnClickListener(v->largeClock.toggle());
-        largeClock.setOnCheckedChangeListener((v,on)->{if(!binding)LockTweaks.save(this,"sink_large_clock",on);});lock.addView(clockRow);
         LinearLayout width=new LinearLayout(this);width.setOrientation(LinearLayout.VERTICAL);width.setPadding(look.dp(16),look.dp(14),look.dp(16),look.dp(12));
-        width.addView(look.text("通知宽度",16,look.text,400));
+        width.addView(look.text("通知对齐",16,look.text,400));
         widthSlot=new FrameLayout(this);LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(-1,-2);wp.topMargin=look.dp(12);width.addView(widthSlot,wp);
         lock.addView(width);
         content.addView(lock);
-        content.addView(look.footer("进入全景沉浸息屏时，ColorOS 会把时钟、通知和底部区域缩小到 90%，并隐藏左下、右下快捷入口。开启「允许通知下沉」后，流体云展开会让时钟切成小号并顶到上方。通知宽度同时作用于锁屏和通知中心。以上默认保持系统行为。"));
+        content.addView(look.footer("进入全景沉浸息屏时，ColorOS 会把时钟、通知和底部区域缩小到 90%，并隐藏左下、右下快捷入口。通知对齐让通知左右边缘与锁屏底部快捷入口或小组件对齐，同时作用于锁屏和通知中心。以上默认保持系统行为。"));
 
         content.addView(look.heading("小米超级壁纸"));
         LinearLayout xiaomi=look.group();
@@ -100,8 +98,8 @@ public final class AppSettingsActivity extends Activity {
         shrinkSlot.removeAllViews();
         shrinkSlot.addView(look.segmented(new String[]{"系统默认","减半","不缩小"},LockTweaks.aodScaleIndex(this),i->{LockTweaks.save(this,"aod_scale",i);bind();}));
         widthSlot.removeAllViews();
-        widthSlot.addView(look.segmented(new String[]{"系统默认","稍窄","更窄"},LockTweaks.notificationInsetIndex(this),i->{LockTweaks.save(this,"notification_inset",i);bind();}));
-        shortcuts.setChecked(LockTweaks.aodShortcuts(this));largeClock.setChecked(LockTweaks.sinkLargeClock(this));
+        widthSlot.addView(look.segmented(new String[]{"系统默认","底部控件","小组件"},LockTweaks.notificationAlign(this),i->{LockTweaks.save(this,"notification_align",i);bind();}));
+        shortcuts.setChecked(LockTweaks.aodShortcuts(this));
         int mode=NotificationOptions.preferences(this).getInt("mode",0);
         notificationSummary.setText(NOTIFICATION[mode>=0&&mode<NOTIFICATION.length?mode:0]);
         binding=false;
