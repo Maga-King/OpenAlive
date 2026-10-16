@@ -71,7 +71,8 @@ final class ColorOsBridge {
         installPanoramicMask(cl);
         installPanoramicHandoff(cl);
         installUnlockEvents(cl);
-        new ColorOsFingerprintAod(cl).install();
+        new ColorOsUnlockHandoff(cl).install();
+        new ColorOsFingerprintAod(cl,aodClock::fingerprintClockSuppressed).install();
         installAnimationWindow(cl);
         try{
             XposedHelpers.findAndHookMethod(controller,"shouldWindowBeTransparent",new XC_MethodHook(){
@@ -172,7 +173,8 @@ final class ColorOsBridge {
                 @Override protected void afterHookedMethod(MethodHookParam p){
                     if(!selected||p.hasThrowable())return;
                     try{
-                        if(!(boolean)XposedHelpers.callMethod(p.thisObject,"isPanoramicAodInShowWhenFpUnlock"))return;
+                        if(!ColorOsUnlockHandoff.inAuthenticatedAnimation()
+                                &&!(boolean)XposedHelpers.callMethod(p.thisObject,"isPanoramicAodInShowWhenFpUnlock"))return;
                         Object rule=XposedHelpers.getObjectField(p.thisObject,"curUnlockAnimRule");
                         if(rule==null||XposedHelpers.getBooleanField(rule,"launcherUnlockScene")
                                 ||XposedHelpers.getBooleanField(rule,"oneShotAnim")||XposedHelpers.getBooleanField(rule,"isSkipUnlockAnim"))return;

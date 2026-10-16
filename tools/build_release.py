@@ -54,7 +54,7 @@ for library in ort_native:
         if struct.unpack_from('<I',data,offset)[0]==1 and struct.unpack_from('<Q',data,offset+48)[0]<16384:
             raise ValueError('Native runtime must support 16 KB pages: '+library.name)
 
-for script in ['check_layout.py','check_wallpaper_picker.py','check_clock_scope.py','check_xiaomi_assets.py','check_xiaomi_desktop.py']:run(sys.executable,ROOT/'tools'/script)
+for script in ['check_layout.py','check_wallpaper_picker.py','check_clock_scope.py','check_xiaomi_assets.py','check_xiaomi_desktop.py','check_unlock_handoff.py','check_fingerprint_clock.py','check_fingerprint_clock_mask.py']:run(sys.executable,ROOT/'tools'/script)
 if WIN:
     linux='/mnt/'+ROOT.drive[0].lower()+ROOT.as_posix()[2:]
     # Local Windows builds use the existing WSL NDK; CI builds directly on Linux.
@@ -131,4 +131,5 @@ with zipfile.ZipFile(apk) as z:
     assert not any(n.startswith('assets/video/') for n in z.namelist())
 (DIST/'build-report.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf8',newline='\n')
 (DIST/'SHA256SUMS').write_text(report['sha256']+'  '+apk.name+'\n',encoding='ascii',newline='\n')
+(DIST/'MD5SUMS').write_text(hashlib.md5(apk.read_bytes()).hexdigest()+'  '+apk.name+'\n',encoding='ascii',newline='\n')
 print(json.dumps(report,indent=2))

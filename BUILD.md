@@ -2,7 +2,7 @@
 
 GitHub Actions 会在推送 `v*` 标签时编译、验证 APK，再发布 Release。手动运行默认只生成构建产物；勾选 `release` 时同时发布。
 
-发布前必须通过 `python tools/verify_release.py`：APK、SHA256SUMS 和 build-report.json 均与 `release/expected.json` 记录的本地审定文件逐字节一致。任一不同则停止发布，Actions 构建产物仍可下载分析。更新版本时应先完整本地构建，再更新该哈希清单。ZIP 时间戳、权限、条目顺序和压缩级别固定，报告统一 LF 换行；Rust 编译路径重映射为固定前缀。
+发布前必须通过 `python tools/verify_release.py`：APK、SHA256SUMS、MD5SUMS 和 build-report.json 均与 `release/expected.json` 记录的本地审定文件逐字节一致。任一不同则停止发布，Actions 构建产物仍可下载分析。Actions 摘要直接显示 APK 的 MD5 和 SHA-256，无需下载 APK 即可核对；发布完整性检查仍以 SHA-256 为准。更新版本时应先完整本地构建，再更新该哈希清单。ZIP 时间戳、权限、条目顺序和压缩级别固定，报告统一 LF 换行；Rust 编译路径重映射为固定前缀。
 
 ## 环境
 

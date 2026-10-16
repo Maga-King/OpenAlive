@@ -25,6 +25,9 @@ __pycache__/
 !/tools/check_hans_lease.py
 !/tools/check_render_lifecycle.py
 !/tools/check_wallpaper_motion.py
+!/tools/check_unlock_handoff.py
+!/tools/check_fingerprint_clock.py
+!/tools/check_fingerprint_clock_mask.py
 !/tools/check_gradient_render.py
 !/tools/import_flyme9_gradient.py
 !/tools/import_flyme9_video.py

@@ -12,6 +12,8 @@ final class ColorOsAodClock {
     private final ClassLoader loader;
     private final Handler main=new Handler(Looper.getMainLooper());
     private final AodClockHost host=new AodClockHost();
+    private final FingerprintClockMask fingerprintMask=new FingerprintClockMask();
+    private boolean fingerprintClockSuppressed;
     private WeakReference<Object> controller=new WeakReference<>(null);
     private Context context;
     private volatile boolean enabled;
@@ -69,6 +71,12 @@ final class ColorOsAodClock {
     }
     String installError(){return installError;}
     boolean usesIndependentClock(){return enabled;}
+    /** Called on the main thread; lifetime belongs to the authenticated OFF-touch attempt. */
+    void fingerprintClockSuppressed(boolean value){
+        fingerprintClockSuppressed=value;
+        try{host.fingerprintClockSuppressed(value);}
+        finally{reconcileFingerprintMask();}
+    }
     void configure(Context context,boolean selected,int style){
         configure(context,selected,style,null);
     }
@@ -111,6 +119,7 @@ final class ColorOsAodClock {
         animation.addUpdateListener(a->{if(maskAnimation==animation&&enabled&&mode==0){contentAlpha=Math.max(0,Math.min(1,1-(float)a.getAnimatedValue()));host.contentAlpha(contentAlpha);}});
     }
     private void reconcile(){
+        reconcileFingerprintMask();
         if(!enabled||context==null){host.hide();return;}
         if(mode!=0){if(mode==2)host.leaveUnlocked();else if(xiaomi)host.leaveXiaomi();else host.leave(wakeToken!=0);return;}
         try{
@@ -119,12 +128,7 @@ final class ColorOsAodClock {
             // mAodIsInShow becomes false BEFORE the 700 ms AOD-to-OFF mask.
             // The accepted scene remains AOD during OFF; retain stock suppression.
             boolean showing=XposedHelpers.getBooleanField(data,"mAodIsInShow");
-            Object current=controller.get();
-            if(current==null){
-                Class<?> dependency=XposedHelpers.findClass("com.android.systemui.DependencyEx",loader);
-                Object keyguard=XposedHelpers.callMethod(XposedHelpers.getStaticObjectField(dependency,"sDependency"),"getDependency",XposedHelpers.findClass("com.android.keyguard.OplusKeyguardDependencyEx",loader));
-                current=XposedHelpers.callMethod(keyguard,"getKeyguardStyleClockController");controller=new WeakReference<>(current);
-            }
+            Object current=clockController();
             if(current==null){host.hide();return;}
             Object plugin=XposedHelpers.getObjectField(current,"clockPlugin");
             if(plugin==null){host.hide();return;}
@@ -162,6 +166,28 @@ final class ColorOsAodClock {
             if(fresh&&host.shown()){if(Diagnostics.TRACE)android.util.Log.i("AliveClean","AOD clock attached; system lock clock retained");}
             if(Diagnostics.TRACE){long minute=System.currentTimeMillis()/60000;if(host.shown()&&minute!=lastMinute){lastMinute=minute;android.util.Log.i("AliveClean","AOD clock minute="+minute+" updated in native display window");}}
         }catch(Throwable error){host.hide();failure(error);}
+    }
+    private Object clockController(){
+        Object current=controller.get();
+        if(current==null){
+            Class<?> dependency=XposedHelpers.findClass("com.android.systemui.DependencyEx",loader);
+            Object keyguard=XposedHelpers.callMethod(XposedHelpers.getStaticObjectField(dependency,"sDependency"),"getDependency",XposedHelpers.findClass("com.android.keyguard.OplusKeyguardDependencyEx",loader));
+            current=XposedHelpers.callMethod(keyguard,"getKeyguardStyleClockController");controller=new WeakReference<>(current);
+        }
+        return current;
+    }
+    private void reconcileFingerprintMask(){
+        if(!fingerprintClockSuppressed){fingerprintMask.clear();return;}
+        try{
+            Object current=clockController();
+            if(current==null){fingerprintMask.clear();return;}
+            Object plugin=XposedHelpers.getObjectField(current,"clockPlugin");
+            Object container=XposedHelpers.getObjectField(current,"keyguardStyleClock");
+            Object scope=plugin==null?null:XposedHelpers.callMethod(plugin,"getView",1);
+            if(container instanceof View&&scope instanceof View)
+                fingerprintMask.bind(((View)container).getRootView(),(View)scope);
+            else fingerprintMask.clear();
+        }catch(Throwable error){fingerprintMask.clear();failure(error);}
     }
     private void bindWidgets(Object current){
         try{

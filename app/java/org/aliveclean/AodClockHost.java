@@ -20,6 +20,8 @@ final class AodClockHost {
     }
     private ValueAnimator fade,stockFade,enterFade;
     private float windowAlpha=1,enterAlpha=1;
+    private float faceOutput;
+    private boolean fingerprintClockSuppressed;
     private float reversedEnterAlpha=-1;
     private boolean enterPending,xiaomiTransitions;
     private int generation;
@@ -71,7 +73,7 @@ final class AodClockHost {
     }
     private void attach(ViewGroup parent,View t,View d,View clockScope){
         boolean reversing=xiaomiClock!=null&&root==parent&&scope==clockScope&&!owning&&fade!=null;
-        float previousFace=reversing&&clock!=null&&windowAlpha>0?Math.min(1,clock.getAlpha()/windowAlpha):0;
+        float previousFace=reversing&&clock!=null&&windowAlpha>0?Math.min(1,faceOutput/windowAlpha):0;
         if(root==parent&&scope==clockScope&&clock!=null){
             if(xiaomiClock!=null&&owning){time=t;date=d;maskContents();return;}
             cancelFade();cancelStockFade();holdingClock=false;holdingUnlock=false;
@@ -84,6 +86,7 @@ final class AodClockHost {
             parent.addView(next,new ViewGroup.LayoutParams(-1,-1));
             next.active(true);next.refresh(System.currentTimeMillis());
             root=parent;clock=next;time=t;date=d;scope=clockScope;owning=true;
+            faceAlpha(1);
             reversedEnterAlpha=reversing?previousFace:-1;stockAlpha=0;
             if(next instanceof XiaomiAodClockView)((XiaomiAodClockView)next).whenFailed(()->{if(clock==next)hide();});
             maskContents();
@@ -150,7 +153,13 @@ final class AodClockHost {
             faceAlpha(windowAlpha*enterAlpha);
         }else faceAlpha(windowAlpha);
     }
-    private void faceAlpha(float value){if(clock!=null){clock.setAlpha(value);clock.active(value>0);}}
+    void fingerprintClockSuppressed(boolean value){
+        fingerprintClockSuppressed=value;faceAlpha(faceOutput);
+    }
+    private void faceAlpha(float value){
+        faceOutput=value;
+        if(clock!=null){float visible=fingerprintClockSuppressed?0:value;clock.setAlpha(visible);clock.active(visible>0);}
+    }
     // HyperOS DozeHost.startEnterAnim: 1000 ms, AccelerateInterpolator, no
     // super-wallpaper style delay. ColorOS still owns the visible AOD window.
     void enterXiaomi(boolean animate){
@@ -217,9 +226,9 @@ final class AodClockHost {
         else if(!waitForFrame)releaseClock();
         if(clock==null){if(!holdingClock)hide();return;}
         if(fade!=null)return;
-        if(clock.getAlpha()==0){removeFace();if(!holdingClock)hide();return;}
+        if(faceOutput==0){removeFace();if(!holdingClock)hide();return;}
         final int token=++generation;
-        fade=ValueAnimator.ofFloat(clock.getAlpha(),0);fade.setDuration(xiaomiClock==null?180:500);
+        fade=ValueAnimator.ofFloat(faceOutput,0);fade.setDuration(xiaomiClock==null?180:500);
         if(xiaomiClock==null)fade.setInterpolator(new PathInterpolator(.33f,0,.67f,1));
         fade.addUpdateListener(a->{if(token==generation)faceAlpha((float)a.getAnimatedValue());});
         fade.addListener(new AnimatorListenerAdapter(){@Override public void onAnimationEnd(Animator a){if(token==generation){fade=null;removeFace();if(!holdingClock)hide();}}});
