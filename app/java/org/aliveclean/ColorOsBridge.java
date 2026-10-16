@@ -70,6 +70,7 @@ final class ColorOsBridge {
         new ColorOsOccludedTransition(cl,()->selected).install();
         installPanoramicMask(cl);
         installAodRim(cl);
+        installLockTweaks(cl);
         installPanoramicHandoff(cl);
         installUnlockEvents(cl);
         new ColorOsFingerprintAod(cl).install();
@@ -295,6 +296,48 @@ final class ColorOsBridge {
             });
         }catch(Throwable error){failure("AOD rim hooks",error);}
     }
+    // Optional lock screen adjustments (设置 → 锁屏与息屏). Defaults keep ColorOS.
+    private static volatile float aodScale=0.9f;
+    private static volatile boolean aodShortcuts,sinkLargeClock;
+    private static void installLockTweaks(ClassLoader cl){
+        try{
+            // Entering panoramic AOD, OplusPanelKeyguardAnimControllerImpl animates clock,
+            // notification and bottom-area scale to 0.9 and the shortcut alpha to 0.
+            String base="com.oplus.systemui.keyguard.anim.OplusPanelKeyguardAnimControllerImpl";
+            Class<?> scene=XposedHelpers.findClass(base+"$PanelSceneAnim",cl);
+            Class<?> panoramic=XposedHelpers.findClass(base+"$PanoramicScreenAnim",cl);
+            Class<?> fromUnlock=XposedHelpers.findClass(base+"$PanoramicScreenOffAnimFromUnlock",cl);
+            Class<?> flow=XposedHelpers.findClass("kotlinx.coroutines.flow.MutableStateFlow",cl);
+            XposedHelpers.findAndHookMethod(scene,"anim",flow,float.class,float.class,int.class,int.class,android.animation.TimeInterpolator.class,new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){
+                    try{
+                        Object self=p.thisObject;
+                        boolean off=fromUnlock.isInstance(self)||panoramic.isInstance(self)&&!XposedHelpers.getBooleanField(self,"screenOn");
+                        if(!off)return;
+                        Object controller=XposedHelpers.getObjectField(self,"this$0"),target=p.args[0];
+                        if((Float)p.args[2]==0.9f&&aodScale!=0.9f)
+                            for(String name:new String[]{"_clockAnimScale","_oneshotClockAnimScale","_notificationAnimScale","_bottomAreaAnimScale"})
+                                if(target==XposedHelpers.getObjectField(controller,name))p.args[2]=aodScale;
+                        if(aodShortcuts&&target==XposedHelpers.getObjectField(controller,"_bottomButtonAnimAlpha"))p.args[2]=1f;
+                    }catch(Throwable error){failure("panoramic AOD layout",error);}
+                }
+            });
+        }catch(Throwable error){failure("panoramic AOD layout hooks",error);}
+        try{
+            // In the sinking stack state (3) the clock size follows AOSP, which turns small
+            // as soon as an expanded fluid cloud card is visible. Capsule state keeps it large.
+            Class<?> size=XposedHelpers.findClass("com.android.systemui.keyguard.shared.model.ClockSize",cl);
+            Object small=XposedHelpers.getStaticObjectField(size,"SMALL"),large=XposedHelpers.getStaticObjectField(size,"LARGE");
+            XposedBridge.hookAllConstructors(XposedHelpers.findClass("com.oplus.systemui.keyguard.ui.viewmodel.OplusKeyguardClockViewModel$ClockSizeState",cl),new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){
+                    try{
+                        if(!sinkLargeClock||p.args.length<3||p.args[0]!=small||p.args[2]==null)return;
+                        if(((Integer)XposedHelpers.callMethod(p.args[2],"getNewState"))==3)p.args[0]=large;
+                    }catch(Throwable error){failure("sinking clock size",error);}
+                }
+            });
+        }catch(Throwable error){failure("sinking clock size hook",error);}
+    }
     private static float nativePanoramicMask(ClassLoader cl){
         try{
             Object params=XposedHelpers.getStaticObjectField(XposedHelpers.findClass("com.oplus.systemui.keyguard.anim.OplusKgdAnimParams$PanelPanoramic",cl),"INSTANCE");
@@ -373,6 +416,7 @@ final class ColorOsBridge {
         boolean continuous=reply.getBoolean("continuous_aod",false);
         long continuousLimit=reply.getLong("continuous_aod_ms",0);
         adaptiveAod=reply.getBoolean("adaptive_aod",false);
+        aodScale=reply.getFloat("aod_scale",0.9f);aodShortcuts=reply.getBoolean("aod_shortcuts",false);sinkLargeClock=reply.getBoolean("sink_large_clock",false);
         boolean vivo=reply.getBoolean("vivo_wallpaper",false);
         Bundle xiaomiClock=reply.getBundle("xiaomi_clock");
         main.post(()->{
