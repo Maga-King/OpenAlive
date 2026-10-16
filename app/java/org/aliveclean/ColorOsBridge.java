@@ -70,8 +70,6 @@ final class ColorOsBridge {
         new ColorOsOccludedTransition(cl,()->selected).install();
         installPanoramicMask(cl);
         installAodRim(cl);
-        installCustomCardAod(cl);
-        installLockTweaks(cl);
         installPanoramicHandoff(cl);
         installUnlockEvents(cl);
         new ColorOsFingerprintAod(cl).install();
@@ -278,60 +276,6 @@ final class ColorOsBridge {
     // ColorOS fades the official notification and capsule rim (gradient stroke) to 0 in
     // AOD: stroke alpha *= (1 - aod progress). Keep the rim at its official lock-screen
     // value there; the inner shadow still fades as ColorOS intends.
-    private static void installCustomCardAod(ClassLoader cl){
-        try{
-            // NotificationDetailColorChanger.changeAodCustomRowColor only reaches CustomRowBgAodWrapper
-            // for a second stack overlay (or a card that already has an AOD colour), and that wrapper
-            // only recolours the overlay. A standalone fluid cloud card's own background never gets
-            // the AOD colour every notification gets through NormalBgAodWrapper; media cards are
-            // handled separately by applyMask. Run the NormalBgAodWrapper type 0 sequence for it, on
-            // the same calls and progress, with the same aod_notification_card_normal_* end colours.
-            String pkg="com.oplus.systemui.notification.aod.notification.";
-            Class<?> changer=XposedHelpers.findClass(pkg+"NotificationDetailColorChanger",cl);
-            Class<?> row=XposedHelpers.findClass("com.oplus.systemui.statusbar.notification.customcard.OplusCustomRow",cl);
-            Class<?> kt=XposedHelpers.findClass(pkg+"AodBgViewWrapperKt",cl);
-            Class<?> platform=XposedHelpers.findClass("com.oplusos.systemui.common.blurability.platformblur.PlatformBlurDrawable",cl);
-            Class<?> pair=XposedHelpers.findClass("kotlin.Pair",cl);
-            Object empty=XposedHelpers.callMethod(XposedHelpers.getStaticObjectField(XposedHelpers.findClass(pkg+"AodBgConstants",cl),"INSTANCE"),"getEMPTY");
-            java.util.Map<Object,Object> colors=new java.util.WeakHashMap<>();
-            XposedHelpers.findAndHookMethod(changer,"changeAodCustomRowColor",row,float.class,boolean.class,new XC_MethodHook(){
-                @Override protected void afterHookedMethod(MethodHookParam p){
-                    try{
-                        android.view.View card=(android.view.View)p.args[0];float progress=(Float)p.args[1];
-                        Object entry=XposedHelpers.callMethod(card,"getEntry");
-                        String service=entry==null?null:(String)XposedHelpers.callMethod(entry,"getServiceId");
-                        if((Boolean)XposedHelpers.callMethod(XposedHelpers.getStaticObjectField(row,"Companion"),"isOplusMediaCustomRow",service))return;
-                        Object background=XposedHelpers.callMethod(card,"getMBackgroundNormal");
-                        Object ext=background==null?null:XposedHelpers.callMethod(background,"getExt");
-                        Object proxy=ext==null?null:XposedHelpers.callMethod(ext,"getViewBlurProxy");
-                        Object drawable=proxy==null?null:XposedHelpers.callMethod(proxy,"getBlurDrawable",new Class<?>[]{android.graphics.drawable.Drawable.class},(Object)null);
-                        if(!platform.isInstance(drawable))return;
-                        Object color=colors.get(card);
-                        Object data=XposedHelpers.callStaticMethod(kt,"access$readBgAodData",drawable,0);
-                        boolean same=color!=null&&java.util.Objects.equals(data==null?null:XposedHelpers.callMethod(data,"getOrigin"),
-                            XposedHelpers.callMethod(XposedHelpers.callMethod(color,"getStart"),"getOrigin"));
-                        boolean idle=(Boolean)XposedHelpers.callMethod(p.thisObject,"isIdle",progress);
-                        if(idle||progress<=0f||card.getVisibility()!=android.view.View.VISIBLE){
-                            if(color==null)return;
-                            if(same){XposedHelpers.callMethod(drawable,"setAodState",false);XposedHelpers.callMethod(drawable,"changeBlurColor",XposedHelpers.callMethod(drawable,"getCurrentBlurMixConfig"),true);}
-                            colors.remove(card);return;
-                        }
-                        if(!same){
-                            android.content.Context c=card.getContext();android.content.res.Resources r=c.getResources();
-                            int top=c.getColor(r.getIdentifier("aod_notification_card_normal_top_layer","color","com.android.systemui"));
-                            int bottom=c.getColor(r.getIdentifier("aod_notification_card_normal_bottom_layer","color","com.android.systemui"));
-                            color=XposedHelpers.callStaticMethod(kt,"access$createBgAodColor",data==null?empty:data,XposedHelpers.newInstance(pair,top,bottom),0,new java.util.LinkedHashSet<>());
-                            colors.put(card,color);
-                        }
-                        Object current=XposedHelpers.callMethod(color,"getColor",progress);
-                        XposedHelpers.callMethod(color,"setCurr",current);
-                        XposedHelpers.callMethod(drawable,"setAodState",true);
-                        XposedHelpers.callStaticMethod(kt,"writeBgAodData",drawable,current);
-                    }catch(Throwable error){failure("fluid cloud AOD colour",error);}
-                }
-            });
-        }catch(Throwable error){failure("fluid cloud AOD colour hook",error);}
-    }
     private static void installAodRim(ClassLoader cl){
         try{
             Class<?> params=XposedHelpers.findClass("com.oplus.systemui.notification.blur.NotificationPlatFormBlurParamsManager",cl);
@@ -350,114 +294,6 @@ final class ColorOsBridge {
                 @Override protected void beforeHookedMethod(MethodHookParam p){if(selected&&lastMode==0)p.args[0]=1f;}
             });
         }catch(Throwable error){failure("AOD rim hooks",error);}
-    }
-    // Optional lock screen adjustments (设置 → 锁屏与息屏). Defaults keep ColorOS.
-    private static volatile float aodScale=0.9f;
-    private static volatile boolean aodShortcuts;
-    private static volatile int notificationAlign;
-    private static final int[] alignedInset={-1,-1,-1};
-    private static volatile Object panelAnim;
-    private static void installLockTweaks(ClassLoader cl){
-        try{
-            // Entering panoramic AOD, OplusPanelKeyguardAnimControllerImpl animates clock,
-            // notification and bottom-area scale to 0.9 and the shortcut alpha to 0.
-            String base="com.oplus.systemui.keyguard.anim.OplusPanelKeyguardAnimControllerImpl";
-            Class<?> scene=XposedHelpers.findClass(base+"$PanelSceneAnim",cl);
-            Class<?> panoramic=XposedHelpers.findClass(base+"$PanoramicScreenAnim",cl);
-            Class<?> fromUnlock=XposedHelpers.findClass(base+"$PanoramicScreenOffAnimFromUnlock",cl);
-            Class<?> flow=XposedHelpers.findClass("kotlinx.coroutines.flow.MutableStateFlow",cl);
-            XposedBridge.hookAllConstructors(XposedHelpers.findClass(base,cl),new XC_MethodHook(){
-                @Override protected void afterHookedMethod(MethodHookParam p){panelAnim=p.thisObject;}
-            });
-            XposedHelpers.findAndHookMethod(scene,"anim",flow,float.class,float.class,int.class,int.class,android.animation.TimeInterpolator.class,new XC_MethodHook(){
-                @Override protected void beforeHookedMethod(MethodHookParam p){
-                    try{
-                        Object self=p.thisObject;
-                        panelAnim=XposedHelpers.getObjectField(self,"this$0");
-                        boolean off=fromUnlock.isInstance(self)||panoramic.isInstance(self)&&!XposedHelpers.getBooleanField(self,"screenOn");
-                        if(!off)return;
-                        Object controller=XposedHelpers.getObjectField(self,"this$0"),target=p.args[0];panelAnim=controller;
-                        if((Float)p.args[2]==0.9f&&aodScale!=0.9f)
-                            for(String name:new String[]{"_clockAnimScale","_oneshotClockAnimScale","_notificationAnimScale","_bottomAreaAnimScale"})
-                                if(target==XposedHelpers.getObjectField(controller,name))p.args[2]=aodScale;
-                        if(aodShortcuts&&target==XposedHelpers.getObjectField(controller,"_bottomButtonAnimAlpha"))p.args[2]=1f;
-                    }catch(Throwable error){failure("panoramic AOD layout",error);}
-                }
-            });
-        }catch(Throwable error){failure("panoramic AOD layout hooks",error);}
-        try{
-            // Shortcut alpha is min(transitionAlpha, bottomAreaAnimAlpha, bottomButtonAnimAlpha,
-            // orientationAlpha). From an unlocked app the panel expansion based transition alpha
-            // stays 0 into panoramic AOD, so the scene override above is not sufficient there.
-            XposedHelpers.findAndHookMethod("com.oplus.systemui.keyguard.ui.viewmodel.OplusKeyguardBottomAreaViewModel$buttonAlpha$1",cl,"invokeSuspend",Object.class,new XC_MethodHook(){
-                @Override protected void afterHookedMethod(MethodHookParam p){
-                    try{
-                        if(!aodShortcuts||!panoramicAod()||!(p.getResult() instanceof Float))return;
-                        float orientation=XposedHelpers.getFloatField(p.thisObject,"F$2");
-                        p.setResult(orientation);
-                    }catch(Throwable error){failure("AOD shortcut alpha",error);}
-                }
-            });
-        }catch(Throwable error){failure("AOD shortcut alpha hook",error);}
-        try{
-            // NotificationStackScrollLayout measures every row as width - 2 * mSidePaddings and
-            // centres it in onLayout. Optionally align the rows with the lock screen's own bottom
-            // shortcuts or widget cards instead of the default inset loaded by initView.
-            Class<?> stack=XposedHelpers.findClass("com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayout",cl);
-            XposedBridge.hookAllMethods(stack,"onMeasure",new XC_MethodHook(){
-                @Override protected void beforeHookedMethod(MethodHookParam p){
-                    try{
-                        android.view.View view=(android.view.View)p.thisObject;int current=XposedHelpers.getIntField(view,"mSidePaddings");
-                        Object base=XposedHelpers.getAdditionalInstanceField(view,"aliveSidePaddings"),applied=XposedHelpers.getAdditionalInstanceField(view,"aliveSideApplied");
-                        int original=base==null||applied==null||current!=(Integer)applied?current:(Integer)base;
-                        int mode=notificationAlign,next=original;
-                        if(mode>0){int inset=alignedInset(view,mode);if(inset>=0)alignedInset[mode]=inset;if(alignedInset[mode]>=0)next=alignedInset[mode];}
-                        // The anchors may lay out after this pass; measure again once they settle.
-                        if(mode>0&&next!=current)view.post(view::requestLayout);
-                        XposedHelpers.setAdditionalInstanceField(view,"aliveSidePaddings",original);XposedHelpers.setAdditionalInstanceField(view,"aliveSideApplied",next);
-                        XposedHelpers.setIntField(view,"mSidePaddings",next);
-                    }catch(Throwable error){failure("notification width",error);}
-                }
-            });
-        }catch(Throwable error){failure("notification width hook",error);}
-    }
-    /** Side inset that lines the notification rows up with the bottom shortcuts (1) or widget cards (2). */
-    private static int alignedInset(android.view.View stack,int mode){
-        if(stack.getWidth()<=0)return -1;
-        int[] bounds={Integer.MAX_VALUE,Integer.MIN_VALUE};
-        collectEdges(stack.getRootView(),mode,bounds,false);
-        if(bounds[0]>=bounds[1]||bounds[0]==Integer.MIN_VALUE+1||!unscaled(stack))return -1;
-        int[] at=new int[2];stack.getLocationOnScreen(at);
-        int left=bounds[0]-at[0],right=at[0]+stack.getWidth()-bounds[1];
-        return left<0||right<0?-1:(left+right)/2;
-    }
-    private static void collectEdges(android.view.View view,int mode,int[] bounds,boolean inside){
-        if(view.getVisibility()!=android.view.View.VISIBLE||view.getWidth()<=0)return;
-        String name=view.getClass().getName();
-        if(mode==1&&inside&&name.endsWith("OplusLaunchableImageView")){addEdges(view,bounds);return;}
-        if(mode==2&&name.endsWith(".CustomRecyclerView")&&view instanceof android.view.ViewGroup){
-            android.view.ViewGroup group=(android.view.ViewGroup)view;
-            for(int i=0;i<group.getChildCount();i++){android.view.View card=group.getChildAt(i);if(card.getVisibility()==android.view.View.VISIBLE&&card.getWidth()>0)addEdges(card,bounds);}
-            return;
-        }
-        if(view instanceof android.view.ViewGroup){
-            boolean within=inside||name.endsWith("OplusKeyguardBottomAreaView");android.view.ViewGroup group=(android.view.ViewGroup)view;
-            for(int i=0;i<group.getChildCount();i++)collectEdges(group.getChildAt(i),mode,bounds,within);
-        }
-    }
-    private static boolean unscaled(android.view.View view){
-        for(Object v=view;v instanceof android.view.View;v=((android.view.View)v).getParent()){android.view.View w=(android.view.View)v;if(w.getScaleX()!=1f)return false;}
-        return true;
-    }
-    private static void addEdges(android.view.View view,int[] bounds){
-        // AOD and unlock scenes scale these anchors; only trust an at-rest lock screen layout.
-        if(!unscaled(view)){bounds[0]=Integer.MIN_VALUE+1;bounds[1]=Integer.MAX_VALUE;return;}
-        if(bounds[0]==Integer.MIN_VALUE+1)return;
-        int[] at=new int[2];view.getLocationOnScreen(at);bounds[0]=Math.min(bounds[0],at[0]);bounds[1]=Math.max(bounds[1],at[0]+view.getWidth());
-    }
-    private static boolean panoramicAod(){
-        Object controller=panelAnim;if(controller==null)return false;
-        try{Object state=XposedHelpers.getObjectField(controller,"curUiState");return state!=null&&"PANORAMIC_AOD".equals(((Enum<?>)state).name());}catch(Throwable error){return false;}
     }
     private static float nativePanoramicMask(ClassLoader cl){
         try{
@@ -537,7 +373,6 @@ final class ColorOsBridge {
         boolean continuous=reply.getBoolean("continuous_aod",false);
         long continuousLimit=reply.getLong("continuous_aod_ms",0);
         adaptiveAod=reply.getBoolean("adaptive_aod",false);
-        aodScale=reply.getFloat("aod_scale",0.9f);aodShortcuts=reply.getBoolean("aod_shortcuts",false);notificationAlign=reply.getInt("notification_align",0);
         boolean vivo=reply.getBoolean("vivo_wallpaper",false);
         Bundle xiaomiClock=reply.getBundle("xiaomi_clock");
         main.post(()->{

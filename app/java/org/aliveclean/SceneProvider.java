@@ -17,7 +17,6 @@ public final class SceneProvider extends ContentProvider {
         try{
             Bundle result=new Bundle();
             NotificationOptions.export(c,result);
-            LockTweaks.export(c,result);
             if("connect".equals(method))result.putBinder("channel",SceneChannel.connect(c,extras==null?null:extras.getBinder("owner"),extras==null?0:extras.getInt("clock_api",0),extras==null?null:extras.getString("clock_error"),extras==null?null:extras.getBinder("clock_feedback")));
             SceneOptions options=new SceneOptions(c.getSharedPreferences(SceneOptions.APPLIED,0));
             result.putInt("aod",options.aod);

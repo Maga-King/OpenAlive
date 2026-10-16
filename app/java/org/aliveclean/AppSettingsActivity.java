@@ -20,8 +20,6 @@ public final class AppSettingsActivity extends Activity {
         @Override public void onChange(boolean self){bind();}
     };
     private boolean binding;
-    private FrameLayout shrinkSlot,widthSlot;
-    private Switch shortcuts;
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
@@ -50,21 +48,6 @@ public final class AppSettingsActivity extends Activity {
         View light=look.row(0,"通知光效","",look.chevron());notificationSummary=Look.summary(light);
         light.setOnClickListener(v->startActivity(new Intent(this,NotificationSettingsActivity.class)));
         notification.addView(light);content.addView(notification);
-
-        content.addView(look.heading("锁屏与息屏"));
-        LinearLayout lock=look.group();
-        LinearLayout shrink=new LinearLayout(this);shrink.setOrientation(LinearLayout.VERTICAL);shrink.setPadding(look.dp(16),look.dp(14),look.dp(16),look.dp(12));
-        shrink.addView(look.text("息屏时元素缩小",16,look.text,400));
-        shrinkSlot=new FrameLayout(this);LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=look.dp(12);shrink.addView(shrinkSlot,sp);
-        lock.addView(shrink);
-        shortcuts=look.toggle();View shortcutRow=look.row(0,"息屏保留快捷入口",null,shortcuts);shortcutRow.setOnClickListener(v->shortcuts.toggle());
-        shortcuts.setOnCheckedChangeListener((v,on)->{if(!binding)LockTweaks.save(this,"aod_shortcuts",on);});lock.addView(shortcutRow);
-        LinearLayout width=new LinearLayout(this);width.setOrientation(LinearLayout.VERTICAL);width.setPadding(look.dp(16),look.dp(14),look.dp(16),look.dp(12));
-        width.addView(look.text("通知对齐",16,look.text,400));
-        widthSlot=new FrameLayout(this);LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(-1,-2);wp.topMargin=look.dp(12);width.addView(widthSlot,wp);
-        lock.addView(width);
-        content.addView(lock);
-        content.addView(look.footer("进入全景沉浸息屏时，ColorOS 会把时钟、通知和底部区域缩小到 90%，并隐藏左下、右下快捷入口。通知对齐让通知左右边缘与锁屏底部快捷入口或小组件对齐，同时作用于锁屏和通知中心。以上默认保持系统行为。"));
 
         content.addView(look.heading("小米超级壁纸"));
         LinearLayout xiaomi=look.group();
@@ -95,11 +78,6 @@ public final class AppSettingsActivity extends Activity {
             :seconds==0?"息屏后壁纸立即定格，最省电。"
             :seconds<0?"息屏期间一直播放，耗电明显增加。"
             :"息屏后继续播放 "+seconds+" 秒，然后定格。");
-        shrinkSlot.removeAllViews();
-        shrinkSlot.addView(look.segmented(new String[]{"系统默认","减半","不缩小"},LockTweaks.aodScaleIndex(this),i->{LockTweaks.save(this,"aod_scale",i);bind();}));
-        widthSlot.removeAllViews();
-        widthSlot.addView(look.segmented(new String[]{"系统默认","底部控件","小组件"},LockTweaks.notificationAlign(this),i->{LockTweaks.save(this,"notification_align",i);bind();}));
-        shortcuts.setChecked(LockTweaks.aodShortcuts(this));
         int mode=NotificationOptions.preferences(this).getInt("mode",0);
         notificationSummary.setText(NOTIFICATION[mode>=0&&mode<NOTIFICATION.length?mode:0]);
         binding=false;
