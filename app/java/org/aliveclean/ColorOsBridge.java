@@ -345,8 +345,12 @@ final class ColorOsBridge {
                         // An expanded fluid cloud card cannot sink, so the stack returns to
                         // TopStack (0) and AOSP shrinks the clock. With sinking enabled keep the
                         // large clock; the stack then lays out below it like sunk notifications.
-                        forcedLargeClock=state==3||state==0&&sinkingEnabled();
-                        if(forcedLargeClock)p.args[0]=large;
+                        boolean keep=state==3||state==0&&sinkingEnabled();
+                        // Only the fully expanded TopStack needs the stack moved below the large
+                        // clock. SinkingStack (3) is the collapse transition into the capsule; its
+                        // own layout already sits at the bottom and must keep the official top.
+                        forcedLargeClock=keep&&state==0;
+                        if(keep)p.args[0]=large;
                     }catch(Throwable error){failure("sinking clock size",error);}
                 }
             });
