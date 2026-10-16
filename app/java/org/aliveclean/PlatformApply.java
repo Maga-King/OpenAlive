@@ -11,12 +11,24 @@ import org.json.JSONObject;
 /** Short-lived root-launched platform adapter, inside the same APK. No resident daemon. */
 public final class PlatformApply {
     private static final String PROVIDER="com.oplus.aod.AodMachineHelperProvider";
+    /** Write the live wallpaper's lock frame as the static file, then restore the live component. */
+    private static void syncStatic(WallpaperManager manager,WallpaperInfo lock,String path)throws Exception {
+        android.graphics.Bitmap frame=android.graphics.BitmapFactory.decodeFile(path);
+        if(frame==null)throw new java.io.IOException("Unreadable snapshot");
+        android.content.ComponentName component=lock.getComponent();
+        WallpaperInfo home=manager.getWallpaperInfo();
+        int flags=home!=null&&component.equals(home.getComponent())?WallpaperManager.FLAG_SYSTEM|WallpaperManager.FLAG_LOCK:WallpaperManager.FLAG_LOCK;
+        manager.setBitmap(frame,null,true,flags);
+        WallpaperManager.class.getMethod("setWallpaperComponentWithFlags",android.content.ComponentName.class,int.class).invoke(manager,component,flags);
+        WallpaperInfo restored=AppliedWallpaper.lock(manager);
+        if(restored==null||!component.equals(restored.getComponent()))throw new IllegalStateException("Live wallpaper not restored");
+    }
     public static void main(String[] args) {
         String stage="startup";
         System.out.println("ALIVE_ADAPTER_STARTED");
         try{
             if(Process.myUid()!=1000)throw new SecurityException("Platform adapter requires the system UID");
-            if(args.length!=1||(!"local-aod".equals(args[0])&&!"panoramic-aod".equals(args[0])&&!"clock-startup".equals(args[0])&&!"motion-permission".equals(args[0])))throw new IllegalArgumentException("Unsupported operation");
+            if(args.length<1||args.length>(("panoramic-aod".equals(args[0])||"local-aod".equals(args[0]))?2:1)||(!"local-aod".equals(args[0])&&!"panoramic-aod".equals(args[0])&&!"clock-startup".equals(args[0])&&!"motion-permission".equals(args[0])))throw new IllegalArgumentException("Unsupported operation");
             if(android.os.Build.VERSION.SDK_INT<31)throw new UnsupportedOperationException("Local AOD adapter requires Android 12 or later");
             if("clock-startup".equals(args[0])){
                 stage="clock-startup";
@@ -37,6 +49,9 @@ public final class PlatformApply {
             WallpaperManager manager=WallpaperManager.getInstance(context);
             WallpaperInfo info=AppliedWallpaper.lock(manager);
             if(!AppliedWallpaper.supported(info))throw new IllegalStateException("请在系统壁纸应用器中将 OpenAlive 应用到锁屏或桌面与锁屏");
+            // Optional: replace the stale static wallpaper file ColorOS samples for clock color.
+            String staticSync=null;
+            if(args.length==2){stage="static";try{syncStatic(manager,info,args[1]);staticSync="ok";}catch(Exception error){staticSync=error.toString();}}
             stage="settings";
             JSONObject report;
             try(PlatformProvider settings=new PlatformProvider("settings",0)){
@@ -58,6 +73,7 @@ public final class PlatformApply {
             int on=settings.secureInt("Setting_AodSwitchEnable",0);
             if(after!=target||on!=1)throw new IllegalStateException("AOD verification failed: expected="+target+", actual="+after+", enabled="+on);
             report=new JSONObject().put("ok",true).put("before",before).put("mode",after);
+            if(staticSync!=null)report.put("staticSync",staticSync);
             }
             // A missing vendor battery interface must not undo a successful wallpaper apply.
             try{ColorOsBackgroundPolicy.allow();report.put("backgroundAllowed",true);}

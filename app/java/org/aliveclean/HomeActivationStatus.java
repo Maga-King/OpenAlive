@@ -36,10 +36,10 @@ final class HomeActivationStatus {
     }
     private TextView indicator(LinearLayout row,Look look,GradientDrawable dot,String text){
         LinearLayout pill=new LinearLayout(activity);pill.setOrientation(LinearLayout.HORIZONTAL);pill.setGravity(Gravity.CENTER_VERTICAL);
-        pill.setBackground(look.round(look.surface,16));pill.setPadding(dp(12),dp(7),dp(14),dp(7));
+        pill.setBackground(look.glass(16,false));pill.setPadding(dp(12),dp(7),dp(14),dp(7));
         View light=new View(activity);dot.setShape(GradientDrawable.OVAL);dot.setColor(0xff95999f);light.setBackground(dot);
         pill.addView(light,new LinearLayout.LayoutParams(dp(7),dp(7)));
-        TextView label=look.text(text,12.5f,look.muted,false);
+        TextView label=look.text(text,12.5f,look.text,false);
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.setMarginStart(dp(8));pill.addView(label,lp);
         row.addView(pill,new LinearLayout.LayoutParams(-2,-2));return label;
     }

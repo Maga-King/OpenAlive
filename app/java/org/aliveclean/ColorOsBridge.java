@@ -69,6 +69,7 @@ final class ColorOsBridge {
         installPowerEvents(cl,controller);
         new ColorOsOccludedTransition(cl,()->selected).install();
         installPanoramicMask(cl);
+        installAodRim(cl);
         installPanoramicHandoff(cl);
         installUnlockEvents(cl);
         new ColorOsFingerprintAod(cl).install();
@@ -237,6 +238,8 @@ final class ColorOsBridge {
                 @Override protected void beforeHookedMethod(MethodHookParam p){
                     try{
                         if(!selected||!"PANORAMIC".equals(String.valueOf(XposedHelpers.getObjectField(p.args[0],"maskState"))))return;
+                        // 自适应 AOD: ColorOS runs its own system-wallpaper mask branch (below).
+                        if(adaptiveAod)return;
                         // The service owns its AOD background/reveal. Native SystemUI
                         // otherwise applies an independent mask and hides the wallpaper.
                         // Keep the power sequence and panel brightness controller intact.
@@ -248,10 +251,49 @@ final class ColorOsBridge {
             XposedHelpers.findAndHookMethod(mask,"getScreenOffAlphaInPanoramic",new XC_MethodHook(){
                 @Override protected void afterHookedMethod(MethodHookParam p){
                     // The native bouncer-to-AOD path settles the same background without an animator.
-                    if(selected&&!p.hasThrowable())p.setResult(0f);
+                    if(!selected||p.hasThrowable())return;
+                    if(!adaptiveAod)p.setResult(0f);
+                }
+            });
+            // ColorOS blacks out third-party lock wallpapers in panoramic AOD (mask 1.0) and
+            // gives its own live wallpapers the partial BACKGROUND_MASK_ALPHA_IN_PANORAMIC.
+            // Under 自适应 AOD answer "not third-party" only inside the mask interactor, so
+            // its native branch, level and timing apply; other consumers are unchanged.
+            ThreadLocal<int[]> inMask=ThreadLocal.withInitial(()->new int[1]);
+            XC_MethodHook scope=new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){inMask.get()[0]++;}
+                @Override protected void afterHookedMethod(MethodHookParam p){inMask.get()[0]--;}
+            };
+            java.util.HashSet<String> names=new java.util.HashSet<>();
+            for(java.lang.reflect.Method m:mask.getDeclaredMethods())if(!m.isSynthetic()&&names.add(m.getName()))XposedBridge.hookAllMethods(mask,m.getName(),scope);
+            XposedHelpers.findAndHookMethod("com.oplus.systemui.keyguard.wallpaper.OplusLockScreenWallpaperController",cl,"isThirdLiveWallpaperForLockscreenScene",new XC_MethodHook(){
+                @Override protected void afterHookedMethod(MethodHookParam p){
+                    if(selected&&adaptiveAod&&inMask.get()[0]>0&&Boolean.TRUE.equals(p.getResult()))p.setResult(false);
                 }
             });
         }catch(Throwable error){failure("panoramic mask hook",error);}
+    }
+    // ColorOS fades the official notification and capsule rim (gradient stroke) to 0 in
+    // AOD: stroke alpha *= (1 - aod progress). Keep the rim at its official lock-screen
+    // value there; the inner shadow still fades as ColorOS intends.
+    private static void installAodRim(ClassLoader cl){
+        try{
+            Class<?> params=XposedHelpers.findClass("com.oplus.systemui.notification.blur.NotificationPlatFormBlurParamsManager",cl);
+            java.lang.reflect.Method apply=null;
+            for(java.lang.reflect.Method m:params.getDeclaredMethods())if(m.getName().equals("applyAodProgressToNotificationBlurParams")&&m.getParameterTypes().length==4)apply=m;
+            if(apply==null)throw new NoSuchMethodException("applyAodProgressToNotificationBlurParams");
+            final java.lang.reflect.Method original=apply;
+            XposedBridge.hookMethod(apply,new XC_MethodHook(){
+                @Override protected void afterHookedMethod(MethodHookParam p){
+                    if(!selected||p.args[0]==null||p.hasThrowable())return;
+                    try{XposedBridge.invokeOriginalMethod(original,p.thisObject,new Object[]{p.args[0],null,0f,p.args[3]});}
+                    catch(Throwable error){failure("AOD notification rim",error);}
+                }
+            });
+            XposedHelpers.findAndHookMethod("com.oplus.systemui.notification.lockscreen.capsule.CapsuleBackgroundHelper",cl,"setStrokeAndShadowAlpha",float.class,float.class,Float.class,new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){if(selected&&lastMode==0)p.args[0]=1f;}
+            });
+        }catch(Throwable error){failure("AOD rim hooks",error);}
     }
     private static float nativePanoramicMask(ClassLoader cl){
         try{
@@ -319,6 +361,7 @@ final class ColorOsBridge {
         continuousAod.configure(context,aod&&!expired);
     }
     private static long continuousAodLimit,continuousAodSince;
+    private static volatile boolean adaptiveAod;
     private static final Runnable endContinuousAod=ColorOsBridge::updateContinuousAod;
     private static void sendBackdrop(boolean covered){
         backdropCovered=covered;
@@ -329,6 +372,7 @@ final class ColorOsBridge {
         int style=reply.getInt("aod",0);
         boolean continuous=reply.getBoolean("continuous_aod",false);
         long continuousLimit=reply.getLong("continuous_aod_ms",0);
+        adaptiveAod=reply.getBoolean("adaptive_aod",false);
         boolean vivo=reply.getBoolean("vivo_wallpaper",false);
         Bundle xiaomiClock=reply.getBundle("xiaomi_clock");
         main.post(()->{

@@ -11,40 +11,32 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-/** Original Xiaomi list shell and row widgets. Only the local data source is replaced. */
+/** The original Xiaomi scenes as banner cards. */
 public final class XiaomiLibraryActivity extends Activity {
-    private XiaomiUi ui; private boolean busy;
+    private boolean busy;
     private int openRequest; private ProgressDialog preparing;
     private final Handler main=new Handler(Looper.getMainLooper());
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
-        new Thread(()->{try{XiaomiUi.bundle(this);runOnUiThread(()->{if(!isDestroyed())showList();});}catch(Exception e){runOnUiThread(()->failure(e));}},"XiaomiUiLoad").start();
+        Look look=new Look(this);
+        FrameLayout root=look.page(this,false);LinearLayout content=look.column(root);
+        content.addView(look.bar(this,"小米超级壁纸",true));
+        TextView intro=look.text("原版场景，息屏、锁屏和桌面连续过渡",14,look.muted,false);
+        intro.setPadding(look.dp(24),look.dp(8),look.dp(24),look.dp(20));content.addView(intro);
+        // Warm the original UI bundle the preview pages use.
+        new Thread(()->{try{XiaomiUi.bundle(this);}catch(Exception e){android.util.Log.w("OpenAliveXiaomi","Xiaomi UI bundle",e);}},"XiaomiUiLoad").start();
+        int width=getResources().getDisplayMetrics().widthPixels-look.dp(32);
+        List<XiaomiPacks.Pack> packs;
+        try{packs=XiaomiPacks.all(this);}catch(Exception e){setContentView(root);failure(e);return;}
+        for(XiaomiPacks.Pack pack:packs){
+            FrameLayout cover=look.cover(null,pack.title,null,22);cover.setContentDescription(pack.title);
+            cover.setOnClickListener(v->open(pack));
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(width,Math.round(width*.36f));lp.leftMargin=look.dp(16);lp.bottomMargin=look.dp(14);
+            content.addView(cover,lp);
+            new Thread(()->{android.graphics.Bitmap image=Covers.asset(this,"xiaomi/"+pack.id+".banner",width);runOnUiThread(()->{if(!isDestroyed()&&image!=null)Look.coverImage(cover,image);});},"XiaomiCover").start();
+        }
+        setContentView(root);
     }
-    private void showList(){try{
-        ui=new XiaomiUi(this);ui.theme.applyStyle(ui.id("style","superWallpaperList.NoBlur"),true);
-        TypedArray bg=ui.obtainStyledAttributes(new int[]{android.R.attr.windowBackground});getWindow().setBackgroundDrawable(bg.getDrawable(0));bg.recycle();
-        View shell=ui.inflate("miuix_appcompat_screen_action_bar"),list=ui.inflate("activity_super_wallpaper_list");
-        ((ViewGroup)shell.findViewById(android.R.id.content)).addView(list,new ViewGroup.LayoutParams(-1,-1));
-        View bar=ui.find(shell,"action_bar");XiaomiUi.call(bar,"setDisplayOptions",new Class[]{int.class},12);
-        XiaomiUi.call(bar,"setTitle",new Class[]{CharSequence.class},ui.getString(ui.id("string","super_wallpaper_list_label")));
-        XiaomiUi.call(bar,"setExpandState",new Class[]{int.class},2);XiaomiUi.call(bar,"setWindowCallback",new Class[]{Window.Callback.class},this);
-        View recycler=ui.find(list,"super_wallpaper_list");Class<?> lm=ui.loader.loadClass("androidx.recyclerview.widget.RecyclerView$LayoutManager");
-        Object layout=ui.loader.loadClass("androidx.recyclerview.widget.LinearLayoutManager").getConstructor(Context.class,int.class,boolean.class).newInstance(ui,1,false);
-        XiaomiUi.call(recycler,"setLayoutManager",new Class[]{lm},layout);
-        List<XiaomiPacks.Pack> packs=XiaomiPacks.all(this);
-        java.util.function.BiConsumer<View,Integer> binder=(v,index)->{try{
-            XiaomiPacks.Pack pack=packs.get(index);Drawable image;try(InputStream in=getAssets().open("xiaomi/"+pack.id+".banner")){image=Drawable.createFromStream(in,pack.id);}
-            final Drawable banner=image;Class<?> fn=ui.loader.loadClass("kotlin.jvm.functions.Function1");Object unit=ui.loader.loadClass("kotlin.Unit").getField("INSTANCE").get(null);
-            Object setImage=Proxy.newProxyInstance(ui.loader,new Class[]{fn},(o,m,a)->{if(m.getName().equals("invoke"))((ImageView)a[0]).setImageDrawable(banner);return unit;});
-            Object click=Proxy.newProxyInstance(ui.loader,new Class[]{fn},(o,m,a)->{if(m.getName().equals("invoke"))open(pack);return unit;});
-            XiaomiUi.call(v,"k",new Class[]{boolean.class,boolean.class,boolean.class,fn,fn,String.class,String.class},false,false,true,setImage,click,pack.title,"");
-            Class<?> complete=ui.loader.loadClass("com.android.thememanager.settings.superwallpaper.widget.DownloadViewHolderInterface$Companion$DownloadState$Complete");Object singleton=null;
-            for(Field f:complete.getDeclaredFields())if(Modifier.isStatic(f.getModifiers())&&f.getType()==complete){f.setAccessible(true);singleton=f.get(null);}
-            XiaomiUi.call(v,"toq",new Class[]{complete.getSuperclass()},singleton);
-        }catch(Exception e){failure(e);}};
-        Object adapter=ui.loader.loadClass("org.aliveclean.XiaomiListAdapter").getConstructor(Context.class,int.class,int.class,java.util.function.BiConsumer.class).newInstance(ui,ui.id("layout","super_wallpaper_item_apk"),packs.size(),binder);
-        XiaomiUi.call(recycler,"setAdapter",new Class[]{ui.loader.loadClass("androidx.recyclerview.widget.RecyclerView$Adapter")},adapter);setContentView(shell);
-    }catch(Exception e){failure(e);}}
     private void open(XiaomiPacks.Pack pack){if(busy)return;busy=true;
         int request=++openRequest;
         main.postDelayed(()->{if(request!=openRequest||!busy||isFinishing()||isDestroyed())return;

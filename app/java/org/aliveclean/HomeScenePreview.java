@@ -28,6 +28,13 @@ final class HomeScenePreview extends FrameLayout implements TextureView.SurfaceT
         // 自适应 AOD previews the lock composition under the dimmed ColorOS AOD.
         dim=new View(context);dim.setBackgroundColor(0x99000000);dim.setVisibility(GONE);addView(dim,new LayoutParams(-1,-1));
     }
+    /** Current frame, small: the home page blurs it into the page backdrop. */
+    Bitmap snapshot(){
+        if(card!=null&&card.image!=null)return card.image;
+        if(!texture.isAvailable()||texture.getWidth()==0)return null;
+        return texture.getBitmap(Math.max(1,texture.getWidth()/2),Math.max(1,texture.getHeight()/2));
+    }
+    int mode(){return mode;}
     void radius(float dp){radius=dp;invalidateOutline();}
     void start(){start(null);}
     void start(XiaomiHomePreview.Card value){

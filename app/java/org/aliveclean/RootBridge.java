@@ -34,7 +34,9 @@ final class RootBridge {
         if(android.os.Process.myUid()/100000!=0)throw new IOException("目前仅支持主用户的 ColorOS 息屏配置");
         if(context.getPackageManager().resolveContentProvider("com.oplus.aod.AodMachineHelperProvider",0)==null)throw new IOException("此系统未提供已适配的 ColorOS 息屏接口，请在系统设置中配置");
         String apk=context.getApplicationInfo().sourceDir;
-        String command="CLASSPATH="+quote(apk)+" /system/bin/app_process /system/bin org.aliveclean.PlatformApply panoramic-aod";
+        // Rendered here, in the app process; the system adapter only installs it.
+        java.io.File snapshot=StaticSnapshot.capture(context);
+        String command="CLASSPATH="+quote(apk)+" /system/bin/app_process /system/bin org.aliveclean.PlatformApply panoramic-aod"+(snapshot==null?"":" "+quote(snapshot.getPath()));
         Process process;
         try{process=new ProcessBuilder("su","1000","-c",command).redirectErrorStream(true).start();}
         catch(IOException error){throw new IOException("无法启动 su，请检查 Root 是否可用",error);}

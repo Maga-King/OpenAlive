@@ -32,7 +32,7 @@ public final class SceneProvider extends ContentProvider {
             // the wallpaper only refreshes for the chosen play window.
             if(AdaptiveAod.active(c)){
                 int play=AdaptiveAod.playSeconds(c);
-                result.putInt("aod",-1);result.remove("xiaomi_clock");
+                result.putInt("aod",-1);result.remove("xiaomi_clock");result.putBoolean("adaptive_aod",true);
                 result.putBoolean("continuous_aod",play!=0);
                 result.putLong("continuous_aod_ms",play>0?play*1000L:0);
             }
