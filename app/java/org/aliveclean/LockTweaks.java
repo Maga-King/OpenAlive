@@ -13,6 +13,9 @@ final class LockTweaks {
     static int aodScaleIndex(Context c){int i=prefs(c).getInt("aod_scale",0);return i>=0&&i<AOD_SCALES.length?i:0;}
     static boolean aodShortcuts(Context c){return prefs(c).getBoolean("aod_shortcuts",false);}
     static boolean sinkLargeClock(Context c){return prefs(c).getBoolean("sink_large_clock",false);}
+    /** Extra notification side inset in dp: system, slightly narrower, narrower. */
+    static final int[] NOTIFICATION_INSETS={0,8,16};
+    static int notificationInsetIndex(Context c){int i=prefs(c).getInt("notification_inset",0);return i>=0&&i<NOTIFICATION_INSETS.length?i:0;}
     static void save(Context c,String key,Object value){
         SharedPreferences.Editor e=prefs(c).edit();
         if(value instanceof Boolean)e.putBoolean(key,(Boolean)value);else e.putInt(key,(Integer)value);
@@ -22,5 +25,6 @@ final class LockTweaks {
         out.putFloat("aod_scale",AOD_SCALES[aodScaleIndex(c)]);
         out.putBoolean("aod_shortcuts",aodShortcuts(c));
         out.putBoolean("sink_large_clock",sinkLargeClock(c));
+        out.putInt("notification_inset",NOTIFICATION_INSETS[notificationInsetIndex(c)]);
     }
 }

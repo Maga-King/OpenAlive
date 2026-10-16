@@ -28,6 +28,8 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
         else if(m.what==4){desktopAmplitude=b.getInt("amplitude");desktopResponsiveness=b.getInt("responsiveness");offsetGeneration++;sendOffset();}return true;
     }));
     private final BroadcastReceiver screen=new BroadcastReceiver(){public void onReceive(Context c,Intent i){
+        if(Intent.ACTION_TIME_TICK.equals(i.getAction())){daylight();return;}
+        if(Intent.ACTION_TIME_CHANGED.equals(i.getAction())||Intent.ACTION_TIMEZONE_CHANGED.equals(i.getAction()))daylight();
         if(Intent.ACTION_SCREEN_OFF.equals(i.getAction()))ambient=true;
         else if(Intent.ACTION_SCREEN_ON.equals(i.getAction())||Intent.ACTION_USER_PRESENT.equals(i.getAction()))ambient=false;
         if(player!=null)try{player.calendarChanged();}catch(Exception e){failure(e);}
@@ -35,7 +37,7 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     }};
     @Override public void onCreate(){super.onCreate();displays=getSystemService(DisplayManager.class);displays.registerDisplayListener(this,main);
         IntentFilter filter=new IntentFilter();filter.addAction(Intent.ACTION_SCREEN_ON);filter.addAction(Intent.ACTION_SCREEN_OFF);filter.addAction(Intent.ACTION_USER_PRESENT);
-        filter.addAction(Intent.ACTION_DATE_CHANGED);filter.addAction(Intent.ACTION_TIME_CHANGED);filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+        filter.addAction(Intent.ACTION_DATE_CHANGED);filter.addAction(Intent.ACTION_TIME_TICK);filter.addAction(Intent.ACTION_TIME_CHANGED);filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
         if(Build.VERSION.SDK_INT>=33)registerReceiver(screen,filter,Context.RECEIVER_NOT_EXPORTED);else registerReceiver(screen,filter);
         new Thread(()->{try{
             XiaomiPacks.Pack p=XiaomiPacks.get(this,getClass().getSimpleName().toLowerCase(Locale.ROOT));File file=XiaomiPacks.find(this,p);
@@ -100,9 +102,24 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     private Runnable pendingLock;
     private boolean aodHeld,aodSettled;
     private final Runnable settleAod=()->{if(mode==0&&aodHeld){aodSettled=true;refresh();}};
+    // Snow Mountain picks its light from os.date() on each rendered frame
+    // (CameraCtrl.lua GetTimeSlice, default sunrise 06:00, sunset 18:00) and
+    // fades the new slice in over 5 s of frame time. A settled panoramic AOD
+    // renders nothing, so wake it briefly when the official slice changes.
+    private int shownSlice;
+    private static int daySlice(){
+        Calendar c=Calendar.getInstance();int t=c.get(Calendar.HOUR_OF_DAY)*3600+c.get(Calendar.MINUTE)*60+c.get(Calendar.SECOND),rise=21600,set=64800;
+        if(t>=rise-3600&&t<rise)return 1;if(t>=rise&&t<rise+7200)return 2;if(t>=rise+7200&&t<(rise+set)/2)return 3;
+        if(t>=(rise+set)/2&&t<set-3600)return 4;if(t>=set-3600&&t<set)return 5;if(t>=set&&t<set+2400)return 6;
+        if(t>=set+2400&&t<set+4800)return 7;if(t>=set+4800&&t<set+7200)return 8;return 9;
+    }
+    private void daylight(){
+        if(pack==null||!"snowmountain".equals(pack.id))return;int now=daySlice();if(now==shownSlice)return;
+        if(mode==0&&aodHeld&&aodSettled){aodSettled=false;refresh();main.removeCallbacks(settleAod);main.postDelayed(settleAod,6000);}
+    }
     private boolean canRun(){if(owner==null||!owner.surface||!owner.visible)return false;if(aodSettled&&!owner.isPreview())return false;
         Display d=owner.display();if(d==null)return false;return d.getState()!=Display.STATE_OFF&&d.getState()!=Display.STATE_UNKNOWN;}
-    private void refresh(){if(player==null)return;try{player.running(canRun());}catch(Exception e){failure(e);}}
+    private void refresh(){if(player==null)return;try{boolean run=canRun();player.running(run);if(run&&ready)shownSlice=daySlice();}catch(Exception e){failure(e);}}
     private void sendOffset(){if(owner!=null&&owner.offset>=0)send("Offset_"+XiaomiDesktopMotion.offset(owner.offset,desktopAmplitude));}
     private void queueOffset(SceneEngine engine,float value){
         // Keep intermediate samples; debouncing to the final page loses motion.

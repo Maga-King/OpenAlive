@@ -299,6 +299,9 @@ final class ColorOsBridge {
     // Optional lock screen adjustments (设置 → 锁屏与息屏). Defaults keep ColorOS.
     private static volatile float aodScale=0.9f;
     private static volatile boolean aodShortcuts,sinkLargeClock;
+    private static volatile int notificationInset;
+    private static volatile Object panelAnim;
+    private static volatile boolean forcedLargeClock;
     private static void installLockTweaks(ClassLoader cl){
         try{
             // Entering panoramic AOD, OplusPanelKeyguardAnimControllerImpl animates clock,
@@ -308,13 +311,17 @@ final class ColorOsBridge {
             Class<?> panoramic=XposedHelpers.findClass(base+"$PanoramicScreenAnim",cl);
             Class<?> fromUnlock=XposedHelpers.findClass(base+"$PanoramicScreenOffAnimFromUnlock",cl);
             Class<?> flow=XposedHelpers.findClass("kotlinx.coroutines.flow.MutableStateFlow",cl);
+            XposedBridge.hookAllConstructors(XposedHelpers.findClass(base,cl),new XC_MethodHook(){
+                @Override protected void afterHookedMethod(MethodHookParam p){panelAnim=p.thisObject;}
+            });
             XposedHelpers.findAndHookMethod(scene,"anim",flow,float.class,float.class,int.class,int.class,android.animation.TimeInterpolator.class,new XC_MethodHook(){
                 @Override protected void beforeHookedMethod(MethodHookParam p){
                     try{
                         Object self=p.thisObject;
+                        panelAnim=XposedHelpers.getObjectField(self,"this$0");
                         boolean off=fromUnlock.isInstance(self)||panoramic.isInstance(self)&&!XposedHelpers.getBooleanField(self,"screenOn");
                         if(!off)return;
-                        Object controller=XposedHelpers.getObjectField(self,"this$0"),target=p.args[0];
+                        Object controller=XposedHelpers.getObjectField(self,"this$0"),target=p.args[0];panelAnim=controller;
                         if((Float)p.args[2]==0.9f&&aodScale!=0.9f)
                             for(String name:new String[]{"_clockAnimScale","_oneshotClockAnimScale","_notificationAnimScale","_bottomAreaAnimScale"})
                                 if(target==XposedHelpers.getObjectField(controller,name))p.args[2]=aodScale;
@@ -331,12 +338,76 @@ final class ColorOsBridge {
             XposedBridge.hookAllConstructors(XposedHelpers.findClass("com.oplus.systemui.keyguard.ui.viewmodel.OplusKeyguardClockViewModel$ClockSizeState",cl),new XC_MethodHook(){
                 @Override protected void beforeHookedMethod(MethodHookParam p){
                     try{
-                        if(!sinkLargeClock||p.args.length<3||p.args[0]!=small||p.args[2]==null)return;
-                        if(((Integer)XposedHelpers.callMethod(p.args[2],"getNewState"))==3)p.args[0]=large;
+                        if(p.args.length<3||p.args[2]==null)return;
+                        int state=(Integer)XposedHelpers.callMethod(p.args[2],"getNewState");
+                        android.util.Log.i("AliveClean","clock size "+p.args[0]+" state="+state+" event="+p.args[2]);
+                        if(!sinkLargeClock||p.args[0]!=small){forcedLargeClock=false;return;}
+                        // An expanded fluid cloud card cannot sink, so the stack returns to
+                        // TopStack (0) and AOSP shrinks the clock. With sinking enabled keep the
+                        // large clock; the stack then lays out below it like sunk notifications.
+                        forcedLargeClock=state==3||state==0&&sinkingEnabled();
+                        if(forcedLargeClock)p.args[0]=large;
                     }catch(Throwable error){failure("sinking clock size",error);}
                 }
             });
         }catch(Throwable error){failure("sinking clock size hook",error);}
+        try{
+            // The notification stack top is getStyleClockBottomPositionForNotification(), built from
+            // getClockHeightAndTop(). That squeezes the clock into expectedClockHeight = screen
+            // height - stack height, i.e. the small clock once the stack expands. While the large
+            // clock is kept, measure as if the whole large clock fits so the stack starts below it.
+            XposedHelpers.findAndHookMethod("com.oplus.systemui.keyguard.clockstyle.KeyguardStyleClockControllerImpl",cl,"getClockHeightAndTop",boolean.class,new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){
+                    try{
+                        if(!sinkLargeClock||!forcedLargeClock||(Boolean)p.args[0])return;
+                        p.setObjectExtra("alive_expected",XposedHelpers.getIntField(p.thisObject,"expectedClockHeight"));
+                        XposedHelpers.setIntField(p.thisObject,"expectedClockHeight",Integer.MAX_VALUE/4);
+                    }catch(Throwable error){failure("large clock stack top",error);}
+                }
+                @Override protected void afterHookedMethod(MethodHookParam p){
+                    Object saved=p.getObjectExtra("alive_expected");
+                    if(saved!=null)try{XposedHelpers.setIntField(p.thisObject,"expectedClockHeight",(Integer)saved);}catch(Throwable error){failure("large clock stack top",error);}
+                }
+            });
+        }catch(Throwable error){failure("large clock stack top hook",error);}
+        try{
+            // Shortcut alpha is min(transitionAlpha, bottomAreaAnimAlpha, bottomButtonAnimAlpha,
+            // orientationAlpha). From an unlocked app the panel expansion based transition alpha
+            // stays 0 into panoramic AOD, so the scene override above is not sufficient there.
+            XposedHelpers.findAndHookMethod("com.oplus.systemui.keyguard.ui.viewmodel.OplusKeyguardBottomAreaViewModel$buttonAlpha$1",cl,"invokeSuspend",Object.class,new XC_MethodHook(){
+                @Override protected void afterHookedMethod(MethodHookParam p){
+                    try{
+                        if(!aodShortcuts||!panoramicAod()||!(p.getResult() instanceof Float))return;
+                        float orientation=XposedHelpers.getFloatField(p.thisObject,"F$2");
+                        p.setResult(orientation);
+                    }catch(Throwable error){failure("AOD shortcut alpha",error);}
+                }
+            });
+        }catch(Throwable error){failure("AOD shortcut alpha hook",error);}
+        try{
+            // NotificationStackScrollLayout measures every row as width - 2 * mSidePaddings and
+            // centres it in onLayout. Widen that inset from the value initView loaded.
+            Class<?> stack=XposedHelpers.findClass("com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayout",cl);
+            XposedBridge.hookAllMethods(stack,"onMeasure",new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){
+                    try{
+                        android.view.View view=(android.view.View)p.thisObject;int current=XposedHelpers.getIntField(view,"mSidePaddings");
+                        Object base=XposedHelpers.getAdditionalInstanceField(view,"aliveSidePaddings"),applied=XposedHelpers.getAdditionalInstanceField(view,"aliveSideApplied");
+                        int original=base==null||applied==null||current!=(Integer)applied?current:(Integer)base;
+                        int next=original+Math.round(notificationInset*view.getResources().getDisplayMetrics().density);
+                        XposedHelpers.setAdditionalInstanceField(view,"aliveSidePaddings",original);XposedHelpers.setAdditionalInstanceField(view,"aliveSideApplied",next);
+                        XposedHelpers.setIntField(view,"mSidePaddings",next);
+                    }catch(Throwable error){failure("notification width",error);}
+                }
+            });
+        }catch(Throwable error){failure("notification width hook",error);}
+    }
+    private static boolean panoramicAod(){
+        Object controller=panelAnim;if(controller==null)return false;
+        try{Object state=XposedHelpers.getObjectField(controller,"curUiState");return state!=null&&"PANORAMIC_AOD".equals(((Enum<?>)state).name());}catch(Throwable error){return false;}
+    }
+    private static boolean sinkingEnabled(){
+        try{android.app.Application app=android.app.AndroidAppHelper.currentApplication();return app!=null&&android.provider.Settings.System.getInt(app.getContentResolver(),"lock_screen_notification_stack_switch",0)==1;}catch(Throwable error){return false;}
     }
     private static float nativePanoramicMask(ClassLoader cl){
         try{
@@ -416,7 +487,7 @@ final class ColorOsBridge {
         boolean continuous=reply.getBoolean("continuous_aod",false);
         long continuousLimit=reply.getLong("continuous_aod_ms",0);
         adaptiveAod=reply.getBoolean("adaptive_aod",false);
-        aodScale=reply.getFloat("aod_scale",0.9f);aodShortcuts=reply.getBoolean("aod_shortcuts",false);sinkLargeClock=reply.getBoolean("sink_large_clock",false);
+        aodScale=reply.getFloat("aod_scale",0.9f);aodShortcuts=reply.getBoolean("aod_shortcuts",false);sinkLargeClock=reply.getBoolean("sink_large_clock",false);notificationInset=reply.getInt("notification_inset",0);
         boolean vivo=reply.getBoolean("vivo_wallpaper",false);
         Bundle xiaomiClock=reply.getBundle("xiaomi_clock");
         main.post(()->{
