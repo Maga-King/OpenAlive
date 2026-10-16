@@ -70,6 +70,7 @@ final class ColorOsBridge {
         new ColorOsOccludedTransition(cl,()->selected).install();
         installPanoramicMask(cl);
         installAodRim(cl);
+        installCustomCardAod(cl);
         installLockTweaks(cl);
         installPanoramicHandoff(cl);
         installUnlockEvents(cl);
@@ -277,6 +278,60 @@ final class ColorOsBridge {
     // ColorOS fades the official notification and capsule rim (gradient stroke) to 0 in
     // AOD: stroke alpha *= (1 - aod progress). Keep the rim at its official lock-screen
     // value there; the inner shadow still fades as ColorOS intends.
+    private static void installCustomCardAod(ClassLoader cl){
+        try{
+            // NotificationDetailColorChanger.changeAodCustomRowColor only reaches CustomRowBgAodWrapper
+            // for a second stack overlay (or a card that already has an AOD colour), and that wrapper
+            // only recolours the overlay. A standalone fluid cloud card's own background never gets
+            // the AOD colour every notification gets through NormalBgAodWrapper; media cards are
+            // handled separately by applyMask. Run the NormalBgAodWrapper type 0 sequence for it, on
+            // the same calls and progress, with the same aod_notification_card_normal_* end colours.
+            String pkg="com.oplus.systemui.notification.aod.notification.";
+            Class<?> changer=XposedHelpers.findClass(pkg+"NotificationDetailColorChanger",cl);
+            Class<?> row=XposedHelpers.findClass("com.oplus.systemui.statusbar.notification.customcard.OplusCustomRow",cl);
+            Class<?> kt=XposedHelpers.findClass(pkg+"AodBgViewWrapperKt",cl);
+            Class<?> platform=XposedHelpers.findClass("com.oplusos.systemui.common.blurability.platformblur.PlatformBlurDrawable",cl);
+            Class<?> pair=XposedHelpers.findClass("kotlin.Pair",cl);
+            Object empty=XposedHelpers.callMethod(XposedHelpers.getStaticObjectField(XposedHelpers.findClass(pkg+"AodBgConstants",cl),"INSTANCE"),"getEMPTY");
+            java.util.Map<Object,Object> colors=new java.util.WeakHashMap<>();
+            XposedHelpers.findAndHookMethod(changer,"changeAodCustomRowColor",row,float.class,boolean.class,new XC_MethodHook(){
+                @Override protected void afterHookedMethod(MethodHookParam p){
+                    try{
+                        android.view.View card=(android.view.View)p.args[0];float progress=(Float)p.args[1];
+                        Object entry=XposedHelpers.callMethod(card,"getEntry");
+                        String service=entry==null?null:(String)XposedHelpers.callMethod(entry,"getServiceId");
+                        if((Boolean)XposedHelpers.callMethod(XposedHelpers.getStaticObjectField(row,"Companion"),"isOplusMediaCustomRow",service))return;
+                        Object background=XposedHelpers.callMethod(card,"getMBackgroundNormal");
+                        Object ext=background==null?null:XposedHelpers.callMethod(background,"getExt");
+                        Object proxy=ext==null?null:XposedHelpers.callMethod(ext,"getViewBlurProxy");
+                        Object drawable=proxy==null?null:XposedHelpers.callMethod(proxy,"getBlurDrawable",new Class<?>[]{android.graphics.drawable.Drawable.class},(Object)null);
+                        if(!platform.isInstance(drawable))return;
+                        Object color=colors.get(card);
+                        Object data=XposedHelpers.callStaticMethod(kt,"access$readBgAodData",drawable,0);
+                        boolean same=color!=null&&java.util.Objects.equals(data==null?null:XposedHelpers.callMethod(data,"getOrigin"),
+                            XposedHelpers.callMethod(XposedHelpers.callMethod(color,"getStart"),"getOrigin"));
+                        boolean idle=(Boolean)XposedHelpers.callMethod(p.thisObject,"isIdle",progress);
+                        if(idle||progress<=0f||card.getVisibility()!=android.view.View.VISIBLE){
+                            if(color==null)return;
+                            if(same){XposedHelpers.callMethod(drawable,"setAodState",false);XposedHelpers.callMethod(drawable,"changeBlurColor",XposedHelpers.callMethod(drawable,"getCurrentBlurMixConfig"),true);}
+                            colors.remove(card);return;
+                        }
+                        if(!same){
+                            android.content.Context c=card.getContext();android.content.res.Resources r=c.getResources();
+                            int top=c.getColor(r.getIdentifier("aod_notification_card_normal_top_layer","color","com.android.systemui"));
+                            int bottom=c.getColor(r.getIdentifier("aod_notification_card_normal_bottom_layer","color","com.android.systemui"));
+                            color=XposedHelpers.callStaticMethod(kt,"access$createBgAodColor",data==null?empty:data,XposedHelpers.newInstance(pair,top,bottom),0,new java.util.LinkedHashSet<>());
+                            colors.put(card,color);
+                        }
+                        Object current=XposedHelpers.callMethod(color,"getColor",progress);
+                        XposedHelpers.callMethod(color,"setCurr",current);
+                        XposedHelpers.callMethod(drawable,"setAodState",true);
+                        XposedHelpers.callStaticMethod(kt,"writeBgAodData",drawable,current);
+                    }catch(Throwable error){failure("fluid cloud AOD colour",error);}
+                }
+            });
+        }catch(Throwable error){failure("fluid cloud AOD colour hook",error);}
+    }
     private static void installAodRim(ClassLoader cl){
         try{
             Class<?> params=XposedHelpers.findClass("com.oplus.systemui.notification.blur.NotificationPlatFormBlurParamsManager",cl);
