@@ -69,6 +69,7 @@ final class ColorOsBridge {
         installPowerEvents(cl,controller);
         new ColorOsOccludedTransition(cl,()->selected).install();
         installPanoramicMask(cl);
+        installLockThumbnail(cl);
         installAodRim(cl);
         installPanoramicHandoff(cl);
         installUnlockEvents(cl);
@@ -229,6 +230,27 @@ final class ColorOsBridge {
             WallpaperManager.getInstance(context).sendWallpaperCommand(window.getWindowToken(),"wallpaper.support.local.dark.mode",local,0,0,null);
             localWallpaperColor=local;
         }catch(Throwable error){failure("wallpaper AOD color",error);}
+    }
+    // For a third-party live wallpaper OplusWallpaperColorManager samples WallpaperInfo.loadThumbnail(),
+    // then the static FLAG_LOCK file, which setting the live component deletes. Both come back empty,
+    // so isWallpaperDark falls back to true and a light scene gets the dark clock and cards. Hand it
+    // the lock frame RootBridge copies into SystemUI's files directory instead.
+    static final String LOCK_THUMBNAIL="openalive_lock.png";
+    private static void installLockThumbnail(ClassLoader cl){
+        try{
+            Class<?> manager=XposedHelpers.findClass("com.oplus.systemui.keyguard.wallpaper.OplusWallpaperColorManager",cl);
+            XposedHelpers.findAndHookMethod(manager,"getOnlineWallpaperThumbnail",Context.class,android.app.WallpaperInfo.class,new XC_MethodHook(){
+                @Override protected void beforeHookedMethod(MethodHookParam p){
+                    try{
+                        Context c=(Context)p.args[0];android.app.WallpaperInfo info=(android.app.WallpaperInfo)p.args[1];
+                        if(c==null||info==null||!"org.aliveclean".equals(info.getPackageName()))return;
+                        java.io.File file=new java.io.File(c.createDeviceProtectedStorageContext().getFilesDir(),LOCK_THUMBNAIL);
+                        android.graphics.Bitmap frame=file.isFile()?android.graphics.BitmapFactory.decodeFile(file.getPath()):null;
+                        if(frame!=null)p.setResult(new android.graphics.drawable.BitmapDrawable(c.getResources(),frame));
+                    }catch(Throwable error){failure("lock thumbnail",error);}
+                }
+            });
+        }catch(Throwable error){failure("lock thumbnail hook",error);}
     }
     private static void installPanoramicMask(ClassLoader cl){
         try{

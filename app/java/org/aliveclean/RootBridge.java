@@ -36,7 +36,8 @@ final class RootBridge {
         String apk=context.getApplicationInfo().sourceDir;
         // Rendered here, in the app process; the system adapter only installs it.
         java.io.File snapshot=StaticSnapshot.capture(context);
-        String command="CLASSPATH="+quote(apk)+" /system/bin/app_process /system/bin org.aliveclean.PlatformApply panoramic-aod"+(snapshot==null?"":" "+quote(snapshot.getPath()));
+        String readable=snapshot==null?null:shareLockFrame(snapshot);
+        String command="CLASSPATH="+quote(apk)+" /system/bin/app_process /system/bin org.aliveclean.PlatformApply panoramic-aod"+(readable==null?"":" "+quote(readable));
         Process process;
         try{process=new ProcessBuilder("su","1000","-c",command).redirectErrorStream(true).start();}
         catch(IOException error){throw new IOException("无法启动 su，请检查 Root 是否可用",error);}
@@ -64,6 +65,26 @@ final class RootBridge {
         android.util.Log.e("AliveClean","Adapter exit="+process.exitValue()+" output="+result);
         String detail=result.trim();if(detail.length()>600)detail=detail.substring(detail.length()-600);
         throw new IOException("息屏辅助进程未返回结果（退出码 "+process.exitValue()+"）"+(detail.isEmpty()?"，请检查超级用户授权":"："+detail));
+    }
+    /**
+     * Copies the lock frame into SystemUI's own files so its wallpaper colour sampling can read it,
+     * and returns a copy the system-uid adapter can read (it cannot enter this app's data directory).
+     */
+    private static String shareLockFrame(java.io.File snapshot){
+        String dir="/data/user_de/0/com.android.systemui/files";
+        String target=dir+"/"+ColorOsBridge.LOCK_THUMBNAIL;
+        String readable="/data/local/tmp/openalive-static.png";
+        String command="cp "+quote(snapshot.getPath())+" "+quote(readable)+" && chmod 644 "+quote(readable)
+                +" && chcon u:object_r:shell_data_file:s0 "+quote(readable)
+                +" && cp "+quote(snapshot.getPath())+" "+quote(target+".tmp")
+                +" && chown $(stat -c %u:%g "+quote(dir)+") "+quote(target+".tmp")
+                +" && chmod 600 "+quote(target+".tmp")+" && mv "+quote(target+".tmp")+" "+quote(target)+" && restorecon "+quote(target);
+        try{
+            Process process=new ProcessBuilder("su","-c",command).redirectErrorStream(true).start();
+            if(!process.waitFor(10,TimeUnit.SECONDS)){process.destroyForcibly();android.util.Log.w("AliveClean","Lock frame copy timed out");return null;}
+            if(process.exitValue()!=0){android.util.Log.w("AliveClean","Lock frame copy failed: "+process.exitValue());return null;}
+            return readable;
+        }catch(Exception error){android.util.Log.w("AliveClean","Lock frame copy unavailable",error);return null;}
     }
     private static String quote(String value){return "'"+value.replace("'","'\"'\"'")+"'";}
 }

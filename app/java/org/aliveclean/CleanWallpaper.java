@@ -116,7 +116,26 @@ public final class CleanWallpaper extends WallpaperService {
             if(next!=renderVisible){renderVisible=next;renderer.visible(next);}
             else if(next&&displayChanged)renderer.resumeDisplay();
         }
-        @Override public void onVisibilityChanged(boolean visible){{if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Wallpaper visible="+visible);}wallpaperVisible=visible;if(visible)update();refreshVisibility();}
+        @Override public void onVisibilityChanged(boolean visible){{if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Wallpaper visible="+visible);}wallpaperVisible=visible;if(visible){update();colorsIfFrameChanged();}refreshVisibility();}
+        // Without colours ColorOS treats a live wallpaper as dark: white clock and dark cards on a
+        // light scene. Report the lock frame StaticSnapshot renders on apply, so WallpaperColors
+        // derives the dark-text hint from what is actually shown.
+        private long colorFrame=-1;
+        private java.io.File lockFrame(){return new java.io.File(getCacheDir(),"static-sync.png");}
+        private void colorsIfFrameChanged(){
+            if(isPreview())return;
+            long modified=lockFrame().lastModified();
+            if(modified!=colorFrame){colorFrame=modified;notifyColorsChanged();}
+        }
+        @Override public android.app.WallpaperColors onComputeColors(){
+            try{
+                java.io.File file=lockFrame();
+                android.graphics.Bitmap frame=file.isFile()?android.graphics.BitmapFactory.decodeFile(file.getPath()):null;
+                if(frame==null)return super.onComputeColors();
+                colorFrame=file.lastModified();
+                return android.app.WallpaperColors.fromBitmap(frame);
+            }catch(Throwable error){android.util.Log.w("AliveClean","Wallpaper colours unavailable",error);return super.onComputeColors();}
+        }
         // Framework @SystemApi callback: absent from the public SDK's stubs.
         public void onAmbientModeChanged(boolean inAmbientMode,long duration){ambient=inAmbientMode;{if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Ambient="+ambient);}update();refreshVisibility();}
         @Override public Bundle onCommand(String action,int x,int y,int z,Bundle extras,boolean resultRequested){
