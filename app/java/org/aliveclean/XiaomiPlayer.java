@@ -21,12 +21,13 @@ import java.util.zip.*;
 public final class XiaomiPlayer implements AutoCloseable {
     private static final Map<String,Runtime> runtimes=new HashMap<>();
     public static final class Runtime {
-        final String family,path;
+        final String family,path,frameworkPath;
         final ClassLoader loader;
         final Context context;
         Runtime(Context host,String family,File apk,String key)throws Exception {
             this.family=family;path=apk.getPath();
             File libs=new File(host.getCodeCacheDir(),"xiaomi-native/"+key);
+            frameworkPath=new File(libs,"libFramework.so").getPath();
             if(!libs.isDirectory()&&!libs.mkdirs())throw new IOException("Cannot create Xiaomi runtime directory");
             try(ZipFile zip=new ZipFile(apk)){
                 Enumeration<? extends ZipEntry> entries=zip.entries();
@@ -49,7 +50,15 @@ public final class XiaomiPlayer implements AutoCloseable {
                     }finally{if(part.exists())part.delete();}
                 }
             }
-            loader=new DexClassLoader(path,host.getCodeCacheDir().getPath(),libs.getPath(),Context.class.getClassLoader());
+            // The Snow lease must run inside the vendor linker namespace. Add
+            // our tiny bridge class after the original dex, and its JNI library
+            // search path; all other families keep their existing class loader.
+            String dex=path,nativePath=libs.getPath();
+            if("snowmountain".equals(family)){
+                ApplicationInfo app=host.getApplicationInfo();dex+=File.pathSeparator+app.sourceDir;
+                nativePath+=File.pathSeparator+app.nativeLibraryDir+File.pathSeparator+app.sourceDir+"!/lib/arm64-v8a";
+            }
+            loader=new DexClassLoader(dex,host.getCodeCacheDir().getPath(),nativePath,Context.class.getClassLoader());
             ApplicationInfo archive=new ApplicationInfo();archive.packageName="com.miui.miwallpaper."+family;
             archive.sourceDir=archive.publicSourceDir=path;archive.uid=android.os.Process.myUid();
             Resources source=host.getPackageManager().getResourcesForApplication(archive);
@@ -87,6 +96,7 @@ public final class XiaomiPlayer implements AutoCloseable {
     private final boolean unity,snow;
     private final DeferredHolder holder;
     private Object player;
+    private Object surfaceLease;
     private Object callbackOwner;
     private boolean running,attached,closed;
     private boolean unityThreadReady,requestedRunning;
@@ -117,6 +127,7 @@ public final class XiaomiPlayer implements AutoCloseable {
         }
         else player=runtime.loader.loadClass(snow?"n2.a":"com.miui.mrengine."+("moon".equals(runtime.family)?"Moon":"Earth")+"MrePlayer")
             .getConstructor(Context.class,SurfaceHolder.class,Context.class).newInstance(runtime.context,holder,displayContext);
+        if(snow)surfaceLease=runtime.loader.loadClass("org.aliveclean.XiaomiSurfaceLease").getConstructor(String.class).newInstance(runtime.frameworkPath);
         // Filament subscribes to the Surface before constructing its Engine. A
         // holder already valid on a restored/async preview must be deferred.
         holder.activate();
@@ -183,7 +194,13 @@ public final class XiaomiPlayer implements AutoCloseable {
         if(!unity&&!snow&&"ForceAOD".equals(event))event="ForceStaticAOD_1";
         if(unity&&!unityThreadReady){startupMessages.add(event);return;}
         if(unity)call(player.getClass(),"UnitySendMessage",new Class[]{String.class,String.class,String.class},"Main Camera","Message",event);
-        else call(player,snow?"b":"sendMessage",new Class[]{String.class},event);
+        else if(snow&&event.startsWith("SysRes_")){
+            // SysRes calls nSetSurface. Hold the old native window until
+            // Filament has actually finished destroying its old EGL surface.
+            call(surfaceLease,"retain",new Class[]{Surface.class},holder.getSurface());
+            call(player,"b",new Class[]{String.class},event);
+            call(surfaceLease,"replaced",new Class[0]);
+        }else call(player,snow?"b":"sendMessage",new Class[]{String.class},event);
     }
     public void running(boolean value)throws Exception {
         main();value=value&&attached&&!closed;requestedRunning=value;if(unity&&!unityThreadReady)return;if(value==running)return;
@@ -221,6 +238,7 @@ public final class XiaomiPlayer implements AutoCloseable {
         // Unity's original destroy() can terminate the process. Call only in a
         // dedicated wallpaper/preview process, never the editor or clock host.
         call(old,snow?"a":"destroy",new Class[0]);
+        if(surfaceLease!=null){call(surfaceLease,"destroyed",new Class[0]);surfaceLease=null;}
     }
     private static void main(){if(Looper.myLooper()!=Looper.getMainLooper())throw new IllegalStateException("Xiaomi renderer must run on its main looper");}
     private static Object field(Object target,String name)throws Exception{for(Class<?> c=target.getClass();c!=null;c=c.getSuperclass())try{Field f=c.getDeclaredField(name);f.setAccessible(true);return f.get(target);}catch(NoSuchFieldException ignored){}throw new NoSuchFieldException(name);}

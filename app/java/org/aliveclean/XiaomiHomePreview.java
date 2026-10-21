@@ -56,14 +56,15 @@ final class XiaomiHomePreview {
         Clock(Context c,Bundle metadata)throws Exception {
             super(c);android.util.DisplayMetrics metrics=new android.util.DisplayMetrics();c.getSystemService(WindowManager.class).getDefaultDisplay().getRealMetrics(metrics);
             width=metrics.widthPixels;height=metrics.heightPixels;renderer=new XiaomiAodPreview.Renderer(c,metadata);
+            renderer.whenBatteryChanged(this::invalidate);
             updates=new ClockUpdates(c,true,time->{try{renderer.update();invalidate();}catch(Exception error){android.util.Log.w("OpenAliveXiaomi","Home clock refresh",error);}});
         }
-        void active(boolean value){if(value)updates.start();else updates.stop();}
+        void active(boolean value){renderer.active(value);if(value)updates.start();else updates.stop();}
         @Override protected void onDraw(Canvas canvas){
             super.onDraw(canvas);if(getWidth()==0||getHeight()==0)return;
             renderer.view.measure(MeasureSpec.makeMeasureSpec(width,MeasureSpec.EXACTLY),MeasureSpec.makeMeasureSpec(height,MeasureSpec.EXACTLY));
             renderer.view.layout(0,0,width,height);int save=canvas.save();canvas.scale(getWidth()/(float)width,getHeight()/(float)height);renderer.view.draw(canvas);canvas.restoreToCount(save);
         }
-        @Override protected void onDetachedFromWindow(){updates.stop();super.onDetachedFromWindow();}
+        @Override protected void onDetachedFromWindow(){renderer.active(false);updates.stop();super.onDetachedFromWindow();}
     }
 }

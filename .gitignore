@@ -60,5 +60,8 @@ __pycache__/
 !/tools/check_xiaomi_assets.py
 !/tools/check_xiaomi_desktop.py
 !/tools/check_xiaomi_startup.py
+!/tools/check_xiaomi_surface.py
+!/tools/check_xiaomi_aod_density.py
+!/tools/check_xiaomi_aod_device.py
 !/tools/import_xiaomi_packs.py
 !/tools/ui-api/

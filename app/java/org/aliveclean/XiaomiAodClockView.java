@@ -39,8 +39,11 @@ final class XiaomiAodClockView extends AodClockFace {
         View content=renderer.content;content.getLocationOnScreen(location);
         return content.getHeight()==0?0:Math.round(location[1]+content.getHeight()+getWidth()*.035f);
     }
-    private void activity(){if(enabled&&isAttachedToWindow()&&getWindowVisibility()==VISIBLE)updates.start();else updates.stop();}
+    private void activity(){
+        boolean visible=enabled&&isAttachedToWindow()&&getWindowVisibility()==VISIBLE;
+        renderer.active(visible);if(visible)updates.start();else updates.stop();
+    }
     @Override protected void onAttachedToWindow(){super.onAttachedToWindow();activity();}
-    @Override protected void onDetachedFromWindow(){updates.stop();super.onDetachedFromWindow();}
+    @Override protected void onDetachedFromWindow(){renderer.active(false);updates.stop();super.onDetachedFromWindow();}
     @Override protected void onWindowVisibilityChanged(int visibility){super.onWindowVisibilityChanged(visibility);if(updates!=null)activity();}
 }

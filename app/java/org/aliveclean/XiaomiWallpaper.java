@@ -125,6 +125,9 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     @Override public void onDestroy(){destroyed=true;displays.unregisterDisplayListener(this);unregisterReceiver(screen);
         main.removeCallbacksAndMessages(null);
         Bundle b=new Bundle();b.putBinder("client",client.getBinder());try{XiaomiState.call(this,"unsubscribe",b);}catch(RuntimeException ignored){}
-        try{if(player!=null)player.close();}catch(Exception e){failure(e);}super.onDestroy();
+        try{if(player!=null)player.close();}catch(Exception e){failure(e);}
+        // Match Xiaomi's one-shot Snow Mountain process lifecycle after nDestroy.
+        if("snowmountain".equalsIgnoreCase(getClass().getSimpleName()))android.os.Process.killProcess(android.os.Process.myPid());
+        super.onDestroy();
     }
 }
