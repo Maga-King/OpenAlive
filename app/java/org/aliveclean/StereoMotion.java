@@ -92,5 +92,6 @@ final class StereoMotion implements WallpaperMotion {
     }
     public void follow(float x,float y){} // Stereo does not follow the clock's AOD region.
     public void pause(){last=-1;sensorStamp=-1;sensorAge=1;rx=ry=rz=0;quiet=1;}
+    public void finish(){scale=targetScale;elapsed=duration;}
     public boolean active(){return elapsed<duration||moving||x!=0||y!=0;}
 }

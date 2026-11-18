@@ -101,7 +101,10 @@ final class ColorOsNativeClockStyles {
     private static void installMaterialBootstrap(ClassLoader loader){
         try{
             Class<?> colors=Class.forName("com.oplus.keyguard.clock.digital.ui.controller.ColorController",false,loader);
-            XposedBridge.hookMethod(colors.getMethod("setScreenShotEx",android.graphics.Bitmap.class,int[].class,boolean.class,Long.class),new XC_MethodHook(){
+            Method setter;
+            try{setter=colors.getMethod("setScreenShotEx",android.graphics.Bitmap.class,int[].class,boolean.class,Long.class,boolean.class);}
+            catch(NoSuchMethodException olderPlugin){setter=colors.getMethod("setScreenShotEx",android.graphics.Bitmap.class,int[].class,boolean.class,Long.class);}
+            XposedBridge.hookMethod(setter,new XC_MethodHook(){
                 @Override protected void beforeHookedMethod(MethodHookParam call){
                     if(!ColorOsBridge.ownsWallpaper())return;
                     NativeClockLoadState.materialInput(call.thisObject,Boolean.TRUE.equals(call.args[2]));

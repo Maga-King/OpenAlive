@@ -6,6 +6,9 @@ import java.util.function.BooleanSupplier;
 
 /** Select the native panoramic sleep path before its window and display work is scheduled. */
 final class ColorOsOccludedTransition {
+    private static volatile boolean coveredSleep;
+    static boolean inCoveredSleep(){return coveredSleep;}
+    static void clearCoveredSleep(){coveredSleep=false;}
     private final ClassLoader loader;
     private final BooleanSupplier selected;
     private final ThreadLocal<Boolean> sleep=new ThreadLocal<>();
@@ -14,7 +17,7 @@ final class ColorOsOccludedTransition {
     void install(){
         try{
             XposedHelpers.findAndHookMethod(type("com.oplus.systemui.keyguard.OplusKeyguardViewMediatorExImpl"),"onStartedGoingToSleep",int.class,new XC_MethodHook(){
-                @Override protected void beforeHookedMethod(MethodHookParam p){if(selected.getAsBoolean())sleep.set(true);}
+                @Override protected void beforeHookedMethod(MethodHookParam p){coveredSleep=false;if(selected.getAsBoolean())sleep.set(true);}
                 @Override protected void afterHookedMethod(MethodHookParam p){sleep.remove();}
             });
             XC_MethodHook selectRoute=new XC_MethodHook(){
@@ -31,6 +34,7 @@ final class ColorOsOccludedTransition {
                         if(shade)XposedHelpers.setBooleanField(display,"mWindowAlreadyShown",false);
                         try{
                             XposedHelpers.setIntField(display,"mAODProcessType",4001);
+                            if(!shade)coveredSleep=true;
                         }catch(Throwable error){
                             if(shade)XposedHelpers.setBooleanField(display,"mWindowAlreadyShown",true);
                             throw error;

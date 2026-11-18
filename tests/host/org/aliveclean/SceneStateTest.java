@@ -35,6 +35,9 @@ public final class SceneStateTest {
         check(!state.accept(1,92));check(!state.accept(0,93));check(state.mode()==2);
         check(!state.accept(2,94,2));check(!state.accept(1,95));check(state.mode()==2);
         check(state.accept(0,100,1));check(state.accept(1,110,2));
+        // Off-only sleep (AOD disabled/suppressed) clears unlock guard without entering AOD.
+        check(state.accept(2,120,3));check(!state.accept(2,130,4));check(state.mode()==2);
+        check(state.accept(1,140,2));check(state.mode()==1);
         state.disconnect();check(state.accept(2,1));check(state.accept(0,2));
         System.out.println("Scene ordering checks passed: "+checks);
     }

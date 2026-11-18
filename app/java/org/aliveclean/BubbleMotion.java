@@ -35,6 +35,7 @@ final class BubbleMotion implements WallpaperMotion {
     }
     public void follow(float x,float y){} // This family has a full composition, not a clock-centered orb.
     public void pause(){last=0;transitionTime.pause();}
+    public void finish(){System.arraycopy(states[mode],0,values,0,SIZE);moving=false;}
     public boolean active(){return moving;}
     private void track(int b,int component,int ms,int wait,Interpolator curve){duration[b][component]=ms;delay[b][component]=wait;curves[b][component]=curve;}
     public void change(int scene,boolean animate){

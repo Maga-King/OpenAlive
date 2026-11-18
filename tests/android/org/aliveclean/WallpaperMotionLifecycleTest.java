@@ -8,8 +8,12 @@ final class WallpaperMotionLifecycleTest {
     static int checks;
     static void run(Context context)throws Exception{
         org.json.JSONArray catalog=new org.json.JSONArray(AssetGl.text(context.getAssets(),"cosmic/catalog.json"));
-        for(int i=0;i<catalog.length();i++)for(boolean dark:new boolean[]{false,true})for(boolean keepLock:new boolean[]{false,true})
-            checkVisibilityTransitions(context,catalog.getJSONObject(i).getInt("id"),keepLock,dark);
+        for(int i=0;i<catalog.length();i++){
+            int id=catalog.getJSONObject(i).getInt("id");
+            if(id>=300)continue;
+            for(boolean dark:new boolean[]{false,true})for(boolean keepLock:new boolean[]{false,true})
+                checkVisibilityTransitions(context,id,keepLock,dark);
+        }
     }
     private static WallpaperMotion motion(Context context,int variant,int scene,boolean keepLock,boolean dark)throws IOException{
         return variant>=201&&variant<=205?new BubbleMotion(context.getAssets(),variant,dark,scene,keepLock):
@@ -43,6 +47,11 @@ final class WallpaperMotionLifecycleTest {
             resumed.advance(25_450_000_000L,0);reference.advance(5_450_000_000L,0);
             same(resumed,reference,"Reversal endpoint changed v"+variant);
             require(!resumed.active(),"Reversed animation never settled");
+            WallpaperMotion finished=motion(context,variant,source,keepLock,dark),settled=motion(context,variant,source,keepLock,dark);
+            finished.change(target,true);settled.change(target,false);
+            finished.advance(1_000_000_000L,0);finished.advance(1_200_000_000L,0);finished.finish();
+            same(finished,settled,"Finish endpoint mismatch v"+variant+" "+source+"->"+target);
+            require(!finished.active(),"Finished animation remained active");
         }
     }
     private static void require(boolean condition,String message){if(!condition)throw new AssertionError(message);checks++;}

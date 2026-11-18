@@ -14,6 +14,7 @@ public final class XiaomiState extends ContentProvider {
     private final Handler main=new Handler(Looper.getMainLooper());
     private final Map<IBinder,Messenger> clients=new HashMap<>();
     private Bundle scene;
+    private boolean covered;
     static Bundle call(Context c,String method,Bundle b){return c.getContentResolver().call(URI,method,null,b);}
     private static boolean own(Context c,WallpaperInfo i){return i!=null&&i.getPackageName().equals(c.getPackageName())&&i.getServiceName().startsWith("org.aliveclean.XiaomiWallpaper$");}
     static boolean active(Context c){try{WallpaperManager m=WallpaperManager.getInstance(c);return own(c,m.getWallpaperInfo())||(Build.VERSION.SDK_INT>=34&&own(c,m.getWallpaperInfo(WallpaperManager.FLAG_LOCK)));}catch(RuntimeException e){return false;}}
@@ -36,7 +37,8 @@ public final class XiaomiState extends ContentProvider {
             Bundle b=new Bundle();b.putInt("mode",mode);b.putBoolean("animate",animate);b.putLong("time",time);b.putInt("phase",phase);b.putFloat("night",night);b.putFloat("mask",mask);scene=b;dispatch(1,b);
         }
         public void region(AodRegion r){}
-        public void disconnected(){scene=null;dispatch(3,new Bundle());}
+        public void backdrop(boolean value){covered=value;Bundle b=new Bundle();b.putBoolean("covered",value);dispatch(5,b);}
+        public void disconnected(){scene=null;covered=false;dispatch(3,new Bundle());}
     }));return true;}
     private void dispatch(int what,Bundle b){for(Messenger client:new ArrayList<>(clients.values()))send(client,what,b);}
     private void send(Messenger client,int what,Bundle b){Message m=Message.obtain();m.what=what;m.setData(new Bundle(b));try{client.send(m);}catch(RemoteException e){clients.remove(client.getBinder());}}
@@ -47,7 +49,11 @@ public final class XiaomiState extends ContentProvider {
             if("subscribe".equals(method)){
                 IBinder binder=data.getBinder("client");if(binder==null)throw new IllegalArgumentException("Missing client");Messenger client=new Messenger(binder);
                 binder.linkToDeath(()->main.post(()->clients.remove(binder)),0);
-                main.post(()->{clients.put(binder,client);send(client,4,motion(c));if(scene!=null)send(client,1,scene);});return result;
+                main.post(()->{
+                    clients.put(binder,client);send(client,4,motion(c));
+                    Bundle cover=new Bundle();cover.putBoolean("covered",covered);send(client,5,cover);
+                    if(scene!=null){Bundle snapshot=new Bundle(scene);snapshot.putBoolean("animate",false);send(client,1,snapshot);}
+                });return result;
             }
             if("unsubscribe".equals(method)){IBinder binder=data.getBinder("client");main.post(()->clients.remove(binder));return result;}
             if("motionRead".equals(method))return motion(c);

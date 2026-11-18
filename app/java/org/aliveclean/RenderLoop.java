@@ -47,6 +47,8 @@ final class RenderLoop {
     private boolean backdropCovered;
     private boolean stateReported;
     private long clockToken,seenClockToken;
+    private long modeChangedAt=SystemClock.uptimeMillis();
+    private final Runnable clockFallback=()->reportClock(false);
     private final AodMotionWindow aodMotion=new AodMotionWindow();
     private final boolean preview;
     private AodRegion aodRegion;
@@ -88,8 +90,17 @@ final class RenderLoop {
     }
     void detach(){handler.post(()->{release();attachedSurface=null;});}
     void mode(int next){mode(next,true);}
-    void clockTransition(long token){handler.post(()->{if(preview||token==seenClockToken)return;seenClockToken=token;clockToken=token;if(token!=0){if(renderingVisible())schedule();else reportClock(false);}});}
+    void clockTransition(long token){handler.post(()->{
+        if(preview||token==seenClockToken)return;
+        handler.removeCallbacks(clockFallback);seenClockToken=token;clockToken=token;
+        if(token!=0){
+            if(renderingVisible())schedule();
+            else if(mode==1&&!backdropCovered)handler.postDelayed(clockFallback,600);
+            else reportClock(false);
+        }
+    });}
     private void reportClock(boolean submitted){
+        handler.removeCallbacks(clockFallback);
         long token=clockToken;clockToken=0;
         if(token!=0&&!preview){{if(Diagnostics.TRACE)Log.i("AliveClean","Frame clock token="+token+" submitted="+submitted);}SceneChannel.frameReady(token,submitted);}
     }
@@ -104,15 +115,27 @@ final class RenderLoop {
             else frameMotion.followClock(aodRegion.sceneX(),aodRegion.sceneY());
         }
     }
+    private void finishAwakePose(){
+        if(vivo!=null)vivo.finish();
+        if(cosmic!=null)cosmic.motion().finish();
+        if(textureMotion!=null)textureMotion.finish();
+        if(frameMotion!=null)frameMotion.finish();
+        if(motion!=null)motion.finish();
+    }
     void mode(int next,boolean animate){mode(next,animate,Float.NaN,Float.NaN);}
     void mode(int next,boolean animate,float nightLevel,float aodMask){handler.post(()->{
         boolean lightSnapshot=(nightLevel==1f||nightLevel==.76f)&&aodMask>=0&&aodMask<1;
         if(lightSnapshot){vivoDarkWallpaper=nightLevel<1;vivoAodMask=aodMask;}
-        if(mode!=next){stateReported=false;frameSample.clear();if(next==0)aodMotion.enter(System.nanoTime());else aodMotion.leave();}
+        if(mode!=next){
+            long nowUptime=SystemClock.uptimeMillis();
+            if(next==0&&mode!=0&&!renderingVisible()&&nowUptime-modeChangedAt>1500L)finishAwakePose();
+            modeChangedAt=nowUptime;
+            stateReported=false;frameSample.clear();if(next==0)aodMotion.enter(System.nanoTime());else aodMotion.leave();
+        }
         if(cosmic!=null&&mode!=next){cosmic.motion().change(next,animate);cosmicUntil=System.nanoTime()+5_000_000_000L;}
         // Apply the wake target and scene together, before any frame can be submitted.
         if(vivo!=null&&(mode!=next||lightSnapshot)){vivo.transition(next,animate,vivoDarkWallpaper?.76f:1f,vivoAodMask);vivo.visible(renderingVisible());}
-        mode=next;updateCosmicLifecycle();if(textureMotion!=null)textureMotion.change(next,animate);if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!renderingVisible())frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!renderingVisible())motion.pause(true);}schedule();
+        mode=next;updateCosmicLifecycle();if(textureMotion!=null){textureMotion.change(next,animate);textureMotion.pause(next==0&&!renderingVisible());}if(motion!=null){if(frameMotion!=null){frameMotion.change(next,motion);if(!animate)frameMotion.finish();if(!renderingVisible())frameMotion.pause(true);}motion.change(next);if(!animate)motion.finish();if(!renderingVisible())motion.pause(true);}schedule();
     });}
     private boolean renderingVisible(){return visible&&!backdropCovered;}
     void backdrop(boolean covered){handler.post(()->{if(preview||backdropCovered==covered)return;backdropCovered=covered;updateRenderActivity();});}
@@ -120,9 +143,13 @@ final class RenderLoop {
     private void updateRenderActivity(){
         boolean active=renderingVisible();
         if(vivo!=null)vivo.visible(active);if(cosmic!=null)cosmic.motion().pause();updateCosmicLifecycle();
+        if(textureMotion!=null)textureMotion.pause(!active&&mode==0);
         if(motion!=null)motion.pause(!active);if(frameMotion!=null)frameMotion.pause(!active);stopFrames();
-        if(active){if(mode==0){long now=System.nanoTime();aodMotion.enter(now);cosmicUntil=now+5_000_000_000L;}pacer.reset();schedule();}
-        else if(clockToken!=0)reportClock(false);
+        if(active){
+            if(mode==2&&SystemClock.uptimeMillis()-modeChangedAt>1500L)finishAwakePose();
+            long now=System.nanoTime();if(mode==0)aodMotion.enter(now);cosmicUntil=now+5_000_000_000L;
+            pacer.reset();schedule();
+        }else{frameSample.clear();if(clockToken!=0&&(mode!=1||backdropCovered))reportClock(false);}
     }
     void resumeDisplay(){handler.post(()->{
         if(!renderingVisible())return;
@@ -208,7 +235,7 @@ final class RenderLoop {
             // A decoded mask belongs to the current animation sample. Deferring
             // its upload to the next vsync would advance the timeline first and
             // repeatedly miss that mask, leaving the old shape until the end.
-            masks=new MaskFrames(context.getAssets(),handler,()->{if(visible&&scene!=0)render(frameTime);},style);
+            masks=new MaskFrames(context.getAssets(),handler,()->{if(renderingVisible()&&scene!=0)render(frameTime);},style);
         }
         applyAodRegion();
         choreographer=Choreographer.getInstance();pacer.reset();
@@ -306,5 +333,5 @@ final class RenderLoop {
         }catch(Exception e){Log.e("AliveClean","Frame failed",e);release();}
     }
     private void closeFrame(){if(textureMotion!=null){textureMotion.close();textureMotion=null;}if(scene!=0)reportClock(false);frameSample.clear();if(frameMotion!=null){frameMotion.close();frameMotion=null;}if(masks!=null){masks.close();masks=null;}}
-    private void release(){stopFrames();if(vivo!=null){vivo.close();vivo=null;}closeCosmic();handler.removeCallbacks(reloadTask);closeFrame();if(motion!=null){motion.close();motion=null;}if(display!=EGL14.EGL_NO_DISPLAY){if(scene!=0){NativeScene.destroy(scene);scene=0;}clearAuxiliary();GLES30.glDeleteTextures(2,new int[]{photo,decorator},0);photo=decorator=0;EGL14.eglMakeCurrent(display,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_CONTEXT);if(window!=EGL14.EGL_NO_SURFACE)EGL14.eglDestroySurface(display,window);if(egl!=EGL14.EGL_NO_CONTEXT)EGL14.eglDestroyContext(display,egl);EGL14.eglTerminate(display);EGL14.eglReleaseThread();}display=EGL14.EGL_NO_DISPLAY;egl=EGL14.EGL_NO_CONTEXT;window=EGL14.EGL_NO_SURFACE;}
+    private void release(){stopFrames();handler.removeCallbacks(clockFallback);if(vivo!=null){vivo.close();vivo=null;}closeCosmic();handler.removeCallbacks(reloadTask);closeFrame();if(motion!=null){motion.close();motion=null;}if(display!=EGL14.EGL_NO_DISPLAY){if(scene!=0){NativeScene.destroy(scene);scene=0;}clearAuxiliary();GLES30.glDeleteTextures(2,new int[]{photo,decorator},0);photo=decorator=0;EGL14.eglMakeCurrent(display,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_SURFACE,EGL14.EGL_NO_CONTEXT);if(window!=EGL14.EGL_NO_SURFACE)EGL14.eglDestroySurface(display,window);if(egl!=EGL14.EGL_NO_CONTEXT)EGL14.eglDestroyContext(display,egl);EGL14.eglTerminate(display);EGL14.eglReleaseThread();}display=EGL14.EGL_NO_DISPLAY;egl=EGL14.EGL_NO_CONTEXT;window=EGL14.EGL_NO_SURFACE;}
 }

@@ -5,5 +5,6 @@ interface WallpaperMotion {
     void advance(long time,float speed);
     void follow(float x,float y);
     void pause();
+    default void finish(){}
     boolean active();
 }

@@ -10,7 +10,8 @@ final class SceneState {
         return accept(next,time,0);
     }
     boolean accept(int next,long time,int eventPhase){
-        if(next<0||next>2||time<timestamp||eventPhase<0||eventPhase>3)return false;
+        if(next<0||next>2||time<timestamp||eventPhase<0||eventPhase>4)return false;
+        if(eventPhase==4){timestamp=time;authoritative=true;if(phase==3)phase=0;return false;}
         if(eventPhase==1&&next!=0||eventPhase==2&&next==0)return false;
         if(eventPhase==3&&next!=2)return false;
         if(phase==3&&eventPhase!=1&&next!=2)return false;

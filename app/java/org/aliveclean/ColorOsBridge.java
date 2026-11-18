@@ -133,19 +133,80 @@ final class ColorOsBridge {
     private static void installPanoramicHandoff(ClassLoader cl){
         try{
             Class<?> listener=XposedHelpers.findClass("com.oplus.systemui.keyguard.anim.OplusKeyguardAppearAnimControllerImpl$PanoramicAodAppearAnimRunner$playPanoramicRemoteAnimation$3",cl);
-            XposedHelpers.findAndHookMethod(android.animation.ValueAnimator.class,"addUpdateListener",android.animation.ValueAnimator.AnimatorUpdateListener.class,new XC_MethodHook(){
-                @Override protected void beforeHookedMethod(MethodHookParam p){
-                    if(!selected||!listener.isInstance(p.args[0]))return;
-                    try{
-                        // Adjust the native transaction's configuration once, before it starts.
-                        // Native thermal/schedule gates, curves, surface ownership and cleanup remain.
-                        XposedHelpers.setBooleanField(p.args[0],"$isThirdLiveWallpaperInOneComponent",false);
-                        XposedHelpers.setBooleanField(p.args[0],"$isThirdLiveWallpaperOnlyLockscreenScene",false);
-                        {if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Panoramic native app/wallpaper fade enabled");}
-                    }catch(Throwable error){failure("panoramic surface handoff",error);}
-                }
-            });
+            java.lang.reflect.Field oneComponent=optionalBooleanField(listener,"$isThirdLiveWallpaperInOneComponent");
+            java.lang.reflect.Field onlyLock=optionalBooleanField(listener,"$isThirdLiveWallpaperOnlyLockscreenScene");
+            if(oneComponent==null&&onlyLock==null)throw new NoSuchFieldException("Missing panoramic live wallpaper flags");
+            // Keep the original ValueAnimator.addUpdateListener hook for older ColorOS builds and
+            // un-inlined callers so the closure flags are cleared once before the animator starts.
+            try{
+                XposedHelpers.findAndHookMethod(android.animation.ValueAnimator.class,"addUpdateListener",android.animation.ValueAnimator.AnimatorUpdateListener.class,new XC_MethodHook(){
+                    @Override protected void beforeHookedMethod(MethodHookParam p){
+                        if(!selected||!listener.isInstance(p.args[0]))return;
+                        try{
+                            enablePanoramicSurfaceFade(p.args[0],oneComponent,onlyLock);
+                            {if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Panoramic native app/wallpaper fade enabled");}
+                        }catch(Throwable error){failure("panoramic surface handoff",error);}
+                    }
+                });
+            }catch(Throwable error){failure("panoramic animator hook",error);}
+            // Profile-guided dex2oat in /data/dalvik-cache on newer ColorOS inlines
+            // ValueAnimator.addUpdateListener into playPanoramicRemoteAnimation. Hook the listener's
+            // own interface callback directly too (never inlinable into bootclasspath ValueAnimator).
+            try{
+                XposedHelpers.findAndHookMethod(listener,"onAnimationUpdate",android.animation.ValueAnimator.class,new XC_MethodHook(){
+                    @Override protected void beforeHookedMethod(MethodHookParam p){
+                        if(!selected)return;
+                        try{enablePanoramicSurfaceFade(p.thisObject,oneComponent,onlyLock);}
+                        catch(Throwable error){failure("panoramic surface update",error);}
+                    }
+                });
+            }catch(Throwable error){failure("panoramic update hook",error);}
         }catch(Throwable error){failure("panoramic handoff hook",error);}
+        try{
+            Class<?> runner=XposedHelpers.findClass("com.oplus.systemui.keyguard.anim.OplusKeyguardAppearAnimControllerImpl$PanoramicAodAppearAnimRunner",cl);
+            try{
+                XposedBridge.hookAllMethods(runner,"playPanoramicRemoteAnimation",new XC_MethodHook(){
+                    @Override protected void afterHookedMethod(MethodHookParam p){ColorOsOccludedTransition.clearCoveredSleep();}
+                });
+            }catch(Throwable ignored){}
+            try{
+                XposedBridge.hookAllMethods(runner,"isNeedOneShotAnim",new XC_MethodHook(){
+                    @Override protected void afterHookedMethod(MethodHookParam p){
+                        if(!selected||!ColorOsOccludedTransition.inCoveredSleep()||p.hasThrowable()||!Boolean.TRUE.equals(p.getResult()))return;
+                        try{
+                            if(p.args.length>=2&&p.args[0] instanceof Boolean&&!nonOccludedOneShot(cl,(Boolean)p.args[0],(Object[])p.args[1]))
+                                p.setResult(false);
+                        }catch(Throwable error){failure("panoramic covered one-shot",error);}
+                    }
+                });
+            }catch(Throwable ignored){}
+        }catch(Throwable ignored){}
+    }
+    private static java.lang.reflect.Field optionalBooleanField(Class<?> owner,String name){
+        try{
+            java.lang.reflect.Field field=owner.getDeclaredField(name);
+            if(field.getType()!=boolean.class)return null;
+            field.setAccessible(true);return field;
+        }catch(Throwable missing){return null;}
+    }
+    private static void enablePanoramicSurfaceFade(Object target,java.lang.reflect.Field oneComponent,java.lang.reflect.Field onlyLock)throws IllegalAccessException{
+        if(oneComponent!=null&&oneComponent.getBoolean(target))oneComponent.setBoolean(target,false);
+        if(onlyLock!=null&&onlyLock.getBoolean(target))onlyLock.setBoolean(target,false);
+    }
+    private static boolean nonOccludedOneShot(ClassLoader cl,boolean desktop,Object[] apps){
+        try{
+            Object companion=XposedHelpers.getStaticObjectField(XposedHelpers.findClass("com.oplus.keyguard.OplusKeyguardUnlockAnimationControllerExImpl",cl),"Companion");
+            if(desktop&&(Boolean)XposedHelpers.callMethod(companion,"isUnlockToLauncherMultiLayerByRemoteTarget",(Object)apps))return true;
+        }catch(Throwable ignored){}
+        if(apps!=null&&apps.length>=2&&XposedHelpers.getBooleanField(apps[0],"isTranslucent")&&!desktop)return true;
+        if(apps==null||apps.length==0||apps[apps.length-1]==null)return false;
+        android.app.ActivityManager.RunningTaskInfo task=(android.app.ActivityManager.RunningTaskInfo)XposedHelpers.getObjectField(apps[apps.length-1],"taskInfo");
+        ComponentName top=task==null?null:task.topActivity;
+        if(top==null)return false;
+        try{
+            java.util.List<?> list=(java.util.List<?>)XposedHelpers.getStaticObjectField(XposedHelpers.findClass("com.oplus.systemui.keyguard.anim.OplusKeyguardAppearAnimControllerImpl",cl),"APPEAR_ONE_SHOT_COMPONENT_LIST");
+            return list!=null&&list.contains(top.flattenToString());
+        }catch(Throwable ignored){return false;}
     }
     private static void installUnlockEvents(ClassLoader cl){
         try{
@@ -242,7 +303,7 @@ final class ColorOsBridge {
                         // The service owns its AOD background/reveal. Native SystemUI
                         // otherwise applies an independent mask and hides the wallpaper.
                         // Keep the power sequence and panel brightness controller intact.
-                        p.args[1]=0f;p.args[4]=false;
+                        p.args[1]=0f;p.args[3]=0L;p.args[4]=false;
                         {if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Panoramic wallpaper mask transparent");}
                     }catch(Throwable error){failure("panoramic mask",error);}
                 }
@@ -264,6 +325,15 @@ final class ColorOsBridge {
             throw new IllegalStateException("Invalid native panoramic mask: "+value);
         }catch(Throwable error){failure("native panoramic wallpaper mask",error);return 0f;}
     }
+    private static void endUnlockForOffSleep(long time){
+        main.post(()->{
+            if(!selected)return;
+            int current=lastMode>=0?lastMode:1;
+            stateOrder.accept(current,time,4);
+            lastPhase=stateOrder.phase();
+            Bundle b=new Bundle();b.putInt("mode",current);b.putBoolean("animate",false);b.putLong("time",time);b.putInt("phase",4);b.putLong("clock_wake",0);send(1,b);
+        });
+    }
     private static void installPowerEvents(ClassLoader cl,Class<?> controller){
         try{
             Class<?> mediator=XposedHelpers.findClass("com.oplus.systemui.keyguard.OplusKeyguardViewMediatorExImpl",cl);
@@ -274,7 +344,7 @@ final class ColorOsBridge {
                         Object display=XposedHelpers.callStaticMethod(XposedHelpers.findClass("com.oplus.systemui.aod.display.AODDisplayUtil",cl),"getInstance",context);
                         // The original callback chooses this after call, battery, privacy and AOD gates.
                         int type=XposedHelpers.getIntField(display,"mPerformAodType");
-                        if(type<1||type>3)return;
+                        if(type<1||type>3){ColorOsOccludedTransition.clearCoveredSleep();endUnlockForOffSleep(SystemClock.uptimeMillis());return;}
                         {if(Diagnostics.TRACE)android.util.Log.i("AliveClean","Sleep begin aodType="+type+" process="+XposedHelpers.getIntField(display,"mAODProcessType")+" keyguard="+XposedHelpers.getBooleanField(display,"mKgShowingWhileGoingToSleep")+" shade="+XposedHelpers.getBooleanField(display,"mWindowAlreadyShown"));}
                         dispatch(0,true,SystemClock.uptimeMillis(),1,type==3?"PANORAMIC_AOD":type==2?"WORKSHOP_AOD":"NORMAL_AOD");
                     }catch(Throwable error){failure("sleep event",error);}
@@ -282,6 +352,7 @@ final class ColorOsBridge {
             });
             XposedHelpers.findAndHookMethod(mediator,"onStartedWakingUp",int.class,new XC_MethodHook(){
                 @Override protected void beforeHookedMethod(MethodHookParam p){
+                    ColorOsOccludedTransition.clearCoveredSleep();
                     if(!selected||context==null)return;
                     try{
                         Object transition=XposedHelpers.callStaticMethod(controller,"getInstance",context);

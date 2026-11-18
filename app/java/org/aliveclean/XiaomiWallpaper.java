@@ -18,15 +18,16 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     private final ArrayList<SceneEngine> engines=new ArrayList<>();
     private final SceneState scenes=new SceneState();
     private XiaomiPacks.Pack pack; private XiaomiPlayer.Runtime runtime; private XiaomiPlayer player;
-    private SceneEngine owner; private DisplayManager displays; private boolean destroyed,ambient,ready; private int land,mode=-1;
-    private Runnable pendingLock;
+    private SceneEngine owner; private DisplayManager displays; private boolean destroyed,ambient,ready,backdropCovered,pendingAod; private int land,mode=-1;
+    private Runnable pendingLock,pendingAodTimeout;
     private int desktopAmplitude,desktopResponsiveness,offsetGeneration;
     private final Messenger client=new Messenger(new Handler(Looper.getMainLooper(),m->{
         if(m.sendingUid!=android.os.Process.myUid())return true;Bundle b=m.getData();
         if(m.what==1){int next=b.getInt("mode",-1);boolean changed=scenes.accept(next,b.getLong("time"),b.getInt("phase"));if(changed){ambient=next==0;setMode(next,!b.getBoolean("animate",true));}refresh();}
         else if(m.what==2&&pack!=null&&pack.id.equals(b.getString("family"))){land=b.getInt("land");send("Land_"+land);}
-        else if(m.what==3){scenes.disconnect();updateMode(false);refresh();}
-        else if(m.what==4){desktopAmplitude=b.getInt("amplitude");desktopResponsiveness=b.getInt("responsiveness");offsetGeneration++;sendOffset();}return true;
+        else if(m.what==3){backdropCovered=false;scenes.disconnect();updateMode(false);refresh();}
+        else if(m.what==4){desktopAmplitude=b.getInt("amplitude");desktopResponsiveness=b.getInt("responsiveness");offsetGeneration++;sendOffset();}
+        else if(m.what==5){backdropCovered=b.getBoolean("covered");refresh();}return true;
     }));
     private final BroadcastReceiver screen=new BroadcastReceiver(){public void onReceive(Context c,Intent i){
         if(Intent.ACTION_SCREEN_OFF.equals(i.getAction()))ambient=true;
@@ -65,9 +66,11 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
     }catch(Exception e){failure(e);}}
     private void send(String event){if(player!=null&&ready)try{player.send(event);}catch(Exception e){failure(e);}}
     private void updateMode(boolean force){if(owner==null)return;int next=owner.isPreview()?1:scenes.fallback(ambient,getSystemService(KeyguardManager.class).isKeyguardLocked());setMode(next,force);}
+    private void clearPendingAod(){pendingAod=false;if(pendingAodTimeout!=null){main.removeCallbacks(pendingAodTimeout);pendingAodTimeout=null;}}
     private void setMode(int next,boolean force){
         if(next<0||next>2)return;
         if(next!=1&&pendingLock!=null){main.removeCallbacks(pendingLock);pendingLock=null;}
+        if(next!=0||force)clearPendingAod();
         if(!force&&mode==next)return;
         boolean waking=next==1&&(mode==0||pendingLock!=null)&&owner!=null&&!owner.isPreview();mode=next;
         if(waking){
@@ -77,15 +80,21 @@ public class XiaomiWallpaper extends WallpaperService implements DisplayManager.
             // success; sending Lock immediately bends a direct AOD->Desk path.
             pendingLock=()->{
                 pendingLock=null;if(destroyed||mode!=1||owner==null||!owner.surface)return;
-                if(!getSystemService(KeyguardManager.class).isKeyguardLocked())return;
+                if(!scenes.authoritative()&&!getSystemService(KeyguardManager.class).isKeyguardLocked())return;
                 send(force?"ForceLock":"Lock");
             };
             main.postDelayed(pendingLock,100);return;
         }
+        if(mode==0&&!force&&!canRun()){
+            pendingAod=true;
+            pendingAodTimeout=()->{pendingAodTimeout=null;if(pendingAod&&!destroyed&&mode==0){pendingAod=false;send("ForceAOD");}};
+            main.postDelayed(pendingAodTimeout,900);
+            return;
+        }
         send((force?new String[]{"ForceAOD","ForceLock","ForceLand"}:new String[]{"AOD","Lock","Desk"})[mode]);
     }
-    private boolean canRun(){if(owner==null||!owner.surface||!owner.visible)return false;Display d=owner.display();if(d==null)return false;return d.getState()!=Display.STATE_OFF&&d.getState()!=Display.STATE_UNKNOWN;}
-    private void refresh(){if(player==null)return;try{player.running(canRun());}catch(Exception e){failure(e);}}
+    private boolean canRun(){if(owner==null||!owner.surface||!owner.visible||(!owner.isPreview()&&backdropCovered))return false;Display d=owner.display();if(d==null)return false;return d.getState()!=Display.STATE_OFF&&d.getState()!=Display.STATE_UNKNOWN;}
+    private void refresh(){if(player==null)return;try{boolean show=canRun();player.running(show);if(show&&pendingAod&&mode==0){clearPendingAod();send("AOD");}}catch(Exception e){failure(e);}}
     private void sendOffset(){if(owner!=null&&owner.offset>=0)send("Offset_"+XiaomiDesktopMotion.offset(owner.offset,desktopAmplitude));}
     private void queueOffset(SceneEngine engine,float value){
         // Keep intermediate samples; debouncing to the final page loses motion.

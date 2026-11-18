@@ -1,3 +1,9 @@
+0.4.42-preview：修复新版 ColorOS 非桌面息屏衔接动画失效与全状态息屏适配。
+
+- 修复 ColorOS 17.0.0.105 等版本经 `dex2oat` 后台优化将 `ValueAnimator.addUpdateListener` 内联进 `playPanoramicRemoteAnimation` 后，非桌面息屏跳过前台应用窗口淡出的问题；同时完整保留旧版系统的 `ValueAnimator.addUpdateListener` 路径与方法签名兼容回退。
+- 修复锁屏遮挡态提升全景息屏后的 `isNeedOneShotAnim` 单帧跳过、新版特殊场景预置半透明黑遮罩闪烁、无 AOD 纯黑屏睡眠后的解锁状态复位，以及锁屏时钟 `ColorController.setScreenShotEx` 新旧参数签名兼容。
+- 统一补齐 Flyme 照片／留光、Cosmic／气泡／3D 壁纸、Vivo 壁纸及小米超级壁纸在应用内隐藏态息屏与直达应用解锁后再息屏的时间轴暂停与姿态结算，避免壁纸未可见前动画提前耗尽或从旧姿态跳变。
+
 0.4.41-preview：小米超级壁纸 AOD 时钟、电量显示与雪山稳定性修复。
 
 - 六款小米超级壁纸共用原版电池图标与百分比显示：月球、雪山、几何、土星环、地球、火星，实际 AOD 和首页预览均生效。电量变化通过系统广播更新，退出后释放监听，不增加轮询、唤醒锁或持续调试日志。

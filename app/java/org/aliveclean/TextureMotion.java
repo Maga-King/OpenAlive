@@ -19,11 +19,17 @@ final class TextureMotion {
         return style>=1&&style<=3?new SceneMotion(w,h,awake?1:0,-1,style,6):null;
     }
     void change(int mode,boolean animate){
+        if(mode==this.mode){if(!animate)finish();return;}
         if(shared&&this.mode==1&&mode==2){if(lock!=null)lock.preserveMode(2);this.mode=mode;return;}
         if(mode==0){change(lock,0,animate);if(home!=lock)change(home,0,animate);}
-        else change(mode==1?lock:home,1,animate);
+        else{
+            change(mode==1?lock:home,1,animate);
+            if(shared&&mode==2&&lock!=null)lock.preserveMode(2);
+        }
         this.mode=mode;
     }
+    void pause(boolean paused){if(lock!=null)lock.pause(paused);if(home!=null&&home!=lock)home.pause(paused);}
+    void finish(){if(lock!=null)lock.finish();if(home!=null&&home!=lock)home.finish();}
     private static void change(SceneMotion track,int mode,boolean animate){
         if(track==null)return;
         track.change(mode);

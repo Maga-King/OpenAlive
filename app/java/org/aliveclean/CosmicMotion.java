@@ -121,6 +121,7 @@ final class CosmicMotion implements WallpaperMotion {
         if(!animate)System.arraycopy(states[mode],0,values,0,SIZE);
     }
     public void pause(){last=0;transitionTime.pause();}
+    public void finish(){System.arraycopy(states[mode],0,values,0,SIZE);transitioning=false;}
     public boolean active(){return transitioning;}
     public void advance(long now,float speed){
         if(transitioning){

@@ -21,7 +21,8 @@ public final class SceneProvider extends ContentProvider {
             SceneOptions options=new SceneOptions(c.getSharedPreferences(SceneOptions.APPLIED,0));
             result.putInt("aod",options.aod);
             result.putBoolean("vivo_wallpaper",options.vivo!=null);
-            result.putBoolean("continuous_aod",options.vivo!=null?options.vivo.animateInAod():options.cosmic!=0?options.cosmicContinuousAod:options.aod==0&&options.sailContinuousAod);
+            boolean continuous=options.vivo!=null?options.vivo.animateInAod():options.cosmic>=501&&options.cosmic<=503?options.stereoAodAnimation:options.cosmic!=0?options.cosmicContinuousAod:options.aod==0&&options.sailContinuousAod;
+            result.putBoolean("continuous_aod",continuous);
             Bundle xiaomiClock=XiaomiState.lockClock(c);
             if(xiaomiClock!=null){
                 result.putInt("aod",101);result.putBoolean("vivo_wallpaper",false);

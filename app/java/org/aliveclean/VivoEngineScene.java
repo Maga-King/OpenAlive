@@ -168,10 +168,11 @@ final class VivoEngineScene implements AutoCloseable {
     }
     void mode(int next,boolean animate){transition(next,animate,nightLevel,aodMask);}
     void transition(int next,boolean animate,float night,float mask){
-        mode=next;nightLevel=night;aodMask=mask;long now=System.nanoTime();
+        mode=next;nightLevel=night;aodMask=mask;long now=visible?System.nanoTime():0L;
         zoom.mode(next,animate,now);dim.target(nightLevel,aodMask,next,animate,now);updateAnimation();
     }
-    void darkWallpaper(boolean dark,boolean animate){nightLevel=dark?.76f:1f;dim.target(nightLevel,aodMask,mode,animate,System.nanoTime());invalidate.run();}
+    void finish(){zoom.pause();dim.pause();}
+    void darkWallpaper(boolean dark,boolean animate){nightLevel=dark?.76f:1f;dim.target(nightLevel,aodMask,mode,animate,visible?System.nanoTime():0L);invalidate.run();}
     boolean animateInAod(){return options.animateInAod();}
     boolean transitionActive(){return zoom.active()||dim.active();}
     boolean updateSensitivity(VivoOptions next){
