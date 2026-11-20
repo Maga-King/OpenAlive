@@ -132,10 +132,11 @@ final class ColorOsBridge {
     }
     private static void installPanoramicHandoff(ClassLoader cl){
         try{
-            Class<?> listener=XposedHelpers.findClass("com.oplus.systemui.keyguard.anim.OplusKeyguardAppearAnimControllerImpl$PanoramicAodAppearAnimRunner$playPanoramicRemoteAnimation$3",cl);
-            java.lang.reflect.Field oneComponent=optionalBooleanField(listener,"$isThirdLiveWallpaperInOneComponent");
-            java.lang.reflect.Field onlyLock=optionalBooleanField(listener,"$isThirdLiveWallpaperOnlyLockscreenScene");
-            if(oneComponent==null&&onlyLock==null)throw new NoSuchFieldException("Missing panoramic live wallpaper flags");
+            String runnerName="com.oplus.systemui.keyguard.anim.OplusKeyguardAppearAnimControllerImpl$PanoramicAodAppearAnimRunner";
+            Class<?> listener=findPanoramicUpdateListener(cl,runnerName);
+            java.lang.reflect.Field oneComponent=listener==null?null:optionalBooleanField(listener,"$isThirdLiveWallpaperInOneComponent","isThirdLiveWallpaperInOneComponent");
+            java.lang.reflect.Field onlyLock=listener==null?null:optionalBooleanField(listener,"$isThirdLiveWallpaperOnlyLockscreenScene","isThirdLiveWallpaperOnlyLockscreenScene");
+            if(listener==null||(oneComponent==null&&onlyLock==null))throw new ClassNotFoundException("Panoramic update listener not found under "+runnerName);
             // Keep the original ValueAnimator.addUpdateListener hook for older ColorOS builds and
             // un-inlined callers so the closure flags are cleared once before the animator starts.
             try{
@@ -182,12 +183,37 @@ final class ColorOsBridge {
             }catch(Throwable ignored){}
         }catch(Throwable ignored){}
     }
-    private static java.lang.reflect.Field optionalBooleanField(Class<?> owner,String name){
+    private static Class<?> findPanoramicUpdateListener(ClassLoader cl,String runnerName){
+        // Anonymous Kotlin lambda indices shift across ColorOS builds ($3 on 17.0.0, $4 on 17.0.1).
+        for(int i=1;i<=16;i++){
+            Class<?> match=checkPanoramicListener(cl,runnerName+"$playPanoramicRemoteAnimation$"+i);
+            if(match!=null)return match;
+        }
+        for(int i=0;i<16;i++){
+            Class<?> match=checkPanoramicListener(cl,runnerName+"$$ExternalSyntheticLambda"+i);
+            if(match!=null)return match;
+        }
+        return null;
+    }
+    private static Class<?> checkPanoramicListener(ClassLoader cl,String name){
         try{
-            java.lang.reflect.Field field=owner.getDeclaredField(name);
-            if(field.getType()!=boolean.class)return null;
-            field.setAccessible(true);return field;
-        }catch(Throwable missing){return null;}
+            Class<?> candidate=Class.forName(name,false,cl);
+            if(!android.animation.ValueAnimator.AnimatorUpdateListener.class.isAssignableFrom(candidate))return null;
+            if(optionalBooleanField(candidate,"$isThirdLiveWallpaperInOneComponent","isThirdLiveWallpaperInOneComponent")!=null
+                    ||optionalBooleanField(candidate,"$isThirdLiveWallpaperOnlyLockscreenScene","isThirdLiveWallpaperOnlyLockscreenScene")!=null)
+                return candidate;
+        }catch(Throwable missing){}
+        return null;
+    }
+    private static java.lang.reflect.Field optionalBooleanField(Class<?> owner,String... names){
+        for(String name:names){
+            try{
+                java.lang.reflect.Field field=owner.getDeclaredField(name);
+                if(field.getType()!=boolean.class)continue;
+                field.setAccessible(true);return field;
+            }catch(Throwable missing){}
+        }
+        return null;
     }
     private static void enablePanoramicSurfaceFade(Object target,java.lang.reflect.Field oneComponent,java.lang.reflect.Field onlyLock)throws IllegalAccessException{
         if(oneComponent!=null&&oneComponent.getBoolean(target))oneComponent.setBoolean(target,false);
@@ -203,9 +229,15 @@ final class ColorOsBridge {
         android.app.ActivityManager.RunningTaskInfo task=(android.app.ActivityManager.RunningTaskInfo)XposedHelpers.getObjectField(apps[apps.length-1],"taskInfo");
         ComponentName top=task==null?null:task.topActivity;
         if(top==null)return false;
+        String flattened=top.flattenToString();
+        Class<?> controller=XposedHelpers.findClass("com.oplus.systemui.keyguard.anim.OplusKeyguardAppearAnimControllerImpl",cl);
         try{
-            java.util.List<?> list=(java.util.List<?>)XposedHelpers.getStaticObjectField(XposedHelpers.findClass("com.oplus.systemui.keyguard.anim.OplusKeyguardAppearAnimControllerImpl",cl),"APPEAR_ONE_SHOT_COMPONENT_LIST");
-            return list!=null&&list.contains(top.flattenToString());
+            java.util.List<?> prefixes=(java.util.List<?>)XposedHelpers.getStaticObjectField(controller,"APPEAR_ONE_SHOT_PACKAGE_PREFIX_LIST");
+            if(prefixes!=null)for(Object prefix:prefixes)if(prefix instanceof String&&flattened.startsWith((String)prefix))return true;
+        }catch(Throwable ignored){}
+        try{
+            java.util.List<?> list=(java.util.List<?>)XposedHelpers.getStaticObjectField(controller,"APPEAR_ONE_SHOT_COMPONENT_LIST");
+            return list!=null&&list.contains(flattened);
         }catch(Throwable ignored){return false;}
     }
     private static void installUnlockEvents(ClassLoader cl){

@@ -1,3 +1,8 @@
+0.4.43-preview：自适应匹配 ColorOS 全景远程动画监听器类编号（兼容 ColorOS 17.0.1 等后续版本）。
+
+- 修复 ColorOS `17.0.1.202` 等版本因新增匿名闭包导致 `PanoramicAodAppearAnimRunner$playPanoramicRemoteAnimation` 监听器类编号由 `$3` 漂移为 `$4` 引发的非桌面息屏衔接失效；改为启动期按接口与捕获字段特征自动发现目标类，同时兼容旧版 `$3`、新版 `$4` 及后续编号变化与 `ExternalSyntheticLambda` 形式。
+- 同步兼容新版 `isNeedOneShotAnim` 的 `APPEAR_ONE_SHOT_PACKAGE_PREFIX_LIST` 规则，老系统缺失该字段时自动忽略。
+
 0.4.42-preview：修复新版 ColorOS 非桌面息屏衔接动画失效与全状态息屏适配。
 
 - 修复 ColorOS 17.0.0.105 等版本经 `dex2oat` 后台优化将 `ValueAnimator.addUpdateListener` 内联进 `playPanoramicRemoteAnimation` 后，非桌面息屏跳过前台应用窗口淡出的问题；同时完整保留旧版系统的 `ValueAnimator.addUpdateListener` 路径与方法签名兼容回退。
